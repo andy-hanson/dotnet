@@ -6,7 +6,7 @@ using Model;
 
 namespace Emit {
 	static class Emit {
-		public static void writeBytecode(ModuleBuilder moduleBuilder, Klass klass, LineColumnGetter lineColumnGetter) {
+		internal static void writeBytecode(ModuleBuilder moduleBuilder, Klass klass, LineColumnGetter lineColumnGetter) {
 			var tb = moduleBuilder.DefineType(klass.name.str, TypeAttributes.Public); //TODO: may need to store this with the class
 
 			tb.CreateTypeInfo();
@@ -18,13 +18,13 @@ namespace Emit {
 		}
 
 		static void foo(TypeBuilder tb, Klass klass) {
-			var slots = (klass.head as Klass.Head.Slots).slots;
+			var slots = ((Klass.Head.Slots) klass.head).slots;
 			foreach (var slot in slots) {
 				var fb = tb.DefineField(slot.name.str, slot.ty.toType(), FieldAttributes.Public);
 			}
 
 			foreach (var member in klass.members) {
-				var method = member as MethodWithBody; //todo: other members
+				var method = (MethodWithBody) member; //todo: other members
 
 				var mb = tb.DefineMethod(method.name.str, MethodAttributes.Public, method.returnTy.toType(),
 					method.parameters.MapToArray(p => p.ty.toType()));
@@ -37,23 +37,25 @@ namespace Emit {
 
 	}
 
-	class ExprEmitter {
+	sealed class ExprEmitter {
 		readonly ILGenerator il;
-		public ExprEmitter(ILGenerator il) {
+		internal ExprEmitter(ILGenerator il) {
 			this.il = il;
 		}
 
-		public void emitAny(Expr e) {
+		internal void emitAny(Expr e) {
 			switch (e.kind) {
 				case ExprKind.Access:
-					emit(e as Access);
+					emit((Access) e);
 					break;
 				case ExprKind.Let:
-					emit(e as Let);
+					emit((Let) e);
 					break;
 				case ExprKind.Seq:
-					emit(e as Seq);
+					emit((Seq) e);
 					break;
+				default:
+					throw new Exception(e.kind.ToString());
 			}
 		}
 

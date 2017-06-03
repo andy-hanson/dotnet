@@ -1,23 +1,23 @@
 using System.Collections.Immutable;
 
 struct Loc {
-    public readonly int start;
-    public readonly int end;
+    internal readonly int start;
+    internal readonly int end;
 
-    public static Loc singleChar(int start) => new Loc(start, start + 1);
+    internal static Loc singleChar(int start) => new Loc(start, start + 1);
     //TODO: eventually get rid of this
-    public static readonly Loc zero = new Loc(0, 0);
+    internal static readonly Loc zero = new Loc(0, 0);
 
-    public Loc(int start, int end) {
+    internal Loc(int start, int end) {
         this.start = start;
         this.end = end;
     }
 }
 
 struct LineAndColumn {
-    public readonly int line;
-    public readonly int column;
-    public LineAndColumn(int line, int column) {
+    internal readonly int line;
+    internal readonly int column;
+    internal LineAndColumn(int line, int column) {
         this.line = line;
         this.column = column;
     }
@@ -26,9 +26,9 @@ struct LineAndColumn {
 }
 
 struct LineAndColumnLoc {
-    public readonly LineAndColumn start;
-    public readonly LineAndColumn end;
-    public LineAndColumnLoc(LineAndColumn start, LineAndColumn end) {
+    internal readonly LineAndColumn start;
+    internal readonly LineAndColumn end;
+    internal LineAndColumnLoc(LineAndColumn start, LineAndColumn end) {
         this.start = start;
         this.end = end;
     }
@@ -36,12 +36,11 @@ struct LineAndColumnLoc {
     public override string ToString() => $"{start}-{end}";
 }
 
-//mv
-class LineColumnGetter {
+struct LineColumnGetter {
     readonly string text;
     private readonly ImmutableArray<int> lineToPos;
 
-    public LineColumnGetter(string text) {
+    internal LineColumnGetter(string text) {
         this.text = text;
         var lineToPos = ImmutableArray.CreateBuilder<int>();
         lineToPos.Add(0);
@@ -53,13 +52,13 @@ class LineColumnGetter {
         this.lineToPos = lineToPos.ToImmutable();
     }
 
-    public LineAndColumnLoc lineAndColumnAtLoc(Loc loc) =>
+    internal LineAndColumnLoc lineAndColumnAtLoc(Loc loc) =>
         new LineAndColumnLoc(lineAndColumnAtPos(loc.start), lineAndColumnAtPos(loc.end));
 
-    public int lineAtPos(int pos) =>
+    internal int lineAtPos(int pos) =>
         lineAndColumnAtPos(pos).line;
 
-    public LineAndColumn lineAndColumnAtPos(int pos) {
+    internal LineAndColumn lineAndColumnAtPos(int pos) {
         //binary search
         var lowLine = 0;
         var highLine = lineToPos.Length - 1;

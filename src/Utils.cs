@@ -3,12 +3,16 @@ using System.Diagnostics;
 using System.Collections.Immutable;
 
 static class Utils {
-	public static T nonNull<T>(T t) {
+	internal static T TODO<T>(string message = "!") {
+		throw new Exception(message);
+	}
+
+	internal static T nonNull<T>(T t) {
 		Debug.Assert(t != null);
 		return t;
 	}
 
-	public static ImmutableArray<T> build<T>(Action<ImmutableArray<T>.Builder> builder) {
+	internal static ImmutableArray<T> build<T>(Action<ImmutableArray<T>.Builder> builder) {
 		var b = ImmutableArray.CreateBuilder<T>();
 		builder(b);
 		return b.ToImmutable();
