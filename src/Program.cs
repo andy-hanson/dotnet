@@ -1,12 +1,6 @@
 ﻿using System;
-using System.Runtime.Loader;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics;
-using System.Linq;
-using static Utils;
 //dotnet add package System.Runtime
 //dotnet add package System.Runtime.Loader
 //dotnet add package System.Reflection.Emit
@@ -14,6 +8,32 @@ using static Utils;
 
 namespace main {
 	class Program {
+		static void Main(string[] args) {
+			TestCompiler();
+		}
+
+		static void TestCompiler() {
+			//var text = File.ReadAllText("sample/A.nz");
+			//Parser.parse(Sym.of("A"), text);
+			var rootDir = Path.empty;
+
+
+			var cmp = new Compiler(new DefaultCompilerHost(rootDir));
+			var x = cmp.compile(Path.from("sample", "A"));
+
+			/*
+			var aName = new AssemblyName("Example");
+			var ab = AssemblyBuilder.DefineDynamicAssembly(aName, AssemblyBuilderAccess.RunAndCollect);
+			var mb = ab.DefineDynamicModule(aName.Name);
+
+			Console.WriteLine("main");
+			//var m = new Model.Module();
+
+			//Model.Emit.writeBytecode(mb, klass, );
+			*/
+		}
+
+
 		static void AddCtr(TypeBuilder tb, FieldBuilder fbNumber) {
 			Type[] parameterTypes = { typeof(int) };
 			var ctor1 = tb.DefineConstructor(
@@ -42,17 +62,6 @@ namespace main {
 			ctor0IL.Emit(OpCodes.Ldc_I4_S, 42);
 			ctor0IL.Emit(OpCodes.Call, ctor1);
 			ctor0IL.Emit(OpCodes.Ret);
-		}
-
-		static void Main(string[] args) {
-			var aName = new AssemblyName("Example");
-			var ab = AssemblyBuilder.DefineDynamicAssembly(aName, AssemblyBuilderAccess.RunAndCollect);
-			var mb = ab.DefineDynamicModule(aName.Name);
-
-			Console.WriteLine("main");
-			//var m = new Model.Module();
-
-			//Model.Emit.writeBytecode(mb, klass, );
 		}
 
 		static void Test() {

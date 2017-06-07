@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 
 using Model;
+using static Utils;
 
 namespace Emit {
 	static class Emit {
@@ -44,35 +45,48 @@ namespace Emit {
 		}
 
 		internal void emitAny(Expr e) {
-			switch (e.kind) {
-				case ExprKind.Access:
-					emit((Access) e);
-					break;
-				case ExprKind.Let:
-					emit((Let) e);
-					break;
-				case ExprKind.Seq:
-					emit((Seq) e);
-					break;
-				default:
-					throw new Exception(e.kind.ToString());
-			}
+			var a = e as Expr.Access;
+			if (a != null) emitAccess(a);
+			var l = e as Expr.Let;
+			if (l != null) emitLet(l);
+			var s = e as Expr.Seq;
+			if (s != null) emitSeq(s);
+			var li = e as Expr.Literal;
+			if (li != null) emitLiteral(li);
+			var sm = e as Expr.StaticMethodCall;
+			if (sm != null) emitStaticMethodCall(sm);
+			var g = e as Expr.GetSlot;
+			if (g != null) emitGetSlot(g);
+			throw TODO();
 		}
 
-		private void emit(Access e) {
-			throw new NotImplementedException();
+		void emitAccess(Expr.Access e) {
+			throw TODO();
 		}
 
-		private void emit(Let l) {
-			throw new NotImplementedException();
+		void emitLet(Expr.Let l) {
+			throw TODO();
 		}
 
-		private void emit(Seq s) {
+		void emitSeq(Expr.Seq s) {
 			emitAny(s.action);
 			emitAny(s.then);
+			throw TODO();
 		}
 
-		private void op(OpCode op) {
+		void emitLiteral(Expr.Literal li) {
+			throw TODO();
+		}
+
+		void emitStaticMethodCall(Expr.StaticMethodCall s) {
+			throw TODO();
+		}
+
+		void emitGetSlot(Expr.GetSlot g) {
+			throw TODO();
+		}
+
+		void op(OpCode op) {
 			il.Emit(op);
 		}
 	}

@@ -1,21 +1,21 @@
 using System;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Linq;
+using static Utils;
 
 struct Path : IEquatable<Path> {
-	private ImmutableArray<Sym> parts;
+	ImmutableArray<Sym> parts;
 
 	internal Path(ImmutableArray<Sym> parts) {
 		this.parts = parts;
 	}
 
-	static Path empty = new Path(ImmutableArray.Create<Sym>());
+	public static Path empty = new Path(ImmutableArray.Create<Sym>());
 
-	static Path resolveWithRoot(Path root, Path path) =>
-		root.resolve(new RelPath(0, path));
+	public static Path resolveWithRoot(Path root, Path path) =>
+		new Path(root.parts.Concat(path.parts));
 
-	internal Path from(params string[] elements) =>
+	internal static Path from(params string[] elements) =>
 		new Path(Arr.fromMappedArray(elements, Sym.of));
 
 	internal Path resolve(RelPath rel) {
@@ -57,11 +57,11 @@ struct RelPath {
 	internal readonly Path relToParent;
 
 	internal RelPath(int nParents, Path relToParent) {
-		Debug.Assert(nParents > 0);
+		assert(nParents > 0);
 		this.nParents = nParents;
 		this.relToParent = relToParent;
 	}
 
-	bool isParentsOnly => relToParent.isEmpty;
-	Sym last => relToParent.last;
+	internal bool isParentsOnly => relToParent.isEmpty;
+	internal Sym last => relToParent.last;
 }

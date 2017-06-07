@@ -1,0 +1,5 @@
+slots
+	val A a
+
+def A b()
+	a

@@ -16,12 +16,13 @@ namespace Ast {
 		}
 
 		internal abstract class Import : Node {
-			private Import(Loc loc) : base(loc) {}
+			Import(Loc loc) : base(loc) {}
 
 			internal sealed class Global : Import {
 				internal readonly Path path;
 				internal Global(Loc loc, Path path) : base(loc) { this.path = path; }
 			}
+
 			internal sealed class Relative : Import {
 				internal readonly RelPath path;
 				internal Relative(Loc loc, RelPath path) : base(loc) { this.path = path; }
@@ -41,11 +42,11 @@ namespace Ast {
 		}
 
 		internal abstract class Head : Node {
-			private Head(Loc loc) : base(loc) {}
+			Head(Loc loc) : base(loc) {}
 
-			sealed class Slots : Head {
-				internal readonly ImmutableArray<Slot> vars;
-				internal Slots(Loc loc, ImmutableArray<Slot> vars) : base(loc) { this.vars = vars; }
+			internal sealed class Slots : Head {
+				internal readonly ImmutableArray<Slot> slots;
+				internal Slots(Loc loc, ImmutableArray<Slot> vars) : base(loc) { this.slots = vars; }
 
 				internal sealed class Slot : Node {
 					internal readonly bool mutable;
@@ -63,9 +64,9 @@ namespace Ast {
 
 	abstract class Member : Node {
 		internal readonly Sym name;
-		private Member(Loc loc, Sym name) : base(loc) { this.name = name; }
+		Member(Loc loc, Sym name) : base(loc) { this.name = name; }
 
-		sealed class Method : Member {
+		internal sealed class Method : Member {
 			internal readonly bool isStatic;
 			internal readonly Ty returnTy;
 			internal readonly ImmutableArray<Parameter> parameters;
@@ -76,27 +77,27 @@ namespace Ast {
 				this.parameters = parameters;
 				this.body = body;
 			}
-		}
 
-		sealed class Parameter : Node {
-			internal readonly Ty ty;
-			internal readonly Sym name;
-			internal Parameter(Loc loc, Ty ty, Sym name) : base(loc) {
-				this.ty = ty;
-				this.name = name;
+			internal sealed class Parameter : Node {
+				internal readonly Ty ty;
+				internal readonly Sym name;
+				internal Parameter(Loc loc, Ty ty, Sym name) : base(loc) {
+					this.ty = ty;
+					this.name = name;
+				}
 			}
 		}
 	}
 
 	abstract class Ty : Node {
-		private Ty(Loc loc) : base(loc) {}
+		Ty(Loc loc) : base(loc) {}
 
-		sealed class Access : Ty {
+		internal sealed class Access : Ty {
 			internal readonly Sym name;
 			internal Access(Loc loc, Sym name) : base(loc) { this.name = name; }
 		}
 
-		sealed class Inst : Ty {
+		internal sealed class Inst : Ty {
 			internal readonly Access instantiated;
 			internal readonly ImmutableArray<Ty> tyArgs;
 			internal Inst(Loc loc, Access instantiated, ImmutableArray<Ty> tyArgs) : base(loc) {
@@ -107,7 +108,7 @@ namespace Ast {
 	}
 
 	abstract class Expr : Node {
-		private Expr(Loc loc) : base(loc) {}
+		Expr(Loc loc) : base(loc) {}
 
 		internal sealed class Access : Expr {
 			internal readonly Sym name;
@@ -163,23 +164,6 @@ namespace Ast {
 			}
 		}
 
-		internal abstract class Pattern : Node {
-			private Pattern(Loc loc) : base(loc) {}
-			internal sealed class Ignore : Pattern {
-				internal Ignore(Loc loc) : base(loc) {}
-			}
-			internal sealed class Single : Pattern {
-				internal readonly Sym name;
-				internal Single(Loc loc, Sym name) : base(loc) { this.name = name; }
-			}
-			internal sealed class Destruct : Pattern {
-				internal readonly ImmutableArray<Pattern> destructed;
-				internal Destruct(Loc loc, ImmutableArray<Pattern> destructed) : base(loc) {
-					this.destructed = destructed;
-				}
-			}
-		}
-
 		internal class Seq : Expr {
 			internal readonly Expr first;
 			internal readonly Expr then;
@@ -190,9 +174,28 @@ namespace Ast {
 		}
 
 		internal class Literal : Expr {
-			internal readonly Model.LiteralValue value;
-			internal Literal(Loc loc, Model.LiteralValue value) : base(loc) { this.value = value; }
+			internal readonly Model.Expr.Literal.LiteralValue value;
+			internal Literal(Loc loc, Model.Expr.Literal.LiteralValue value) : base(loc) { this.value = value; }
 		}
 	}
 
+	internal abstract class Pattern : Node {
+		Pattern(Loc loc) : base(loc) {}
+		
+		internal sealed class Ignore : Pattern {
+			internal Ignore(Loc loc) : base(loc) {}
+		}
+		
+		internal sealed class Single : Pattern {
+			internal readonly Sym name;
+			internal Single(Loc loc, Sym name) : base(loc) { this.name = name; }
+		}
+		
+		internal sealed class Destruct : Pattern {
+			internal readonly ImmutableArray<Pattern> destructed;
+			internal Destruct(Loc loc, ImmutableArray<Pattern> destructed) : base(loc) {
+				this.destructed = destructed;
+			}
+		}
+	}
 }
