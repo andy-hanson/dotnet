@@ -154,7 +154,7 @@ sealed class ILWriter {
 	}
 
 	void log(string s) {
-		Console.WriteLine("  " + s);
+		//Console.WriteLine("  " + s);
 		//logs.add(s);
 	}
 
@@ -215,6 +215,26 @@ sealed class ILWriter {
 		il.Emit(OpCodes.Br, l);
 	}
 
+	internal void getParameter(Method.Parameter p) {
+		log($"get parameter {p.name}");
+		il.Emit(ldargOperation(p.index));
+	}
+
+	OpCode ldargOperation(uint index) {
+		switch (index) {
+			case 0:
+				return OpCodes.Ldarg_0;
+			case 1:
+				return OpCodes.Ldarg_1;
+			case 2:
+				return OpCodes.Ldarg_2;
+			case 3:
+				return OpCodes.Ldarg_3;
+			default:
+				throw TODO();
+		}
+	}
+
 	//internal void construct(ConstructorInfo c) {
 	//	il.Emit(OpCodes.Newobj, c);
 	//}
@@ -226,9 +246,15 @@ sealed class ExprEmitter {
 	internal ExprEmitter(Emitter emitter, ILWriter il) { this.emitter = emitter; this.il = il; }
 
 	internal void emitAny(Expr e) {
-		var a = e as Expr.Access;
-		if (a != null) {
-			emitAccess(a);
+		var p = e as Expr.AccessParameter;
+		if (p != null) {
+			emitAccessParameter(p);
+			return;
+		}
+
+		var lo = e as Expr.AccessLocal;
+		if (lo != null) {
+			emitAccessLocal(lo);
 			return;
 		}
 
@@ -271,7 +297,11 @@ sealed class ExprEmitter {
 		throw TODO();
 	}
 
-	void emitAccess(Expr.Access e) {
+	void emitAccessParameter(Expr.AccessParameter p) {
+		il.getParameter(p.param);
+	}
+
+	void emitAccessLocal(Expr.AccessLocal lo) {
 		throw TODO();
 	}
 

@@ -25,6 +25,13 @@ struct Arr<T> {
         return b.finish();
     }
 
+    internal Arr<U> map<U>(Func<T, uint, U> mapper) {
+        var b = Arr.fixedSizeBuilder<U>(length);
+        for (uint i = 0; i < length; i++)
+            b[i] = mapper(this[i], i);
+        return b.finish();
+    }
+
     internal Arr<T> rcons(T next) {
         var b = Arr.fixedSizeBuilder<T>(length + 1);
         for (uint i = 0; i < length; i++)
@@ -157,6 +164,13 @@ static class Arr {
         return b.finish();
     }
 
+    internal static Arr<U> map<T, U>(this T[] xs, Func<T, uint, U> mapper) {
+        var b = Arr.fixedSizeBuilder<U>(unsigned(xs.Length));
+        for (uint i = 0; i < xs.Length; i++)
+            b[i] = mapper(xs[i], i);
+        return b.finish();
+    }
+
     internal struct Builder<T> {
         ImmutableArray<T>.Builder b;
         internal Builder(bool dummy) { b = ImmutableArray.CreateBuilder<T>(); }
@@ -186,7 +200,7 @@ static class Arr {
         }
 
         internal Arr<U> map<U>(Func<T, U> mapper) {
-            var b = new Builder<U>(length);
+            var b = Arr.fixedSizeBuilder<U>(length);
             for (uint i = 0; i < length; i++)
                 b[i] = mapper(this[i]);
             return b.finish();

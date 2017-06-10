@@ -22,15 +22,13 @@ namespace main {
 
 			var e = new Emitter();
 			Type t = e.compileModule(m);
-			Console.WriteLine("COMPILED");
 
 			var me = t.GetMethod("f");
 			Console.WriteLine(me);
 
-			var res = me.Invoke(null, new object[] {});
-
-
-			Console.WriteLine(res);
+			Func<bool, object> mm = (bool b) => me.Invoke(null, new object[] { Builtins.Bool.of(b) });
+			Console.WriteLine(mm(true));
+			Console.WriteLine(mm(false));
 
 
 			//Emit.Emit.writeBytecode(mb, x.klass, x.lineColumnGetter);

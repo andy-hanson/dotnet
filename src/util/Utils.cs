@@ -7,7 +7,7 @@ static class Utils {
 	internal static int signed(uint u) => (int) u;
 	internal static uint unsigned(int i) => (uint) i;
 
-	internal static Exception TODO(string message = "!") {
+	internal static Exception TODO(string message = "TODO") {
 		Debugger.Break();
 		return new Exception(message);
 	}

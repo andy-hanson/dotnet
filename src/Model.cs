@@ -229,11 +229,13 @@ namespace Model {
 			internal readonly Loc loc;
 			internal readonly Ty ty;
 			internal readonly Sym name;
+			internal readonly uint index;
 
-			internal Parameter(Loc loc, Ty ty, Sym name) {
+			internal Parameter(Loc loc, Ty ty, Sym name, uint index) {
 				this.loc = loc;
 				this.ty = ty;
 				this.name = name;
+				this.index = index;
 			}
 		}
 	}
@@ -246,14 +248,14 @@ namespace Model {
 			return customName != null ? customName.name : Sym.of(m.Name);
 		}
 
-		static Arr<Method.Parameter> mapParams(MethodInfo m) => m.GetParameters().map(p => {
+		static Arr<Method.Parameter> mapParams(MethodInfo m) => m.GetParameters().map((p, index) => {
 			assert(!p.IsIn);
 			assert(!p.IsLcid);
 			assert(!p.IsOut);
 			assert(!p.IsOptional);
 			assert(!p.IsRetval);
 			var ty = BuiltinClass.fromDotNetType(p.ParameterType);
-			return new Method.Parameter(Loc.zero, ty, Sym.of(p.Name));
+			return new Method.Parameter(Loc.zero, ty, Sym.of(p.Name), index);
 		});
 	}
 
@@ -298,30 +300,22 @@ namespace Model {
 			this.loc = loc;
 		}
 
-		//TODO: don't think having a base class here helps...
-		internal abstract class Access : Expr {
-			internal abstract Sym name { get; }
-			Access(Loc loc) : base(loc) { }
-
-			internal sealed class Parameter : Access {
-				internal readonly MethodWithBody.Parameter param;
-				internal Parameter(Loc loc, MethodWithBody.Parameter param) : base(loc) {
-					this.param = param;
-				}
-
-				internal override Ty ty => param.ty;
-				internal override Sym name => param.name;
+		internal sealed class AccessParameter : Expr {
+			internal readonly MethodWithBody.Parameter param;
+			internal AccessParameter(Loc loc, MethodWithBody.Parameter param) : base(loc) {
+				this.param = param;
 			}
 
-			internal sealed class Local : Access {
-				readonly Pattern.Single local;
-				internal Local(Loc loc, Pattern.Single local) : base(loc) {
-					this.local = local;
-				}
+			internal override Ty ty => param.ty;
+		}
 
-				internal override Ty ty => local.ty;
-				internal override Sym name => local.name;
+		internal sealed class AccessLocal : Expr {
+			internal readonly Pattern.Single local;
+			internal AccessLocal(Loc loc, Pattern.Single local) : base(loc) {
+				this.local = local;
 			}
+
+			internal override Ty ty => local.ty;
 		}
 
 		internal sealed class Let : Expr {

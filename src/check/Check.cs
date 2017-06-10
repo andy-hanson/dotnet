@@ -110,8 +110,8 @@ class Checker {
 
 	Member emptyMember(Klass klass, Ast.Member ast) {
 		var mAst = (Ast.Member.Method) ast;
-		var parameters = mAst.parameters.map(p =>
-			new Method.Parameter(p.loc, baseScope.getTy(p.ty), p.name));
+		var parameters = mAst.parameters.map((p, index) =>
+			new Method.Parameter(p.loc, baseScope.getTy(p.ty), p.name, index));
 		return new MethodWithBody(
 			klass, mAst.loc, mAst.isStatic, baseScope.getTy(mAst.returnTy), mAst.name, parameters);
 	}
@@ -300,10 +300,10 @@ class MethodChecker {
 
 	Expr get(Loc loc, Sym name) {
 		if (parameters.find(out var param, p => p.name == name))
-			return new Expr.Access.Parameter(loc, param);
+			return new Expr.AccessParameter(loc, param);
 
 		if (locals.find(out var local, l => l.name == name))
-			return new Expr.Access.Local(loc, local);
+			return new Expr.AccessLocal(loc, local);
 
 		if (!baseScope.tryGetMember(name, out var member))
 			throw TODO(); //error: cannot find name...
