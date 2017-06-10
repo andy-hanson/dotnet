@@ -94,7 +94,7 @@ class Checker {
 	Member emptyMember(Klass klass, Ast.Member ast) {
 		var mAst = (Ast.Member.Method) ast;
 		var parameters = mAst.parameters.map(p =>
-			new NzMethod.Parameter(p.loc, baseScope.getTy(p.ty), p.name));
+			new Method.Parameter(p.loc, baseScope.getTy(p.ty), p.name));
 		return new MethodWithBody(
 			klass, mAst.loc, mAst.isStatic, baseScope.getTy(mAst.returnTy), mAst.name, parameters);
 	}
@@ -200,7 +200,7 @@ class MethodChecker {
 	Expr checkLet(ref Expected expected, Ast.Expr.Let l) {
 		Expr value = checkInfer(l.value);
 
-		var i = 0;
+		uint i = 0;
 		var pattern = startCheckPattern(value.ty, l.assigned, ref i);
 		var expr = checkExpr(ref expected, l.then);
 		endCheckPattern(i);
@@ -218,7 +218,7 @@ class MethodChecker {
 
 	Expr callStaticMethod(ref Expected expected, Loc loc, ClassLike klass, Sym methodName, ImmutableArray<Ast.Expr> argAsts) {
 		if (!klass.membersMap.TryGetValue(methodName, out var member)) TODO();
-		var method = (NzMethod) member;
+		var method = (Method) member;
 		if (method.isStatic) throw TODO();
 		var args = checkCall(loc, method, argAsts);
 		var call = new Expr.StaticMethodCall(loc, method, args);
@@ -227,7 +227,7 @@ class MethodChecker {
 
 	Expr callMethod(ref Expected expected, Loc loc, Ast.Expr targetAst, Sym methodName, ImmutableArray<Ast.Expr> argAsts) {
 		getProperty(loc, targetAst, methodName, out var target, out var member);
-		var method = (NzMethod) member; //TODO: error handling
+		var method = (Method) member; //TODO: error handling
 		if (method.isStatic) throw TODO();
 		var args = checkCall(loc, method, argAsts);
 		var call = new Expr.MethodCall(loc, target, method, args);
@@ -245,7 +245,7 @@ class MethodChecker {
 		return member;
 	}
 
-	ImmutableArray<Expr> checkCall(Loc callLoc, NzMethod method, ImmutableArray<Ast.Expr> argAsts) {
+	ImmutableArray<Expr> checkCall(Loc callLoc, Method method, ImmutableArray<Ast.Expr> argAsts) {
 		if (method.arity != argAsts.Length) {
 			throw TODO();
 		}
@@ -349,7 +349,7 @@ class MethodChecker {
 	 * ...do things with pattern variables in scope...
 	 * endCheckPattern(i); // Removes them from scope
 	 */
-	Pattern startCheckPattern(Ty ty, Ast.Pattern ast, ref int nAdded) {
+	Pattern startCheckPattern(Ty ty, Ast.Pattern ast, ref uint nAdded) {
 		if (ast is Ast.Pattern.Ignore)
 			return new Pattern.Ignore(ast.loc);
 
@@ -365,7 +365,7 @@ class MethodChecker {
 		throw TODO();
 	}
 
-	void endCheckPattern(int nAdded) {
+	void endCheckPattern(uint nAdded) {
 		doTimes(nAdded, () => locals.Pop());
 	}
 }

@@ -1,9 +1,17 @@
 using System;
 using System.Collections.Immutable;
+using System.Diagnostics;
+
 using static Utils;
 
 static class Utils {
-	internal static Exception TODO(string message = "!") => new Exception(message);
+	internal static int signed(uint u) => (int) u;
+	internal static uint unsigned(int i) => (uint) i;
+
+	internal static Exception TODO(string message = "!") {
+		Debugger.Break();
+		return new Exception(message);
+	}
 
 	internal static Exception unreachable() => new Exception("UNREACHABLE");
 
@@ -24,7 +32,7 @@ static class Utils {
 		}
 	}
 
-	internal static void doTimes(int times, Action action) {
+	internal static void doTimes(uint times, Action action) {
 		assert(times >= 0);
 		for (var i = times; i != 0; i--) {
 			action();

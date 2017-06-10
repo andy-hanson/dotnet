@@ -1,5 +1,8 @@
-slots
-	val A a
+static
 
-def A b()
-	a
+fun Int b()
+	when
+		1
+			2
+		else
+			3

@@ -16,7 +16,7 @@ struct Path : IEquatable<Path> {
 		new Path(root.parts.Concat(path.parts));
 
 	internal static Path from(params string[] elements) =>
-		new Path(Arr.fromMappedArray(elements, Sym.of));
+		new Path(elements.map(Sym.of));
 
 	internal Path resolve(RelPath rel) {
 		var nPartsToKeep = parts.Length - rel.nParents;
@@ -26,7 +26,7 @@ struct Path : IEquatable<Path> {
 		return new Path(parent.Concat(rel.relToParent.parts));
 	}
 
-	internal Path add(Sym next) => new Path(Arr.rcons(parts, next));
+	internal Path add(Sym next) => new Path(parts.rcons(next));
 
 	internal Path parent() => new Path(parts.rtail());
 

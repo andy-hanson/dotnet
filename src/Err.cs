@@ -1,6 +1,6 @@
 using Model;
 
-struct CompileError {//rename
+struct CompileError {
     internal readonly Loc loc;
     internal readonly Err err;
     internal CompileError(Loc loc, Err err) { this.loc = loc; this.err = err; }
@@ -59,9 +59,10 @@ abstract class Err {
     }
 
     internal sealed class UnexpectedToken : Err {
-        internal readonly string desc;
-        internal UnexpectedToken(string desc) { this.desc = desc; }
-        internal override string Show => $"Unexpected token {desc}";
+        internal readonly string expected;
+        internal readonly string actual;
+        internal UnexpectedToken(string expected, string actual) { this.expected = expected; this.actual = actual; }
+        internal override string Show => $"Unexpected token {actual}, expecting {expected}";
     }
 
     internal sealed class CombineTypes : Err {

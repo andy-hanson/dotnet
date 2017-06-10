@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Reflection;
 
 using static Utils;
 
@@ -49,18 +50,82 @@ namespace Model {
 	}
 
 	abstract class ClassLike : Ty {
+		internal readonly Sym name;
 		internal abstract ImmutableDictionary<Sym, Member> membersMap { get; }
+
+		protected ClassLike(Sym name) { this.name = name; }
+	}
+
+	sealed class BuiltinClass : ClassLike {
+		readonly Type dotNetType;
+
+		ImmutableDictionary<Sym, Member> _membersMap;
+		internal override ImmutableDictionary<Sym, Member> membersMap => _membersMap;
+
+		static readonly IDictionary<Type, BuiltinClass> map = new Dictionary<Type, BuiltinClass>();
+		internal static BuiltinClass get(Type t) {
+			if (map.TryGetValue(t, out var old)) {
+				return old;
+			}
+
+			var customName = t.GetCustomAttribute<BuiltinName>(inherit: false);
+			var name = customName != null ? customName.name : unescapeName(t.Name);
+			var klass = new BuiltinClass(name, t);
+			// Important that we put this in the map *before* initializing it, so a type's methods can refer to itself.
+			map[t] = klass;
+
+			klass._membersMap = t.GetMethods().mapToDict<MethodInfo, Sym, Member>(m => {
+				if (m.GetCustomAttribute<Hid>(inherit: true) != null)
+					return null;
+
+				Member m2 = new BuiltinMethod(klass, m);
+				return m2.name.to(m2);
+			});
+
+			return klass;
+		}
+
+		private BuiltinClass(Sym name, Type dotNetType) : base(name) { this.dotNetType = dotNetType; }
+
+		internal override Type toType() => dotNetType;
+
+		public override bool Equals(Ty ty) => object.ReferenceEquals(this, ty);
+		public override int GetHashCode() => name.GetHashCode();
+
+		internal static string escapeName(Sym name) {
+			if (operatorEscapes.TryGetValue(name, out var str))
+				return str;
+
+			foreach (var ch in name.str)
+				if ('a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z')
+					unreachable();
+
+			return name.str;
+		}
+
+		internal static Sym unescapeName(string name) {
+			if (operatorUnescapes.TryGetValue(name, out var v))
+				return v;
+			return Sym.of(name);
+		}
+
+		static ImmutableDictionary<Sym, string> operatorEscapes = Dict.create(
+			"+".to("_add"),
+			"-".to("_sub"),
+			"*".to("_mul"),
+			"/".to("_div"),
+			"^".to("_pow")
+		).mapKeys(Sym.of);
+		static ImmutableDictionary<string, Sym> operatorUnescapes = operatorEscapes.reverse();
 	}
 
 	sealed class Klass : ClassLike {
 		internal readonly Loc loc;
-		internal readonly Sym name;
 
 		internal override Type toType() => throw TODO();
 
-		internal Klass(Loc loc, Sym name) {
+		internal Klass(Loc loc, Sym name) : base(name) {
 			this.loc = loc;
-			this.name = name;
 		}
 
 		Op<Head> _head;
@@ -78,14 +143,22 @@ namespace Model {
 		//internal IEnumerable<MethodWithBody> methods ...
 
 		internal abstract class Head {
-			Head() { }
-			//TODO: isType, isGeneric
+			readonly Loc loc;
+			Head(Loc loc) { this.loc = loc; }
+
+			// Static class: May only contain "fun"
+			internal class Static : Head {
+				internal Static(Loc loc) : base(loc) {}
+			}
+
+			// Abstract class: Never instantiated.
+			internal class Abstract : Head {
+				internal Abstract(Loc loc) : base(loc) {}
+			}
 
 			internal class Slots : Head {
-				internal readonly Loc loc;
 				internal readonly ImmutableArray<Slot> slots;
-				internal Slots(Loc loc, ImmutableArray<Slot> slots) {
-					this.loc = loc;
+				internal Slots(Loc loc, ImmutableArray<Slot> slots) : base(loc) {
 					this.slots = slots;
 				}
 
@@ -113,13 +186,13 @@ namespace Model {
 		internal Member(Loc loc, Sym name) { this.loc = loc; this.name = name; }
 	}
 
-	abstract class NzMethod : Member {
+	abstract class Method : Member {
 		internal readonly ClassLike klass;
 		internal readonly bool isStatic;//TODO: just store static methods elsewhere?
 		internal readonly Ty returnTy;
 		internal readonly ImmutableArray<Parameter> parameters;
 
-		internal NzMethod(ClassLike klass, Loc loc, bool isStatic, Ty returnTy, Sym name, ImmutableArray<Parameter> parameters) : base(loc, name) {
+		internal Method(ClassLike klass, Loc loc, bool isStatic, Ty returnTy, Sym name, ImmutableArray<Parameter> parameters) : base(loc, name) {
 			this.klass = klass;
 			this.isStatic = isStatic;
 			this.returnTy = returnTy;
@@ -140,8 +213,26 @@ namespace Model {
 			}
 		}
 	}
-	sealed class MethodWithBody : NzMethod {
-		internal MethodWithBody(ClassLike klass, Loc loc, bool isStatic, Ty returnTy, Sym name, ImmutableArray<Parameter> parameters)
+	sealed class BuiltinMethod : Method {
+		internal BuiltinMethod(BuiltinClass klass, MethodInfo m)
+			: base(klass, Loc.zero, m.IsStatic, BuiltinClass.get(m.ReturnType), getName(m), mapParams(m)) {}
+
+		static Sym getName(MethodInfo m) {
+			var customName = m.GetCustomAttribute<BuiltinName>(inherit: true);
+			return customName != null ? customName.name : Sym.of(m.Name);
+		}
+
+		static ImmutableArray<Method.Parameter> mapParams(MethodInfo m) => m.GetParameters().map(p => {
+			assert(p.IsIn);
+			assert(!p.IsOptional);
+			assert(!p.IsRetval);
+			var ty = BuiltinClass.get(p.GetType());
+			return new Method.Parameter(Loc.zero, ty, Sym.of(p.Name));
+		});
+	}
+
+	sealed class MethodWithBody : Method {
+		internal MethodWithBody(Klass klass, Loc loc, bool isStatic, Ty returnTy, Sym name, ImmutableArray<Parameter> parameters)
 			: base(klass, loc, isStatic, returnTy, name, parameters) { }
 
 		Op<Expr> _body;
@@ -150,7 +241,6 @@ namespace Model {
 			set { assert(!_body.has); _body = Op.Some(value); }
 		}
 	}
-	//BuiltinMethod, MethodWithBody
 
 	abstract class Pattern {
 		readonly Loc loc;
@@ -266,9 +356,9 @@ namespace Model {
 		}
 
 		internal sealed class StaticMethodCall : Expr {
-			internal readonly NzMethod method;
+			internal readonly Method method;
 			internal readonly ImmutableArray<Expr> args;
-			internal StaticMethodCall(Loc loc, NzMethod method, ImmutableArray<Expr> args) : base(loc) {
+			internal StaticMethodCall(Loc loc, Method method, ImmutableArray<Expr> args) : base(loc) {
 				assert(method.isStatic);
 				this.method = method;
 				this.args = args;
@@ -279,9 +369,9 @@ namespace Model {
 
 		internal sealed class MethodCall : Expr {
 			internal readonly Expr target;
-			internal readonly NzMethod method;
+			internal readonly Method method;
 			internal readonly ImmutableArray<Expr> args;
-			internal MethodCall(Loc loc, Expr target, NzMethod method, ImmutableArray<Expr> args) : base(loc) {
+			internal MethodCall(Loc loc, Expr target, Method method, ImmutableArray<Expr> args) : base(loc) {
 				assert(!method.isStatic);
 				this.target = target;
 				this.method = method;

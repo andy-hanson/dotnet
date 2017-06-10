@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
-using System.Linq;
+
+using static Utils;
 
 struct PathLoc {
 	internal readonly Path path;
@@ -8,23 +9,23 @@ struct PathLoc {
 }
 
 struct Loc {
-	internal readonly int start;
-	internal readonly int end;
+	internal readonly uint start;
+	internal readonly uint end;
 
-	internal static Loc singleChar(int start) => new Loc(start, start + 1);
+	internal static Loc singleChar(uint start) => new Loc(start, start + 1);
 	//TODO: eventually get rid of this
 	internal static readonly Loc zero = new Loc(0, 0);
 
-	internal Loc(int start, int end) {
+	internal Loc(uint start, uint end) {
 		this.start = start;
 		this.end = end;
 	}
 }
 
 struct LineAndColumn {
-	internal readonly int line;
-	internal readonly int column;
-	internal LineAndColumn(int line, int column) {
+	internal readonly uint line;
+	internal readonly uint column;
+	internal LineAndColumn(uint line, uint column) {
 		this.line = line;
 		this.column = column;
 	}
@@ -45,14 +46,14 @@ struct LineAndColumnLoc {
 
 struct LineColumnGetter {
 	readonly string text;
-	readonly ImmutableArray<int> lineToPos;
+	readonly ImmutableArray<uint> lineToPos;
 
 	internal LineColumnGetter(string text) {
 		this.text = text;
-		var lineToPos = ImmutableArray.CreateBuilder<int>();
+		var lineToPos = ImmutableArray.CreateBuilder<uint>();
 		lineToPos.Add(0);
-		foreach (var pos in Enumerable.Range(0, text.Length)) {
-			var ch = text[pos];
+		for (uint pos = 0; pos < text.Length; pos++) {
+			var ch = text.at(pos);
 			if (ch == '\n')
 				lineToPos.Add(pos + 1);
 		}
@@ -62,20 +63,20 @@ struct LineColumnGetter {
 	internal LineAndColumnLoc lineAndColumnAtLoc(Loc loc) =>
 		new LineAndColumnLoc(lineAndColumnAtPos(loc.start), lineAndColumnAtPos(loc.end));
 
-	internal int lineAtPos(int pos) =>
+	internal uint lineAtPos(uint pos) =>
 		lineAndColumnAtPos(pos).line;
 
-	internal LineAndColumn lineAndColumnAtPos(int pos) {
+	internal LineAndColumn lineAndColumnAtPos(uint pos) {
 		//binary search
-		var lowLine = 0;
-		var highLine = lineToPos.Length - 1;
+		uint lowLine = 0;
+		uint highLine = unsigned(lineToPos.Length - 1);
 
 		//Invariant:
 		//start of lowLineNumber comes before pos
 		//end of line highLineNumber comes after pos
 		while (lowLine <= highLine) {
 			var middleLine = mid(lowLine, highLine);
-			var middlePos = lineToPos[middleLine];
+			var middlePos = lineToPos.at(middleLine);
 
 			if (middlePos == pos)
 				return new LineAndColumn(middleLine, 0);
@@ -85,9 +86,9 @@ struct LineColumnGetter {
 				lowLine = middleLine + 1;
 		}
 
-		var line = lowLine - 1;
-		return new LineAndColumn(line, pos - lineToPos[line]);
+		uint line = lowLine - 1;
+		return new LineAndColumn(line, pos - lineToPos.at(line));
 	}
 
-	static int mid(int a, int b) => (a + b) / 2;
+	static uint mid(uint a, uint b) => (a + b) / 2;
 }

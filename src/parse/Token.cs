@@ -10,17 +10,22 @@ internal enum Token {
 	IntLiteral,
 	QuoteStart,
 
-	// Keywords that resemble names
+	// Keywords
+	Abstract,
 	Def,
 	Enum,
+	Else,
 	Fun,
 	Generic,
 	Import,
+	If,
 	Slots,
+	Static,
 	Val,
 	Var,
+	When,
 
-	// Other keywords
+	// Punctuation
 	Backslash,
 	Underscore,
 	Equals,
@@ -43,14 +48,19 @@ internal enum Token {
 static class TokenU {
 	internal static Token? keywordFromName(string s) {
 		switch (s) {
+			case "abstract": return Token.Abstract;
 			case "def": return Token.Def;
+			case "else": return Token.Else;
 			case "enum": return Token.Enum;
 			case "fun": return Token.Fun;
 			case "generic": return Token.Generic;
+			case "if": return Token.If;
 			case "import": return Token.Import;
 			case "slots": return Token.Slots;
+			case "static": return Token.Static;
 			case "val": return Token.Val;
 			case "var": return Token.Var;
+			case "when": return Token.When;
 			default: return null;
 		}
 	}
@@ -65,14 +75,19 @@ static class TokenU {
 			case Token.FloatLiteral: return "float literal";
 			case Token.QuoteStart: return "quote start";
 
+			case Token.Abstract: return "abstract";
 			case Token.Def: return "def";
 			case Token.Enum: return "enum";
+			case Token.Else: return "else";
 			case Token.Fun: return "fun";
 			case Token.Generic: return "generic";
 			case Token.Import: return "import";
+			case Token.If: return "if";
 			case Token.Slots: return "slots";
+			case Token.Static: return "static";
 			case Token.Val: return "val";
 			case Token.Var: return "var";
+			case Token.When: return "when";
 
 			case Token.Backslash: return "\\";
 			case Token.Underscore: return "_";

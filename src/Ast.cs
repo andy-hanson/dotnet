@@ -44,6 +44,14 @@ namespace Ast {
 		internal abstract class Head : Node {
 			Head(Loc loc) : base(loc) {}
 
+			internal sealed class Static : Head {
+				internal Static(Loc loc) : base(loc) {}
+			}
+
+			internal sealed class Abstract : Head {
+				internal Abstract(Loc loc) : base(loc) {}
+			}
+
 			internal sealed class Slots : Head {
 				internal readonly ImmutableArray<Slot> slots;
 				internal Slots(Loc loc, ImmutableArray<Slot> vars) : base(loc) { this.slots = vars; }
@@ -164,7 +172,7 @@ namespace Ast {
 			}
 		}
 
-		internal class Seq : Expr {
+		internal sealed class Seq : Expr {
 			internal readonly Expr first;
 			internal readonly Expr then;
 			internal Seq(Loc loc, Expr first, Expr then) : base(loc){
@@ -173,24 +181,37 @@ namespace Ast {
 			}
 		}
 
-		internal class Literal : Expr {
+		internal sealed class Literal : Expr {
 			internal readonly Model.Expr.Literal.LiteralValue value;
 			internal Literal(Loc loc, Model.Expr.Literal.LiteralValue value) : base(loc) { this.value = value; }
+		}
+
+		internal sealed class WhenTest : Expr {
+			internal readonly ImmutableArray<Case> cases;
+			internal readonly Expr elseResult;
+			internal WhenTest(Loc loc, ImmutableArray<Case> cases, Expr elseResult) : base(loc) { this.cases = cases; this.elseResult = elseResult; }
+
+			internal struct Case {
+				internal readonly Loc loc;
+				internal readonly Expr test;
+				internal readonly Expr result;
+				internal Case(Loc loc, Expr test, Expr result) { this.loc = loc; this.test = test; this.result = result; }
+			}
 		}
 	}
 
 	internal abstract class Pattern : Node {
 		Pattern(Loc loc) : base(loc) {}
-		
+
 		internal sealed class Ignore : Pattern {
 			internal Ignore(Loc loc) : base(loc) {}
 		}
-		
+
 		internal sealed class Single : Pattern {
 			internal readonly Sym name;
 			internal Single(Loc loc, Sym name) : base(loc) { this.name = name; }
 		}
-		
+
 		internal sealed class Destruct : Pattern {
 			internal readonly ImmutableArray<Pattern> destructed;
 			internal Destruct(Loc loc, ImmutableArray<Pattern> destructed) : base(loc) {

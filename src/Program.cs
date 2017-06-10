@@ -17,7 +17,6 @@ namespace main {
 			//Parser.parse(Sym.of("A"), text);
 			var rootDir = Path.empty;
 
-
 			var cmp = new Compiler(new DefaultCompilerHost(rootDir));
 			var x = cmp.compile(Path.from("sample", "A"));
 

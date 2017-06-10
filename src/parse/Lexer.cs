@@ -1,19 +1,36 @@
 using System;
 using System.Text;
-using static Utils;
+
 using static ParserExit;
+using static Utils;
+
+using Pos = System.UInt32;
 
 abstract class Lexer {
 	readonly string source;
 	// Index of the character we are *about* to take.
-	protected int pos { get; private set; } = 0;
-	int indent = 0;
+	protected Pos pos = 0;
+	uint indent = 0;
 	// Number of Token.Dedent we have to output before continuing to read.
-	int dedenting = 0;
+	uint dedenting = 0;
 
 	// This is set after taking one of several kinds of token, such as Name or NumberLiteral
-	string tokenValue;
-	internal Sym tokenSym => Sym.of(tokenValue);
+	protected string tokenValue;
+	protected Sym tokenSym => Sym.of(tokenValue);
+
+	string debug() {
+		//Current line with a '|' in the middle.
+		var ch = pos;
+		var nlBefore = pos;
+		while (nlBefore > 0 && source.at(nlBefore - 1) != '\n')
+			nlBefore--;
+		var nlAfter = pos;
+		while (nlAfter < source.Length && source.at(nlAfter) != '\n')
+			nlAfter++;
+
+		return $"{source.slice(nlBefore, pos)}|{source.slice(pos, nlAfter)}";
+	}
+
 
 	protected Lexer(string source) {
 		//Ensure "source" ends in a newline.
@@ -26,11 +43,11 @@ abstract class Lexer {
 		skipNewlines();
 	}
 
-	protected Loc locFrom(int start) => new Loc(start, pos);
+	protected Loc locFrom(Pos start) => new Loc(start, pos);
 
-	char peek => source[pos];
+	char peek => source.at(pos);
 
-	char readChar() => source[pos++];
+	char readChar() => source.at(pos++);
 
 	void skip() { pos++; }
 
@@ -88,23 +105,32 @@ abstract class Lexer {
 		}
 	}
 
-	string sliceFrom(int startPos) {
-		return source.Substring(startPos, pos - startPos);
+	string sliceFrom(Pos startPos) {
+		return source.slice(startPos, pos);
 	}
 
 	//This is called *after* having skipped the first char of the number.
-	Token takeNumber(int startPos) {
+	Token takeNumber(Pos startPos) {
 		skipWhile(isDigit);
 		var isFloat = peek == '.';
 		if (isFloat) {
 			skip();
-			must(isDigit(peek), Loc.singleChar(pos), Err.TooMuchIndent);
+			if (!isDigit(peek)) throw exit(Loc.singleChar(pos), Err.TooMuchIndent);
 		}
 		this.tokenValue = sliceFrom(startPos);
 		return isFloat ? Token.FloatLiteral : Token.IntLiteral;
 	}
 
-	Token takeStringLike(Token kind, int startPos, Func<char, bool> pred) {
+	Token takeNameOrKeyword(Pos startPos) {
+		skipWhile(isNameChar);
+		var s = sliceFrom(startPos);
+		var t = TokenU.keywordFromName(s);
+		if (t != null) return t.Value;
+		this.tokenValue = s;
+		return Token.Name;
+	}
+
+	Token takeStringLike(Token kind, Pos startPos, Func<char, bool> pred) {
 		skipWhile(pred);
 		this.tokenValue = sliceFrom(startPos);
 		return kind;
@@ -136,7 +162,7 @@ abstract class Lexer {
 				}
 
 			case ' ':
-				must(peek != '\n', Loc.singleChar(pos), Err.TrailingSpace);
+				if (peek == '\n') throw exit(Loc.singleChar(pos), Err.TrailingSpace);
 				throw new Exception("TODO");
 
 			case '\n':
@@ -177,7 +203,7 @@ abstract class Lexer {
 			case 'k': case 'l': case 'm': case 'n': case 'o':
 			case 'p': case 'q': case 'r': case 's': case 't':
 			case 'u': case 'v': case 'w': case 'x': case 'y': case 'z':
-				return takeStringLike(Token.Name, start, isNameChar);
+				return takeNameOrKeyword(start);
 
 			case 'A': case 'B': case 'C': case 'D': case 'E':
 			case 'F': case 'G': case 'H': case 'I': case 'J':
@@ -242,11 +268,11 @@ abstract class Lexer {
 		}
 	}
 
-	int lexIndent() {
+	uint lexIndent() {
 		var start = pos;
 		skipWhile(ch => ch == '\t');
 		var count = pos - start;
-		must(peek != ' ', locFrom(start), Err.LeadingSpace);
+		if (peek == ' ') throw exit(locFrom(start), Err.LeadingSpace);
 		return count;
 	}
 
@@ -255,7 +281,7 @@ abstract class Lexer {
 		var oldIndent = indent;
 		indent = lexIndent();
 		if (indent > oldIndent) {
-			must(indent == oldIndent + 1, Loc.singleChar(pos), Err.TooMuchIndent);
+			if (indent != oldIndent + 1) throw exit(Loc.singleChar(pos), Err.TooMuchIndent);
 			return Token.Indent;
 		} else if (indent == oldIndent) {
 			return Token.Newline;
@@ -280,6 +306,15 @@ abstract class Lexer {
 
 	protected bool atEOF => peek == '\0';
 
+	protected bool tryTakeDedentFromDedenting() {
+		if (dedenting == 0)
+			return false;
+		else {
+			dedenting--;
+			return true;
+		}
+	}
+
 	protected bool tryTakeDedent() {
 		assert(dedenting == 0);
 
@@ -290,9 +325,15 @@ abstract class Lexer {
 		// If a newline is taken, it *must* be a dedent.
 		var x = handleNewline();
 		if (x != Token.Dedent) {
-			unexpected(start, x);
+			unexpected(start, "dedent", x);
 		}
 		return true;
+	}
+
+	protected void takeNewline() {
+		expectCharacter('\n');
+		skipNewlines();
+		doTimes(this.indent, () => expectCharacter('\t'));
 	}
 
 	protected bool tryTakeNewline() {
@@ -320,7 +361,13 @@ abstract class Lexer {
 		expectCharacter("keyword", ch => 'a' <= ch && ch <= 'z');
 		skipWhile(isNameChar);
 		var name = sliceFrom(startPos);
-		return TokenU.keywordFromName(name) ?? throw unexpected(startPos, name);
+		return TokenU.keywordFromName(name) ?? throw unexpected(startPos, "keyword", name);
+	}
+
+	protected void takeSpecificKeyword(Token kw) {
+		var startPos = pos;
+		var actual = takeKeyword();
+		if (actual != kw) throw unexpected(startPos, TokenU.TokenName(kw), TokenU.TokenName(actual));
 	}
 
 	protected Sym takeName() {
@@ -337,6 +384,6 @@ abstract class Lexer {
 		return Sym.of(sliceFrom(startPos));
 	}
 
-	protected ParserExit unexpected(int startPos, Token token) => unexpected(startPos, TokenU.TokenName(token));
-	protected ParserExit unexpected(int startPos, string desc) => exit(locFrom(startPos), new Err.UnexpectedToken(desc));
+	protected ParserExit unexpected(Pos startPos, string expectedDesc, Token token) => unexpected(startPos, expectedDesc,TokenU.TokenName(token));
+	protected ParserExit unexpected(Pos startPos, string expectedDesc, string actualDesc) => exit(locFrom(startPos), new Err.UnexpectedToken(expectedDesc, actualDesc));
 }

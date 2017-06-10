@@ -1,9 +1,10 @@
-using System;
 using System.Collections.Immutable;
 using System.Linq;
 using static Arr;
 using static ParserExit;
 using static Utils;
+
+using Pos = System.UInt32;
 
 sealed class Parser : Lexer {
 	internal static Either<Ast.Module, CompileError> parse(Sym name, string source) {
@@ -59,14 +60,20 @@ sealed class Parser : Lexer {
 			: (Ast.Module.Import) new Ast.Module.Import.Relative(loc, new RelPath(leadingDots, path)));
 	}
 
-	Ast.Klass parseClass(Sym name, int start, Token kw) {
+	Ast.Klass parseClass(Sym name, Pos start, Token kw) {
 		var head = parseHead(start, kw);
 		var members = buildUntilNull(parseMember);
 		return new Ast.Klass(locFrom(start), name, head, members);
 	}
 
-	Ast.Klass.Head parseHead(int start, Token kw) {
+	Ast.Klass.Head parseHead(Pos start, Token kw) {
 		switch (kw) {
+			case Token.Abstract:
+				takeNewline();
+				return new Ast.Klass.Head.Abstract(locFrom(start));
+			case Token.Static:
+				takeNewline();
+				return new Ast.Klass.Head.Static(locFrom(start));
 			case Token.Slots:
 				takeIndent();
 				var vars = build2(parseSlot); // At least one slot must exist.
@@ -74,7 +81,7 @@ sealed class Parser : Lexer {
 			case Token.Enum:
 				throw TODO();
 			default:
-				throw unexpected(start, kw);
+				throw unexpected(start, "'slots' or 'enum'", kw);
 		}
 	}
 
@@ -90,7 +97,7 @@ sealed class Parser : Lexer {
 				mutable = false;
 				break;
 			default:
-				throw unexpected(start, next);
+				throw unexpected(start, "'var' or 'val'", next);
 		}
 
 		takeSpace();
@@ -118,7 +125,7 @@ sealed class Parser : Lexer {
 				isStatic = false;
 				break;
 			default:
-				throw unexpected(start, next);
+				throw unexpected(start, "'fun' or 'def'", next);
 		}
 
 		takeSpace();
@@ -169,6 +176,7 @@ sealed class Parser : Lexer {
 	}
 
 	enum Ctx {
+		//??
 		Line,
 		/** Line Line, but forbid `=` because we're already on the rhs of one. */
 		ExprOnly,
@@ -176,7 +184,8 @@ sealed class Parser : Lexer {
 		Paren,
 		/** Looking for a QuoteEnd */
 		Quote,
-		CsHead,
+		/** In this context, and indent will result in CtxEnded. */
+		SingleLineThenIndent,
 		List,
 	}
 
@@ -199,9 +208,11 @@ sealed class Parser : Lexer {
 		internal static Next NewlineAfterStatement => new Next(Kind.NewlineAfterStatement, null);
 		internal static Next EndNestedBlock => new Next(Kind.EndNestedBlock, null);
 		internal static Next CtxEnded => new Next(Kind.CtxEnded, null);
+
+		internal bool isCtxEnded => kind == Kind.CtxEnded;
 	}
 
-	Ast.Expr parseBlockWithStart(int start, Token first) {
+	Ast.Expr parseBlockWithStart(Pos start, Token first) {
 		Ast.Expr expr;
 		Next next;
 		parseExprWithNext(start, first, Ctx.Line, out expr, out next);
@@ -230,19 +241,24 @@ sealed class Parser : Lexer {
 		}
 	}
 
+	Ast.Expr parseExprAndEndContext(Ctx ctx) {
+		var start = pos;
+		var startToken = nextToken();
+		parseExprWithNext(start, startToken, ctx, out var expr, out var next);
+		assert(next.isCtxEnded);
+		return expr;
+	}
+
 	void parseExpr(Ctx ctx, out Ast.Expr expr, out Next next) {
 		var start = pos;
 		var startToken = nextToken();
-		parseExprWithNext(start, startToken ,ctx, out expr, out next);
+		parseExprWithNext(start, startToken, ctx, out expr, out next);
 	}
 
-	void parseExprWithNext(int exprStart, Token startToken, Ctx ctx, out Ast.Expr expr, out Next next) {
+	void parseExprWithNext(Pos exprStart, Token startToken, Ctx ctx, out Ast.Expr expr, out Next next) {
 		var parts = ImmutableArray.CreateBuilder<Ast.Expr>();
-		void addPart(Ast.Expr part) { parts.Add(part); }
-		bool anySoFar() => parts.Any();
-		Loc finishLoc() => locFrom(exprStart);
 		Ast.Expr finishRegular() {
-			var loc = finishLoc();
+			var loc = locFrom(exprStart);
 			switch (parts.Count) {
 				case 0:
 					throw exit(loc, Err.EmptyExpression);
@@ -256,7 +272,6 @@ sealed class Parser : Lexer {
 
 		var loopStart = exprStart;
 		var loopNext = startToken;
-		Exception notExpected() => unexpected(loopStart, loopNext);
 		void readAndLoop() {
 			loopStart = pos;
 			loopNext = nextToken();
@@ -266,20 +281,19 @@ sealed class Parser : Lexer {
 			switch (loopNext) {
 				case Token.Equals: {
 					var patternLoc = locFrom(loopStart);
-					if (ctx != Ctx.Line) throw notExpected();
+					if (ctx != Ctx.Line) throw TODO(); //diagnostic
 					var pattern = partsToPattern(patternLoc, parts);
 					Next nnext;
 					parseExpr(Ctx.ExprOnly, out expr, out nnext);
-					must(nnext.kind != Next.Kind.CtxEnded, locFrom(loopStart), Err.BlockCantEndInLet);
+					if (nnext.kind == Next.Kind.CtxEnded) throw exit(locFrom(loopStart), Err.BlockCantEndInLet);
 					assert(nnext.kind == Next.Kind.NewlineAfterStatement);
 					next = Next.NewlineAfterEquals(pattern);
 					return;
 				}
 
 				case Token.Operator: {
-					if (!anySoFar()) {
+					if (!parts.Any())
 						throw TODO();
-					}
 					var left = finishRegular();
 					Ast.Expr right;
 					parseExpr(ctx, out right, out next);
@@ -289,19 +303,13 @@ sealed class Parser : Lexer {
 
 				case Token.Newline:
 				case Token.Dedent: {
-					switch (ctx) {
-						case Ctx.Line:
-						case Ctx.ExprOnly:
-							switch (loopNext) {
-								case Token.Newline:
-									next = Next.NewlineAfterStatement;
-									break;
-								case Token.Dedent:
-									next = Next.CtxEnded;
-									break;
-								default:
-									throw unreachable();
-							}
+					if (ctx != Ctx.Line && ctx != Ctx.ExprOnly) throw unreachable();
+					switch (loopNext) {
+						case Token.Newline:
+							next = Next.NewlineAfterStatement;
+							break;
+						case Token.Dedent:
+							next = Next.CtxEnded;
 							break;
 						default:
 							throw unreachable();
@@ -314,10 +322,25 @@ sealed class Parser : Lexer {
 					var className = tokenSym;
 					takeDot();
 					var staticMethodName = takeName();
-					addPart(new Ast.Expr.StaticAccess(locFrom(loopStart), className, staticMethodName));
+					parts.Add(new Ast.Expr.StaticAccess(locFrom(loopStart), className, staticMethodName));
 					readAndLoop();
 					break;
 				}
+
+				case Token.When:
+					//It will give us newlineafterequals or dedent
+					parts.Add(parseWhen(loopStart));
+					expr = finishRegular();
+					next = tryTakeDedentFromDedenting() ? Next.CtxEnded : Next.NewlineAfterStatement;
+					return;
+
+				case Token.Indent:
+					if (ctx != Ctx.SingleLineThenIndent) {
+						throw TODO();
+					}
+					expr = finishRegular();
+					next = Next.CtxEnded;
+					return;
 
 				default: {
 					// Single-token expressions:
@@ -328,18 +351,46 @@ sealed class Parser : Lexer {
 							e = new Ast.Expr.Access(loc, tokenSym);
 							break;
 						case Token.IntLiteral:
+							e = new Ast.Expr.Literal(loc, new Model.Expr.Literal.LiteralValue.Int(int.Parse(tokenValue)));
+							break;
 						case Token.FloatLiteral:
+							e = new Ast.Expr.Literal(loc, new Model.Expr.Literal.LiteralValue.Float(double.Parse(tokenValue)));
+							break;
 						case Token.StringLiteral:
-							throw TODO();
+							e = new Ast.Expr.Literal(loc, new Model.Expr.Literal.LiteralValue.Str(tokenValue));
+							break;
 						default:
-							throw notExpected();
+							throw TODO(); //diagnostic
 					}
-					addPart(e);
+					parts.Add(e);
 					readAndLoop();
 					break;
 				}
 			}
 		}
+	}
+
+	Ast.Expr parseWhen(Pos startPos) {
+		/*
+		when
+			firstTest
+				firstResult
+			else
+				elseResult
+		*/
+		takeIndent();
+		//Must take at least one non-'else' part.
+		var firstCaseStartPos = pos;
+		var firstTest = parseExprAndEndContext(Ctx.SingleLineThenIndent);
+		var firstResult = parseBlock();
+		var firstCase = new Ast.Expr.WhenTest.Case(locFrom(firstCaseStartPos), firstTest, firstResult);
+
+		//TODO: support arbitrary number of clauses
+		takeSpecificKeyword(Token.Else);
+		takeIndent();
+		var elseResult = parseBlock();
+
+		return new Ast.Expr.WhenTest(locFrom(startPos), ImmutableArray.Create(firstCase), elseResult);
 	}
 
 	static Ast.Pattern partsToPattern(Loc loc, ImmutableArray<Ast.Expr>.Builder parts) {
@@ -350,7 +401,7 @@ sealed class Parser : Lexer {
 		switch (parts.Count) {
 			case 0: throw exit(loc, Err.PrecedingEquals);
 			case 1: return partToPattern(parts[0]);
-			default: return new Ast.Pattern.Destruct(loc, Arr.fromMappedBuilder(parts, partToPattern));
+			default: return new Ast.Pattern.Destruct(loc, parts.map(partToPattern));
 		}
 	}
 }
