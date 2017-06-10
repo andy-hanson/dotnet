@@ -1,5 +1,3 @@
-using System.Collections.Immutable;
-
 namespace Ast {
 	abstract class Node {
 		internal readonly Loc loc;
@@ -7,10 +5,10 @@ namespace Ast {
 	}
 
 	sealed class Module : Node {
-		internal readonly ImmutableArray<Import> imports;
+		internal readonly Arr<Import> imports;
 		internal readonly Klass klass;
 
-		internal Module(Loc loc, ImmutableArray<Import> imports, Klass klass) : base(loc) {
+		internal Module(Loc loc, Arr<Import> imports, Klass klass) : base(loc) {
 			this.imports = imports;
 			this.klass = klass;
 		}
@@ -33,9 +31,9 @@ namespace Ast {
 	sealed class Klass : Node {
 		internal readonly Sym name;
 		internal readonly Head head;
-		internal readonly ImmutableArray<Member> members;
+		internal readonly Arr<Member> members;
 
-		internal Klass(Loc loc, Sym name, Head head, ImmutableArray<Member> members) : base(loc) {
+		internal Klass(Loc loc, Sym name, Head head, Arr<Member> members) : base(loc) {
 			this.name = name;
 			this.head = head;
 			this.members = members;
@@ -53,8 +51,8 @@ namespace Ast {
 			}
 
 			internal sealed class Slots : Head {
-				internal readonly ImmutableArray<Slot> slots;
-				internal Slots(Loc loc, ImmutableArray<Slot> vars) : base(loc) { this.slots = vars; }
+				internal readonly Arr<Slot> slots;
+				internal Slots(Loc loc, Arr<Slot> vars) : base(loc) { this.slots = vars; }
 
 				internal sealed class Slot : Node {
 					internal readonly bool mutable;
@@ -77,9 +75,9 @@ namespace Ast {
 		internal sealed class Method : Member {
 			internal readonly bool isStatic;
 			internal readonly Ty returnTy;
-			internal readonly ImmutableArray<Parameter> parameters;
+			internal readonly Arr<Parameter> parameters;
 			internal readonly Expr body;
-			internal Method(Loc loc, bool isStatic, Ty returnTy, Sym name, ImmutableArray<Parameter> parameters, Expr body) : base(loc, name) {
+			internal Method(Loc loc, bool isStatic, Ty returnTy, Sym name, Arr<Parameter> parameters, Expr body) : base(loc, name) {
 				this.isStatic = isStatic;
 				this.returnTy = returnTy;
 				this.parameters = parameters;
@@ -107,8 +105,8 @@ namespace Ast {
 
 		internal sealed class Inst : Ty {
 			internal readonly Access instantiated;
-			internal readonly ImmutableArray<Ty> tyArgs;
-			internal Inst(Loc loc, Access instantiated, ImmutableArray<Ty> tyArgs) : base(loc) {
+			internal readonly Arr<Ty> tyArgs;
+			internal Inst(Loc loc, Access instantiated, Arr<Ty> tyArgs) : base(loc) {
 				this.instantiated = instantiated;
 				this.tyArgs = tyArgs;
 			}
@@ -145,8 +143,8 @@ namespace Ast {
 
 		internal sealed class Call : Expr {
 			internal readonly Expr target;
-			internal readonly ImmutableArray<Expr> args;
-			internal Call(Loc loc, Expr target, ImmutableArray<Expr> args) : base(loc) {
+			internal readonly Arr<Expr> args;
+			internal Call(Loc loc, Expr target, Arr<Expr> args) : base(loc) {
 				this.target = target;
 				this.args = args;
 			}
@@ -187,9 +185,9 @@ namespace Ast {
 		}
 
 		internal sealed class WhenTest : Expr {
-			internal readonly ImmutableArray<Case> cases;
+			internal readonly Arr<Case> cases;
 			internal readonly Expr elseResult;
-			internal WhenTest(Loc loc, ImmutableArray<Case> cases, Expr elseResult) : base(loc) { this.cases = cases; this.elseResult = elseResult; }
+			internal WhenTest(Loc loc, Arr<Case> cases, Expr elseResult) : base(loc) { this.cases = cases; this.elseResult = elseResult; }
 
 			internal struct Case {
 				internal readonly Loc loc;
@@ -213,8 +211,8 @@ namespace Ast {
 		}
 
 		internal sealed class Destruct : Pattern {
-			internal readonly ImmutableArray<Pattern> destructed;
-			internal Destruct(Loc loc, ImmutableArray<Pattern> destructed) : base(loc) {
+			internal readonly Arr<Pattern> destructed;
+			internal Destruct(Loc loc, Arr<Pattern> destructed) : base(loc) {
 				this.destructed = destructed;
 			}
 		}

@@ -1,92 +1,372 @@
+using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
 
 using Model;
 using static Utils;
 
-namespace Emit {
-	static class Emit {
-		internal static void writeBytecode(ModuleBuilder moduleBuilder, Klass klass, LineColumnGetter lineColumnGetter) {
-			var tb = moduleBuilder.DefineType(klass.name.str, TypeAttributes.Public); //TODO: may need to store this with the class
+struct TypeBuilding {
+	internal readonly TypeInfo info;
+	internal readonly Op<Type> _type;
+	internal Type type => _type.force;
 
-			tb.CreateTypeInfo();
-			//val bytes = classToBytecode(klass, lineColumnGetter);
-			//set things on the klass
+	internal TypeBuilding(TypeInfo info) { this.info = info; this._type = Op<Type>.None; }
+	internal TypeBuilding(TypeInfo info, Type type) { this.info = info; this._type = Op.Some(type); }
+	internal TypeBuilding withType(Type type) { return new TypeBuilding(this.info, type); }
+}
 
-			//Create ourselves a class
+/**
+Note: We *lazily* compile modules. But we must compile all of a module's imports before we compile it.
+*/
+class Emitter {
+	readonly AssemblyName assemblyName = new AssemblyName("noze");
+	readonly AssemblyBuilder assemblyBuilder;
+	readonly Dictionary<Klass, TypeBuilding> typeInfos = new Dictionary<Klass, TypeBuilding>();
+	//var mb = ab.DefineDynamicModule(aName.Name);
 
-		}
+	internal Type getClass(Klass k) => typeInfos[k].type;
 
-		static void foo(TypeBuilder tb, Klass klass) {
-			var slots = ((Klass.Head.Slots) klass.head).slots;
-			foreach (var slot in slots) {
-				var fb = tb.DefineField(slot.name.str, slot.ty.toType(), FieldAttributes.Public);
-			}
+	internal Type toType(Ty ty) {
+		var b = ty as BuiltinClass;
+		if (b != null)
+			return b.dotNetType;
 
-			foreach (var member in klass.members) {
-				var method = (MethodWithBody) member; //todo: other members
-
-				var mb = tb.DefineMethod(method.name.str, MethodAttributes.Public, method.returnTy.toType(),
-					method.parameters.MapToArray(p => p.ty.toType()));
-				var methIl = mb.GetILGenerator();
-				new ExprEmitter(methIl).emitAny(method.body);
-			}
-
-			//Fields, constructors, etc.
-		}
-
+		return typeInfos[(Klass) ty].type;
 	}
 
-	sealed class ExprEmitter {
-		readonly ILGenerator il;
-		internal ExprEmitter(ILGenerator il) {
-			this.il = il;
+	//This holds a mapping from Klass -> compiled class.
+	internal Emitter() {
+		assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndCollect);
+	}
+
+	internal Type compileModule(Model.Module m) {
+		if (typeInfos.TryGetValue(m.klass, out var b)) {
+			return b.type;
 		}
 
-		internal void emitAny(Expr e) {
-			var a = e as Expr.Access;
-			if (a != null) emitAccess(a);
-			var l = e as Expr.Let;
-			if (l != null) emitLet(l);
-			var s = e as Expr.Seq;
-			if (s != null) emitSeq(s);
-			var li = e as Expr.Literal;
-			if (li != null) emitLiteral(li);
-			var sm = e as Expr.StaticMethodCall;
-			if (sm != null) emitStaticMethodCall(sm);
-			var g = e as Expr.GetSlot;
-			if (g != null) emitGetSlot(g);
-			throw TODO();
+		foreach (var im in m.imports)
+			compileModule(im);
+
+		return doCompileModule(m);
+	}
+
+	Type doCompileModule(Model.Module m) {
+		var moduleBuilder = assemblyBuilder.DefineDynamicModule(m.name.str);
+		var klass = m.klass;
+		//TypeAttributes.Abstract;
+		//TypeAttributes.Interface;
+		var typeBuilder = moduleBuilder.DefineType(klass.name.str, TypeAttributes.Public | TypeAttributes.Sealed);
+
+		typeInfos[klass] = new TypeBuilding(typeBuilder.GetTypeInfo());
+
+		//Fill in stuff!
+		fillHead(typeBuilder, klass);
+		fillMethods(typeBuilder, klass);
+
+		var type = typeBuilder.CreateType();
+		typeInfos[klass] = typeInfos[klass].withType(type);
+		return type;
+	}
+
+	void fillHead(TypeBuilder tb, Klass klass) {
+		var head = klass.head;
+
+		var statik = head as Klass.Head.Static;
+		if (statik != null)
+			// Nothing to do for a static class.
+			return;
+
+		var slots = head as Klass.Head.Slots;
+		if (slots != null) {
+			foreach (var slot in slots.slots)
+				tb.DefineField(slot.name.str, toType(slot.ty), FieldAttributes.Public);
+			return;
 		}
 
-		void emitAccess(Expr.Access e) {
-			throw TODO();
+		throw TODO();
+	}
+
+	void fillMethods(TypeBuilder tb, Klass klass) {
+		foreach (var member in klass.membersMap.values) {
+			var method = (MethodWithBody) member;
+
+			var attr = MethodAttributes.Public;
+			if (method.isStatic)
+				attr |= MethodAttributes.Static;
+			else
+				attr |= MethodAttributes.Final;
+
+			var mb = tb.DefineMethod(method.name.str, attr);
+
+			mb.SetParameters(method.parameters.mapToArray(p => toType(p.ty)));
+			mb.SetReturnType(toType(method.returnTy));
+
+
+			var methIl = mb.GetILGenerator();
+			var iw = new ILWriter(methIl);
+			new ExprEmitter(this, iw).emitAny(method.body);
+			iw.ret();
+		}
+	}
+}
+
+/*
+static class Emit {
+	/*internal static void writeBytecode(ModuleBuilder moduleBuilder, Klass klass, LineColumnGetter lineColumnGetter) {
+		var tb = moduleBuilder.DefineType(klass.name.str, TypeAttributes.Public); //TODO: may need to store this with the class?
+		//Or, just use a lookup.
+
+		var ti = tb.CreateTypeInfo();
+		//val bytes = classToBytecode(klass, lineColumnGetter);
+		//set things on the klass
+
+		//Create ourselves a class
+
+	}* /
+
+	static void foo(TypeBuilder tb, Klass klass) {
+		var slots = ((Klass.Head.Slots) klass.head).slots;
+		foreach (var slot in slots) {
+			var fb = tb.DefineField(slot.name.str, slot.ty.toType(), FieldAttributes.Public);
 		}
 
-		void emitLet(Expr.Let l) {
-			throw TODO();
+		foreach (var member in klass.membersMap.values) {
+			var method = (MethodWithBody) member; //todo: other members
+
+			var mb = tb.DefineMethod(method.name.str, MethodAttributes.Public, method.returnTy.toType(),
+				method.parameters.MapToArray(p => p.ty.toType()));
+			var methIl = mb.GetILGenerator();
+			new ExprEmitter(methIl).emitAny(method.body);
 		}
 
-		void emitSeq(Expr.Seq s) {
-			emitAny(s.action);
-			emitAny(s.then);
-			throw TODO();
+		//Fields, constructors, etc.
+	}
+}
+*/
+
+sealed class ILWriter {
+	//readonly Arr.Builder<string> logs;
+	readonly ILGenerator il;
+	internal ILWriter(ILGenerator il) {
+		this.il = il;
+		//this.logs = Arr.builder<string>();
+	}
+
+	void log(string s) {
+		Console.WriteLine("  " + s);
+		//logs.add(s);
+	}
+
+	internal void ret() {
+		log("return");
+		il.Emit(OpCodes.Ret);
+	}
+
+	internal void constInt(int i) {
+		log($"const {i}");
+		il.Emit(OpCodes.Ldc_I4, i);
+	}
+
+	internal void constDouble(double d) {
+		log($"const {d}");
+		il.Emit(OpCodes.Ldc_R8, d);
+	}
+
+	internal void constStr(string s) {
+		log($"const '{s}'");
+		il.Emit(OpCodes.Ldstr, s);
+	}
+
+	internal void loadStaticField(FieldInfo field) {
+		log($"load static field {field.DeclaringType.Name}: {field.Name}");
+		il.Emit(OpCodes.Ldsfld, field);
+	}
+
+	internal void callStaticMethod(MethodInfo m) {
+		log($"call static {m.DeclaringType.Name}: {m}");
+		assert(m.IsStatic);
+		// Last arg only matters if this is varargs.
+		il.EmitCall(OpCodes.Call, m, null);
+	}
+
+	/** Remember to call markLabel! */
+	internal Label label() {
+		return il.DefineLabel();
+	}
+
+	internal void markLabel(Label l) {
+		log($"{l}");
+		il.MarkLabel(l);
+	}
+
+	internal void getField(FieldInfo field) {
+		log($"get instance field {field.Name}");
+		il.Emit(OpCodes.Ldfld, field);
+	}
+
+	internal void goToIfFalse(Label l) {
+		log($"goto if false: {l}");
+		il.Emit(OpCodes.Brfalse, l);
+	}
+
+	internal void goTo(Label l) {
+		log($"goto {l}");
+		il.Emit(OpCodes.Br, l);
+	}
+
+	//internal void construct(ConstructorInfo c) {
+	//	il.Emit(OpCodes.Newobj, c);
+	//}
+}
+
+sealed class ExprEmitter {
+	readonly Emitter emitter;
+	readonly ILWriter il;
+	internal ExprEmitter(Emitter emitter, ILWriter il) { this.emitter = emitter; this.il = il; }
+
+	internal void emitAny(Expr e) {
+		var a = e as Expr.Access;
+		if (a != null) {
+			emitAccess(a);
+			return;
 		}
 
-		void emitLiteral(Expr.Literal li) {
-			throw TODO();
+		var l = e as Expr.Let;
+		if (l != null) {
+			emitLet(l);
+			return;
 		}
 
-		void emitStaticMethodCall(Expr.StaticMethodCall s) {
-			throw TODO();
+		var s = e as Expr.Seq;
+		if (s != null) {
+			emitSeq(s);
+			return;
 		}
 
-		void emitGetSlot(Expr.GetSlot g) {
-			throw TODO();
+		var li = e as Expr.Literal;
+		if (li != null) {
+			emitLiteral(li);
+			return;
 		}
 
-		void op(OpCode op) {
-			il.Emit(op);
+		var sm = e as Expr.StaticMethodCall;
+		if (sm != null) {
+			emitStaticMethodCall(sm);
+			return;
 		}
+
+		var g = e as Expr.GetSlot;
+		if (g != null) {
+			emitGetSlot(g);
+			return;
+		}
+
+		var w = e as Expr.WhenTest;
+		if (w != null) {
+			emitWhenTest(w);
+			return;
+		}
+
+		throw TODO();
+	}
+
+	void emitAccess(Expr.Access e) {
+		throw TODO();
+	}
+
+	void emitLet(Expr.Let l) {
+		throw TODO();
+	}
+
+	void emitSeq(Expr.Seq s) {
+		emitAny(s.action);
+		emitAny(s.then);
+		throw TODO();
+	}
+
+	void emitLiteral(Expr.Literal li) {
+		var v = li.value;
+		var vb = v as Expr.Literal.LiteralValue.Bool;
+		if (vb != null) {
+			var b = typeof(Builtins.Bool);
+			var field = b.GetField(vb.value ? nameof(Builtins.Bool.boolTrue) : nameof(Builtins.Bool.boolFalse), BindingFlags.Static | BindingFlags.Public);
+			assert(field != null);
+			il.loadStaticField(field);
+			return;
+		}
+
+		var vi = v as Expr.Literal.LiteralValue.Int;
+		if (vi != null) {
+			il.constInt(vi.value);
+			il.callStaticMethod(typeof(Builtins.Int).GetMethod(nameof(Builtins.Int.of)));
+			return;
+		}
+
+		var vf = v as Expr.Literal.LiteralValue.Float;
+		if (vf != null) {
+			il.constDouble(vf.value);
+			il.callStaticMethod(typeof(Builtins.Float).GetMethod(nameof(Builtins.Float.of)));
+			return;
+		}
+
+		var vs = v as Expr.Literal.LiteralValue.Str;
+		if (vs != null) {
+			il.constStr(vs.value);
+			il.callStaticMethod(typeof(Builtins.Str).GetMethod(nameof(Builtins.Str.of)));
+			return;
+		}
+
+		throw unreachable();
+	}
+
+	void unpackBool() {
+		il.getField(typeof(Builtins.Bool).GetField(nameof(Builtins.Bool.value)));
+	}
+
+	void emitWhenTest(Expr.WhenTest w) {
+		/*
+		test1:
+		do test1
+		ifnot: goto test2
+			do test1 result
+			goto end
+		test2:
+		do test2
+		ifnot: goto elze
+			do test2 result
+			goto end
+		elze:
+			do elze result
+			(already at end)
+		end:
+		...
+		*/
+
+		if (w.cases.length != 1) throw TODO(); //TODO
+		var kase = w.cases[0];
+
+		var elzeResultLabel = il.label();
+		var end = il.label();
+
+		emitAny(kase.test);
+		unpackBool();
+		il.goToIfFalse(elzeResultLabel);
+
+		emitAny(kase.result);
+		il.goTo(end);
+
+		il.markLabel(elzeResultLabel);
+		emitAny(w.elseResult);
+
+		il.markLabel(end);
+	}
+
+	void emitStaticMethodCall(Expr.StaticMethodCall s) {
+		throw TODO();
+	}
+
+	void emitGetSlot(Expr.GetSlot g) {
+		throw TODO();
 	}
 }

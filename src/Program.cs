@@ -9,27 +9,40 @@ using System.Reflection.Emit;
 namespace main {
 	class Program {
 		static void Main(string[] args) {
-			TestCompiler();
+			testCompiler();
 		}
 
-		static void TestCompiler() {
+		static void testCompiler() {
 			//var text = File.ReadAllText("sample/A.nz");
 			//Parser.parse(Sym.of("A"), text);
 			var rootDir = Path.empty;
 
 			var cmp = new Compiler(new DefaultCompilerHost(rootDir));
-			var x = cmp.compile(Path.from("sample", "A"));
+			var m = cmp.compile(Path.from("sample", "A"));
 
-			/*
+			var e = new Emitter();
+			Type t = e.compileModule(m);
+			Console.WriteLine("COMPILED");
+
+			var me = t.GetMethod("f");
+			Console.WriteLine(me);
+
+			var res = me.Invoke(null, new object[] {});
+
+
+			Console.WriteLine(res);
+
+
+			//Emit.Emit.writeBytecode(mb, x.klass, x.lineColumnGetter);
+
+		}
+
+		static void goof() {
 			var aName = new AssemblyName("Example");
 			var ab = AssemblyBuilder.DefineDynamicAssembly(aName, AssemblyBuilderAccess.RunAndCollect);
 			var mb = ab.DefineDynamicModule(aName.Name);
 
 			Console.WriteLine("main");
-			//var m = new Model.Module();
-
-			//Model.Emit.writeBytecode(mb, klass, );
-			*/
 		}
 
 
@@ -63,12 +76,8 @@ namespace main {
 			ctor0IL.Emit(OpCodes.Ret);
 		}
 
-		static void Test() {
+		static void testAssemblyStuff() {
 			var aName = new AssemblyName("Example");
-			//var ab = AppDomain.CurrentDomain.DefineDynamicAssembly(
-			//    aName,
-			//    AssemblyBuilderAccess.RunAndSave);
-
 			var ab = AssemblyBuilder.DefineDynamicAssembly(aName, AssemblyBuilderAccess.RunAndCollect);
 			var mb = ab.DefineDynamicModule(aName.Name);
 			var tb = mb.DefineType("MyType", TypeAttributes.Public);
@@ -146,7 +155,7 @@ namespace main {
 			MethodInfo mi = t.GetMethod("MyMethod");
 			PropertyInfo pi = t.GetProperty("Number");
 
-			object o1 = Activator.CreateInstance(t.AsType());
+			object o1 = Activator.CreateInstance(tb.CreateType());
 
 			Console.WriteLine(pi.GetValue(o1, null));
 

@@ -15,12 +15,14 @@ internal enum Token {
 	Def,
 	Enum,
 	Else,
+	False,
 	Fun,
 	Generic,
 	Import,
 	If,
 	Slots,
 	Static,
+	True,
 	Val,
 	Var,
 	When,
@@ -52,12 +54,14 @@ static class TokenU {
 			case "def": return Token.Def;
 			case "else": return Token.Else;
 			case "enum": return Token.Enum;
+			case "false": return Token.False;
 			case "fun": return Token.Fun;
 			case "generic": return Token.Generic;
 			case "if": return Token.If;
 			case "import": return Token.Import;
 			case "slots": return Token.Slots;
 			case "static": return Token.Static;
+			case "true": return Token.True;
 			case "val": return Token.Val;
 			case "var": return Token.Var;
 			case "when": return Token.When;
@@ -79,12 +83,14 @@ static class TokenU {
 			case Token.Def: return "def";
 			case Token.Enum: return "enum";
 			case Token.Else: return "else";
+			case Token.False: return "false";
 			case Token.Fun: return "fun";
 			case Token.Generic: return "generic";
 			case Token.Import: return "import";
 			case Token.If: return "if";
 			case Token.Slots: return "slots";
 			case Token.Static: return "static";
+			case Token.True: return "true";
 			case Token.Val: return "val";
 			case Token.Var: return "var";
 			case Token.When: return "when";

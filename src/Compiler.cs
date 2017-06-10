@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.IO;
 
 using Model;
@@ -103,8 +102,8 @@ sealed class Compiler {
     }
 
     //kill
-    internal static ImmutableArray<Path> attemptedPaths(Path logicalPath) =>
-        ImmutableArray.Create(regularPath(logicalPath), mainPath(logicalPath));
+    internal static Arr<Path> attemptedPaths(Path logicalPath) =>
+        Arr.of(regularPath(logicalPath), mainPath(logicalPath));
 
     internal static Path fullPath(Path logicalPath, bool isMain) =>
         isMain ? mainPath(logicalPath) : regularPath(logicalPath);

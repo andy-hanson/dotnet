@@ -1,16 +1,14 @@
 using System;
-using System.Collections.Immutable;
-using System.Linq;
 using static Utils;
 
 struct Path : IEquatable<Path> {
-	ImmutableArray<Sym> parts;
+	Arr<Sym> parts;
 
-	internal Path(ImmutableArray<Sym> parts) {
+	internal Path(Arr<Sym> parts) {
 		this.parts = parts;
 	}
 
-	public static Path empty = new Path(ImmutableArray.Create<Sym>());
+	public static Path empty = new Path(Arr.empty<Sym>());
 
 	public static Path resolveWithRoot(Path root, Path path) =>
 		new Path(root.parts.Concat(path.parts));
@@ -19,7 +17,7 @@ struct Path : IEquatable<Path> {
 		new Path(elements.map(Sym.of));
 
 	internal Path resolve(RelPath rel) {
-		var nPartsToKeep = parts.Length - rel.nParents;
+		var nPartsToKeep = parts.length - rel.nParents;
 		if (nPartsToKeep < 0)
 			throw new Exception($"Can't resolve: {rel}\nRelative to: {this}");
 		var parent = parts.Slice(0, nPartsToKeep);
@@ -30,16 +28,15 @@ struct Path : IEquatable<Path> {
 
 	internal Path parent() => new Path(parts.rtail());
 
-	internal Sym last => parts.Last();
+	internal Sym last => parts.last;
 
 	internal Path addExtension(string extension) {
-		var b = parts.ToBuilder();
-		b[parts.Length - 1] = Sym.of(parts[parts.Length - 1].str + extension);
-		return new Path(b.ToImmutable());
+		var b = parts.toBuilder();
+		b[parts.length - 1] = Sym.of(parts[parts.length - 1].str + extension);
+		return new Path(b.finish());
 	}
 
-	internal bool isEmpty =>
-		parts.IsEmpty;
+	internal bool isEmpty => parts.isEmpty;
 
 	internal Path directory() => new Path(parts.rtail());
 
@@ -47,16 +44,16 @@ struct Path : IEquatable<Path> {
 	internal Tuple<Path, Sym> directoryAndBasename() => Tuple.Create(directory(), last);
 
 	public override bool Equals(object other) => other is Path && Equals((Path) other);
-	bool IEquatable<Path>.Equals(Path other) => parts.SequenceEqual(other.parts);
+	bool IEquatable<Path>.Equals(Path other) => parts.eachEqual(other.parts);
 	public override int GetHashCode() => parts.GetHashCode();
-	public override string ToString() => string.Join("/", parts);
+	public override string ToString() => parts.join("/");
 }
 
 struct RelPath {
-	internal readonly int nParents;
+	internal readonly uint nParents;
 	internal readonly Path relToParent;
 
-	internal RelPath(int nParents, Path relToParent) {
+	internal RelPath(uint nParents, Path relToParent) {
 		assert(nParents > 0);
 		this.nParents = nParents;
 		this.relToParent = relToParent;

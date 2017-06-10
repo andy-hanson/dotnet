@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Reflection;
 
 using static Utils;
@@ -8,7 +7,6 @@ using static Utils;
 namespace Model {
 	//TODO: actual types
 	abstract class Ty : IEquatable<Ty> {
-		internal abstract Type toType();
 		public override bool Equals(object o) {
 			var t = o as Ty;
 			return t != null && Equals(t);
@@ -19,21 +17,23 @@ namespace Model {
 		public static bool operator !=(Ty a, Ty b) => !a.Equals(b);
 	}
 
-	sealed class Module {
+	sealed class Module : IEquatable<Module> {
 		internal readonly Path path;
 		internal readonly bool isMain;
 		internal readonly string source;
+		internal readonly LineColumnGetter lineColumnGetter;
 
 		internal Module(Path path, bool isMain, string source) {
 			this.path = path;
 			this.isMain = isMain;
 			this.source = source;
+			this.lineColumnGetter = new LineColumnGetter(source);
 		}
 
 		internal Path fullPath => Compiler.fullPath(path, isMain);
 
-		ImmutableArray<Module>? _imports;
-		internal ImmutableArray<Module> imports {
+		Arr<Module>? _imports;
+		internal Arr<Module> imports {
 			get { return _imports.Value; }
 			set { assert(!_imports.HasValue); _imports = value; }
 		}
@@ -47,34 +47,71 @@ namespace Model {
 		}
 
 		internal Sym name => klass.name;
+
+		public bool Equals(Module other) => object.ReferenceEquals(this, other);
+		public override int GetHashCode() => path.GetHashCode();
 	}
 
 	abstract class ClassLike : Ty {
 		internal readonly Sym name;
-		internal abstract ImmutableDictionary<Sym, Member> membersMap { get; }
+		internal abstract Dict<Sym, Member> membersMap { get; }
 
 		protected ClassLike(Sym name) { this.name = name; }
 	}
 
 	sealed class BuiltinClass : ClassLike {
-		readonly Type dotNetType;
+		internal readonly Type dotNetType;
 
-		ImmutableDictionary<Sym, Member> _membersMap;
-		internal override ImmutableDictionary<Sym, Member> membersMap => _membersMap;
+		Dict<Sym, Member> _membersMap;
+		internal override Dict<Sym, Member> membersMap => _membersMap;
 
-		static readonly IDictionary<Type, BuiltinClass> map = new Dictionary<Type, BuiltinClass>();
-		internal static BuiltinClass get(Type t) {
-			if (map.TryGetValue(t, out var old)) {
+		static Dictionary<Sym, BuiltinClass> byName = new Dictionary<Sym, BuiltinClass>();
+
+		static BuiltinClass() {
+			Builtins.register();
+		}
+
+		static Dict<Sym, string> operatorEscapes = Dict.create(
+			"+".to("_add"),
+			"-".to("_sub"),
+			"*".to("_mul"),
+			"/".to("_div"),
+			"^".to("_pow")
+		).mapKeys(Sym.of);
+		static Dict<string, Sym> operatorUnescapes = operatorEscapes.reverse();
+
+		//void is OK for builtins, but we shouldn't attempt to create a class for it.
+		static ISet<Type> badTypes = new HashSet<Type> { typeof(void), typeof(object), typeof(string), typeof(char), typeof(uint), typeof(int), typeof(bool) };
+
+		internal static readonly BuiltinClass Bool = fromDotNetType(typeof(Builtins.Bool));
+		internal static readonly BuiltinClass Int = fromDotNetType(typeof(Builtins.Int));
+		internal static readonly BuiltinClass Float = fromDotNetType(typeof(Builtins.Float));
+		internal static readonly BuiltinClass Str = fromDotNetType(typeof(Builtins.Str));
+
+		/** Get an already-registered type by name. */
+		internal static bool tryGet(Sym name, out BuiltinClass b) => byName.TryGetValue(name, out b);
+
+		/** Safe to call this twice on the same type. */
+		internal static BuiltinClass fromDotNetType(Type dotNetType) {
+			if (badTypes.Contains(dotNetType)) {
+				throw new Exception($"Should not attempt to use {dotNetType} as a builtin");
+			}
+
+
+			var customName = dotNetType.GetCustomAttribute<BuiltinName>(inherit: false);
+			var name = customName != null ? customName.name : unescapeName(dotNetType.Name);
+
+			if (byName.TryGetValue(name, out var old)) {
+				assert(old.dotNetType == dotNetType);
 				return old;
 			}
 
-			var customName = t.GetCustomAttribute<BuiltinName>(inherit: false);
-			var name = customName != null ? customName.name : unescapeName(t.Name);
-			var klass = new BuiltinClass(name, t);
+			var klass = new BuiltinClass(name, dotNetType);
 			// Important that we put this in the map *before* initializing it, so a type's methods can refer to itself.
-			map[t] = klass;
+			byName[name] = klass;
 
-			klass._membersMap = t.GetMethods().mapToDict<MethodInfo, Sym, Member>(m => {
+			//BAD! GetMethods() gets inherited methosd!
+			klass._membersMap = dotNetType.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public).mapToDict<MethodInfo, Sym, Member>(m => {
 				if (m.GetCustomAttribute<Hid>(inherit: true) != null)
 					return null;
 
@@ -87,13 +124,11 @@ namespace Model {
 
 		private BuiltinClass(Sym name, Type dotNetType) : base(name) { this.dotNetType = dotNetType; }
 
-		internal override Type toType() => dotNetType;
-
 		public override bool Equals(Ty ty) => object.ReferenceEquals(this, ty);
 		public override int GetHashCode() => name.GetHashCode();
 
 		internal static string escapeName(Sym name) {
-			if (operatorEscapes.TryGetValue(name, out var str))
+			if (operatorEscapes.get(name, out var str))
 				return str;
 
 			foreach (var ch in name.str)
@@ -104,25 +139,16 @@ namespace Model {
 		}
 
 		internal static Sym unescapeName(string name) {
-			if (operatorUnescapes.TryGetValue(name, out var v))
+			if (operatorUnescapes.get(name, out var v))
 				return v;
 			return Sym.of(name);
 		}
 
-		static ImmutableDictionary<Sym, string> operatorEscapes = Dict.create(
-			"+".to("_add"),
-			"-".to("_sub"),
-			"*".to("_mul"),
-			"/".to("_div"),
-			"^".to("_pow")
-		).mapKeys(Sym.of);
-		static ImmutableDictionary<string, Sym> operatorUnescapes = operatorEscapes.reverse();
+		public override string ToString() => $"BuiltinClass({name})";
 	}
 
 	sealed class Klass : ClassLike {
 		internal readonly Loc loc;
-
-		internal override Type toType() => throw TODO();
 
 		internal Klass(Loc loc, Sym name) : base(name) {
 			this.loc = loc;
@@ -134,11 +160,9 @@ namespace Model {
 			set { assert(!_head.has); _head = Op.Some(value); }
 		}
 
-		Op<ImmutableDictionary<Sym, Member>> _membersMap;
-		internal override ImmutableDictionary<Sym, Member> membersMap => _membersMap.force;
-		internal void setMembersMap(ImmutableDictionary<Sym, Member> membersMap) { assert(!_membersMap.has); _membersMap = Op.Some(membersMap); }
-
-		internal IEnumerable<Member> members => membersMap.Values;
+		Dict<Sym, Member>? _membersMap;
+		internal override Dict<Sym, Member> membersMap => _membersMap.Value;
+		internal void setMembersMap(Dict<Sym, Member> membersMap) { assert(!_membersMap.HasValue); _membersMap = membersMap; }
 
 		//internal IEnumerable<MethodWithBody> methods ...
 
@@ -157,8 +181,8 @@ namespace Model {
 			}
 
 			internal class Slots : Head {
-				internal readonly ImmutableArray<Slot> slots;
-				internal Slots(Loc loc, ImmutableArray<Slot> slots) : base(loc) {
+				internal readonly Arr<Slot> slots;
+				internal Slots(Loc loc, Arr<Slot> slots) : base(loc) {
 					this.slots = slots;
 				}
 
@@ -190,16 +214,16 @@ namespace Model {
 		internal readonly ClassLike klass;
 		internal readonly bool isStatic;//TODO: just store static methods elsewhere?
 		internal readonly Ty returnTy;
-		internal readonly ImmutableArray<Parameter> parameters;
+		internal readonly Arr<Parameter> parameters;
 
-		internal Method(ClassLike klass, Loc loc, bool isStatic, Ty returnTy, Sym name, ImmutableArray<Parameter> parameters) : base(loc, name) {
+		internal Method(ClassLike klass, Loc loc, bool isStatic, Ty returnTy, Sym name, Arr<Parameter> parameters) : base(loc, name) {
 			this.klass = klass;
 			this.isStatic = isStatic;
 			this.returnTy = returnTy;
 			this.parameters = parameters;
 		}
 
-		internal int arity => parameters.Length;
+		internal uint arity => parameters.length;
 
 		internal sealed class Parameter {
 			internal readonly Loc loc;
@@ -215,24 +239,26 @@ namespace Model {
 	}
 	sealed class BuiltinMethod : Method {
 		internal BuiltinMethod(BuiltinClass klass, MethodInfo m)
-			: base(klass, Loc.zero, m.IsStatic, BuiltinClass.get(m.ReturnType), getName(m), mapParams(m)) {}
+			: base(klass, Loc.zero, m.IsStatic, BuiltinClass.fromDotNetType(m.ReturnType), getName(m), mapParams(m)) {}
 
 		static Sym getName(MethodInfo m) {
 			var customName = m.GetCustomAttribute<BuiltinName>(inherit: true);
 			return customName != null ? customName.name : Sym.of(m.Name);
 		}
 
-		static ImmutableArray<Method.Parameter> mapParams(MethodInfo m) => m.GetParameters().map(p => {
-			assert(p.IsIn);
+		static Arr<Method.Parameter> mapParams(MethodInfo m) => m.GetParameters().map(p => {
+			assert(!p.IsIn);
+			assert(!p.IsLcid);
+			assert(!p.IsOut);
 			assert(!p.IsOptional);
 			assert(!p.IsRetval);
-			var ty = BuiltinClass.get(p.GetType());
+			var ty = BuiltinClass.fromDotNetType(p.ParameterType);
 			return new Method.Parameter(Loc.zero, ty, Sym.of(p.Name));
 		});
 	}
 
 	sealed class MethodWithBody : Method {
-		internal MethodWithBody(Klass klass, Loc loc, bool isStatic, Ty returnTy, Sym name, ImmutableArray<Parameter> parameters)
+		internal MethodWithBody(Klass klass, Loc loc, bool isStatic, Ty returnTy, Sym name, Arr<Parameter> parameters)
 			: base(klass, loc, isStatic, returnTy, name, parameters) { }
 
 		Op<Expr> _body;
@@ -258,8 +284,8 @@ namespace Model {
 			}
 		}
 		internal sealed class Destruct : Pattern {
-			internal readonly ImmutableArray<Pattern> destructuredInto;
-			internal Destruct(Loc loc, ImmutableArray<Pattern> destructuredInto) : base(loc) {
+			internal readonly Arr<Pattern> destructuredInto;
+			internal Destruct(Loc loc, Arr<Pattern> destructuredInto) : base(loc) {
 				this.destructuredInto = destructuredInto;
 			}
 		}
@@ -335,30 +361,52 @@ namespace Model {
 				internal abstract Ty ty { get; }
 				LiteralValue() {}
 
+				internal sealed class Bool : LiteralValue {
+					internal readonly bool value;
+					internal Bool(bool value) { this.value = value; }
+					internal override Ty ty => BuiltinClass.Bool;
+				}
+
 				internal sealed class Int : LiteralValue {
 					internal readonly int value;
 					internal Int(int value) { this.value = value; }
-					internal override Ty ty => throw TODO();
+					internal override Ty ty => BuiltinClass.Int;
 				}
 
 				internal sealed class Float : LiteralValue {
 					internal readonly double value;
 					internal Float(double value) { this.value = value; }
-					internal override Ty ty => throw TODO();
+					internal override Ty ty => BuiltinClass.Float;
 				}
 
 				internal sealed class Str : LiteralValue {
 					internal readonly string value;
 					internal Str(string value) { this.value = value; }
-					internal override Ty ty => throw TODO();
+					internal override Ty ty => BuiltinClass.Str;
 				}
 			}
 		}
 
+		internal sealed class WhenTest : Expr {
+			internal readonly Arr<Case> cases;
+			internal readonly Expr elseResult;
+			internal readonly Ty _ty; // Common type of all cases and elseResult.
+			internal WhenTest(Loc loc, Arr<Case> cases, Expr elseResult, Ty ty) : base(loc) { this.cases = cases; this.elseResult = elseResult; this._ty = ty; }
+
+			internal struct Case {
+				internal readonly Loc loc;
+				internal readonly Expr test;
+				internal readonly Expr result;
+				internal Case(Loc loc, Expr test, Expr result) { this.loc = loc; this.test = test; this.result = result; }
+			}
+
+			override internal Ty ty => ty;
+		}
+
 		internal sealed class StaticMethodCall : Expr {
 			internal readonly Method method;
-			internal readonly ImmutableArray<Expr> args;
-			internal StaticMethodCall(Loc loc, Method method, ImmutableArray<Expr> args) : base(loc) {
+			internal readonly Arr<Expr> args;
+			internal StaticMethodCall(Loc loc, Method method, Arr<Expr> args) : base(loc) {
 				assert(method.isStatic);
 				this.method = method;
 				this.args = args;
@@ -370,8 +418,8 @@ namespace Model {
 		internal sealed class MethodCall : Expr {
 			internal readonly Expr target;
 			internal readonly Method method;
-			internal readonly ImmutableArray<Expr> args;
-			internal MethodCall(Loc loc, Expr target, Method method, ImmutableArray<Expr> args) : base(loc) {
+			internal readonly Arr<Expr> args;
+			internal MethodCall(Loc loc, Expr target, Method method, Arr<Expr> args) : base(loc) {
 				assert(!method.isStatic);
 				this.target = target;
 				this.method = method;

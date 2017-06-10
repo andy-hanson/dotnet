@@ -1,5 +1,3 @@
-using System.Collections.Immutable;
-using System.Linq;
 using static Arr;
 using static ParserExit;
 using static Utils;
@@ -23,7 +21,7 @@ sealed class Parser : Lexer {
 		var start = pos;
 		var kw = takeKeyword();
 
-		ImmutableArray<Ast.Module.Import> imports;
+		Arr<Ast.Module.Import> imports;
 		var classStart = start;
 		var nextKw = kw;
 		if (kw == Token.Import) {
@@ -31,7 +29,7 @@ sealed class Parser : Lexer {
 			classStart = pos;
 			nextKw = takeKeyword();
 		} else {
-			imports = ImmutableArray.Create<Ast.Module.Import>();
+			imports = Arr.empty<Ast.Module.Import>();
 		}
 
 		var klass = parseClass(name, classStart, nextKw);
@@ -46,14 +44,14 @@ sealed class Parser : Lexer {
 		takeSpace();
 
 		var startPos = pos;
-		var leadingDots = 0;
+		uint leadingDots = 0;
 		while (tryTakeDot()) leadingDots++;
 
-		var pathParts = ImmutableArray.CreateBuilder<Sym>();
-		pathParts.Add(takeName());
-		while (tryTakeDot()) pathParts.Add(takeName());
+		var pathParts = Arr.builder<Sym>();
+		pathParts.add(takeName());
+		while (tryTakeDot()) pathParts.add(takeName());
 
-		var path = new Path(pathParts.ToImmutable());
+		var path = new Path(pathParts.finish());
 		var loc = locFrom(startPos);
 		return Op.Some<Ast.Module.Import>(leadingDots == 0
 			? (Ast.Module.Import) new Ast.Module.Import.Global(loc, path)
@@ -133,12 +131,12 @@ sealed class Parser : Lexer {
 		takeSpace();
 		var name = takeName();
 		takeLparen();
-		ImmutableArray<Ast.Member.Method.Parameter> parameters;
+		Arr<Ast.Member.Method.Parameter> parameters;
 		if (tryTakeRparen())
-			parameters = ImmutableArray.Create<Ast.Member.Method.Parameter>();
+			parameters = Arr.empty<Ast.Member.Method.Parameter>();
 		else {
 			var first = parseJustParameter();
-			buildUntilNullWithFirst(first, parseParameter);
+			parameters = buildUntilNullWithFirst(first, parseParameter);
 		}
 
 		takeIndent();
@@ -202,7 +200,7 @@ sealed class Parser : Lexer {
 
 		internal Ast.Pattern pattern => _pattern.force;
 
-		Next(Kind kind, Ast.Pattern pattern) { this.kind = kind; this._pattern = Op.FromNullable(pattern); }
+		Next(Kind kind, Ast.Pattern pattern) { this.kind = kind; this._pattern = Op.fromNullable(pattern); }
 
 		internal static Next NewlineAfterEquals(Ast.Pattern p) => new Next(Kind.NewlineAfterEquals, p);
 		internal static Next NewlineAfterStatement => new Next(Kind.NewlineAfterStatement, null);
@@ -256,17 +254,17 @@ sealed class Parser : Lexer {
 	}
 
 	void parseExprWithNext(Pos exprStart, Token startToken, Ctx ctx, out Ast.Expr expr, out Next next) {
-		var parts = ImmutableArray.CreateBuilder<Ast.Expr>();
+		var parts = Arr.builder<Ast.Expr>();
 		Ast.Expr finishRegular() {
 			var loc = locFrom(exprStart);
-			switch (parts.Count) {
+			switch (parts.length) {
 				case 0:
 					throw exit(loc, Err.EmptyExpression);
 				case 1:
 					return parts[0];
 				default:
 					var head = parts.popLeft();
-					return new Ast.Expr.Call(loc, head, parts.ToImmutable());
+					return new Ast.Expr.Call(loc, head, parts.finish());
 			}
 		}
 
@@ -279,6 +277,12 @@ sealed class Parser : Lexer {
 
 		while (true) {
 			switch (loopNext) {
+				case Token.True:
+				case Token.False:
+					parts.add(new Ast.Expr.Literal(locFrom(loopStart), new Model.Expr.Literal.LiteralValue.Bool(loopNext == Token.True)));
+					readAndLoop();
+					break;
+
 				case Token.Equals: {
 					var patternLoc = locFrom(loopStart);
 					if (ctx != Ctx.Line) throw TODO(); //diagnostic
@@ -292,7 +296,7 @@ sealed class Parser : Lexer {
 				}
 
 				case Token.Operator: {
-					if (!parts.Any())
+					if (parts.isEmpty)
 						throw TODO();
 					var left = finishRegular();
 					Ast.Expr right;
@@ -322,14 +326,14 @@ sealed class Parser : Lexer {
 					var className = tokenSym;
 					takeDot();
 					var staticMethodName = takeName();
-					parts.Add(new Ast.Expr.StaticAccess(locFrom(loopStart), className, staticMethodName));
+					parts.add(new Ast.Expr.StaticAccess(locFrom(loopStart), className, staticMethodName));
 					readAndLoop();
 					break;
 				}
 
 				case Token.When:
 					//It will give us newlineafterequals or dedent
-					parts.Add(parseWhen(loopStart));
+					parts.add(parseWhen(loopStart));
 					expr = finishRegular();
 					next = tryTakeDedentFromDedenting() ? Next.CtxEnded : Next.NewlineAfterStatement;
 					return;
@@ -362,7 +366,7 @@ sealed class Parser : Lexer {
 						default:
 							throw TODO(); //diagnostic
 					}
-					parts.Add(e);
+					parts.add(e);
 					readAndLoop();
 					break;
 				}
@@ -390,15 +394,15 @@ sealed class Parser : Lexer {
 		takeIndent();
 		var elseResult = parseBlock();
 
-		return new Ast.Expr.WhenTest(locFrom(startPos), ImmutableArray.Create(firstCase), elseResult);
+		return new Ast.Expr.WhenTest(locFrom(startPos), Arr.of(firstCase), elseResult);
 	}
 
-	static Ast.Pattern partsToPattern(Loc loc, ImmutableArray<Ast.Expr>.Builder parts) {
+	static Ast.Pattern partsToPattern(Loc loc, Arr.Builder<Ast.Expr> parts) {
 		Ast.Pattern partToPattern(Ast.Expr part) {
 			var a = part as Ast.Expr.Access;
 			return a == null ? throw exit(loc, Err.PrecedingEquals) : new Ast.Pattern.Single(a.loc, a.name);
 		}
-		switch (parts.Count) {
+		switch (parts.length) {
 			case 0: throw exit(loc, Err.PrecedingEquals);
 			case 1: return partToPattern(parts[0]);
 			default: return new Ast.Pattern.Destruct(loc, parts.map(partToPattern));

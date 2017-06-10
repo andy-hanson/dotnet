@@ -3,7 +3,7 @@ using System;
 using static Utils;
 
 static class Op {
-	internal static Op<T> FromNullable<T>(T value) where T : class =>
+	internal static Op<T> fromNullable<T>(T value) where T : class =>
 		value != null ? Op<T>.Some(value) : Op<T>.None;
 
 	internal static Op<T> Some<T>(T value) where T : class => Op<T>.Some(value);

@@ -1,8 +1,4 @@
 static
 
-fun Int b()
-	when
-		1
-			2
-		else
-			3
+fun Int f()
+	1

@@ -1,20 +1,20 @@
+using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 
 using static Utils;
 using Model;
 
 struct BaseScope {
 	internal readonly Klass self;
-	readonly ImmutableArray<Module> imported;
+	readonly Arr<Module> imported;
 
 	internal bool hasMember(Sym name) =>
-		self.membersMap.ContainsKey(name);
+		self.membersMap.has(name);
 
 	internal bool tryGetMember(Sym name, out Member member) =>
-		self.membersMap.TryGetValue(name, out member);
+		self.membersMap.get(name, out member);
 
-	internal BaseScope(Klass self, ImmutableArray<Module> imported) {
+	internal BaseScope(Klass self, Arr<Module> imported) {
 		this.self = self; this.imported = imported;
 		imported.each((import, i) => {
 			if (import.name == self.name)
@@ -44,42 +44,40 @@ struct BaseScope {
 		if (imported.find(out var found, i => i.name == name))
 			return found.klass;
 
-		//TODO: Builtin types
-		//TODO: return a dummy Ty and issue a diagnostic
-		throw TODO();
+		if (BuiltinClass.tryGet(name, out var builtin))
+			return builtin;
+
+		throw TODO(); //Return dummy Ty and issue diagnostic
 	}
 }
 
 class Checker {
-	internal static Klass checkClass(ImmutableArray<Module> imported, Ast.Klass ast) {
+	internal static Klass checkClass(Arr<Module> imported, Ast.Klass ast) {
 		var klass = new Klass(ast.loc, ast.name);
 		return new Checker(klass, imported).checkClass(klass, ast);
 	}
 
 	readonly BaseScope baseScope;
 
-	Checker(Klass klass, ImmutableArray<Module> imported) {
+	Checker(Klass klass, Arr<Module> imported) {
 		this.baseScope = new BaseScope(klass, imported);
 	}
 
 	Klass checkClass(Klass klass, Ast.Klass ast) {
-		var slots = ast.head as Ast.Klass.Head.Slots;
-		var head = new Klass.Head.Slots(slots.loc, slots.slots.map(var =>
-			new Klass.Head.Slots.Slot(klass, ast.loc, var.mutable, baseScope.getTy(var.ty), var.name)));
-		klass.head = head;
-
-		var b = ImmutableDictionary.CreateBuilder<Sym, Member>();
-		void add(Member member) {
+		var b = Dict.builder<Sym, Member>();
+		void addMember(Member member) {
 			if (!b.TryAdd(member.name, member))
 				throw TODO(); //diagnostic
 		}
-		foreach (var slot in head.slots) add(slot);
+
+		klass.head = checkHead(klass, ast.head, addMember);
+
 		var emptyMembers = ast.members.map(memberAst => {
 			var e = emptyMember(klass, memberAst);
-			add(e);
+			addMember(e);
 			return e;
 		});
-		klass.setMembersMap(b.ToImmutable());
+		klass.setMembersMap(new Dict<Sym, Member>(b));
 
 		// Now that all members exist, fill in the body of each member.
 		ast.members.doZip(emptyMembers, (memberAst, member) => {
@@ -89,6 +87,25 @@ class Checker {
 		});
 
 		return klass;
+	}
+
+	Klass.Head checkHead(Klass klass, Ast.Klass.Head ast, Action<Member> addMember) {
+		var loc = ast.loc;
+		var staticAst = ast as Ast.Klass.Head.Static;
+		if (staticAst != null) {
+			return new Klass.Head.Static(loc);
+		}
+
+		var slotsAst = ast as Ast.Klass.Head.Slots;
+		if (slotsAst != null) {
+			var slots = slotsAst.slots.map(var =>
+				new Klass.Head.Slots.Slot(klass, ast.loc, var.mutable, baseScope.getTy(var.ty), var.name));
+			slots.each(addMember);
+			var head = new Klass.Head.Slots(loc, slots);
+			return head;
+		}
+
+		throw TODO();
 	}
 
 	Member emptyMember(Klass klass, Ast.Member ast) {
@@ -107,7 +124,7 @@ class MethodChecker {
 	readonly BaseScope baseScope;
 	Klass currentClass => baseScope.self;
 	readonly MethodWithBody currentMethod;
-	ImmutableArray<MethodWithBody.Parameter> parameters => currentMethod.parameters;
+	Arr<MethodWithBody.Parameter> parameters => currentMethod.parameters;
 	readonly Stack<Pattern.Single> locals = new Stack<Pattern.Single>();
 	//TODO: Also readonly Push<Err> errors;
 
@@ -130,7 +147,7 @@ class MethodChecker {
 		return checkExpr(ref e, a);
 	}
 	Expr checkInfer(Ast.Expr a) {
-		var e = Expected.Infer;
+		var e = Expected.Infer();
 		return checkExpr(ref e, a);
 	}
 	Expr checkSubtype(Ty ty, Ast.Expr a) {
@@ -155,6 +172,8 @@ class MethodChecker {
 		if (s != null) return checkSeq(ref e, s);
 		var li = a as Ast.Expr.Literal;
 		if (li != null) return checkLiteral(ref e, li);
+		var w = a as Ast.Expr.WhenTest;
+		if (w != null) return checkWhenTest(ref e, w);
 		throw TODO();
 	}
 
@@ -167,7 +186,7 @@ class MethodChecker {
 		throw TODO();
 	}
 	Expr checkOperatorCall(ref Expected expected, Ast.Expr.OperatorCall o) =>
-		callMethod(ref expected, o.loc, o.left, o.oper, ImmutableArray.Create(o.right));
+		callMethod(ref expected, o.loc, o.left, o.oper, Arr.of(o.right));
 
 	Expr checkCallAst(ref Expected expected, Ast.Expr.Call call) {
 		var sa = call.target as Ast.Expr.StaticAccess;
@@ -216,8 +235,25 @@ class MethodChecker {
 	Expr checkLiteral(ref Expected expected, Ast.Expr.Literal l) =>
 		handle(ref expected, l.loc, new Expr.Literal(l.loc, l.value));
 
-	Expr callStaticMethod(ref Expected expected, Loc loc, ClassLike klass, Sym methodName, ImmutableArray<Ast.Expr> argAsts) {
-		if (!klass.membersMap.TryGetValue(methodName, out var member)) TODO();
+	Expr checkWhenTest(ref Expected expected, Ast.Expr.WhenTest w) {
+		var inferrer = Expected.Infer();
+
+		var cases = w.cases.map(kase => {
+			//kase.loc
+			//kase.result
+			//kase.test
+			var test = checkSubtype(BuiltinClass.Bool, kase.test);
+			var result = checkExpr(ref inferrer, kase.result);
+			return new Expr.WhenTest.Case(kase.loc, test, result);
+		});
+
+		var elseResult = checkExpr(ref inferrer, w.elseResult);
+
+		return new Expr.WhenTest(w.loc, cases, elseResult, inferrer.inferredType);
+	}
+
+	Expr callStaticMethod(ref Expected expected, Loc loc, ClassLike klass, Sym methodName, Arr<Ast.Expr> argAsts) {
+		if (!klass.membersMap.get(methodName, out var member)) TODO();
 		var method = (Method) member;
 		if (method.isStatic) throw TODO();
 		var args = checkCall(loc, method, argAsts);
@@ -225,7 +261,7 @@ class MethodChecker {
 		return handle(ref expected, loc, call);
 	}
 
-	Expr callMethod(ref Expected expected, Loc loc, Ast.Expr targetAst, Sym methodName, ImmutableArray<Ast.Expr> argAsts) {
+	Expr callMethod(ref Expected expected, Loc loc, Ast.Expr targetAst, Sym methodName, Arr<Ast.Expr> argAsts) {
 		getProperty(loc, targetAst, methodName, out var target, out var member);
 		var method = (Method) member; //TODO: error handling
 		if (method.isStatic) throw TODO();
@@ -241,12 +277,12 @@ class MethodChecker {
 
 	Member getMember(Loc loc, Ty ty, Sym name) {
 		var klass = (ClassLike) ty;//TODO: error handling
-		if (!klass.membersMap.TryGetValue(name, out var member)) throw TODO();
+		if (!klass.membersMap.get(name, out var member)) throw TODO();
 		return member;
 	}
 
-	ImmutableArray<Expr> checkCall(Loc callLoc, Method method, ImmutableArray<Ast.Expr> argAsts) {
-		if (method.arity != argAsts.Length) {
+	Arr<Expr> checkCall(Loc callLoc, Method method, Arr<Ast.Expr> argAsts) {
+		if (method.arity != argAsts.length) {
 			throw TODO();
 		}
 		return method.parameters.zip(argAsts, (parameter, argAst) => checkSubtype(parameter.ty, argAst));
@@ -300,11 +336,13 @@ class MethodChecker {
 		//For SubTypeOf, this is always non-null.
 		//For Infer, this is mutable.
 		Op<Ty> expectedTy;
-		Expected(Kind kind, Ty ty) { this.kind = kind; this.expectedTy = Op.Some(ty); }
+		Expected(Kind kind, Ty ty) { this.kind = kind; this.expectedTy = Op.fromNullable(ty); }
 
 		internal static Expected Void => new Expected(Kind.Void, null);
 		internal static Expected SubTypeOf(Ty ty) => new Expected(Kind.SubTypeOf, ty);
-		internal static Expected Infer => new Expected(Kind.Infer, null);
+		internal static Expected Infer() => new Expected(Kind.Infer, null);
+
+		internal Ty inferredType => expectedTy.force;
 
 		internal Expr handle(Loc loc, Expr e, MethodChecker c) {
 			switch (kind) {

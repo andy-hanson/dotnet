@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Immutable;
 using System.Diagnostics;
 
 using static Utils;
@@ -14,17 +13,6 @@ static class Utils {
 	}
 
 	internal static Exception unreachable() => new Exception("UNREACHABLE");
-
-	/*internal static T nonNull<T>(T t) {
-		assert(t != null);
-		return t;
-	}*/
-
-	internal static ImmutableArray<T> build<T>(Action<ImmutableArray<T>.Builder> builder) {
-		var b = ImmutableArray.CreateBuilder<T>();
-		builder(b);
-		return b.ToImmutable();
-	}
 
 	internal static void assert(bool condition) {
 		if (!condition) {
