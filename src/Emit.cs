@@ -89,7 +89,7 @@ class Emitter {
 
 	void fillMethods(TypeBuilder tb, Klass klass) {
 		foreach (var member in klass.membersMap.values) {
-			var method = (MethodWithBody) member;
+			var method = (Method.MethodWithBody) member; //TODO
 
 			var attr = MethodAttributes.Public;
 			if (method.isStatic)
@@ -315,43 +315,53 @@ sealed class ExprEmitter {
 		throw TODO();
 	}
 
+	static readonly FieldInfo fieldBoolTrue = typeof(Builtins.Bool).GetField(nameof(Builtins.Bool.boolTrue));
+	static readonly FieldInfo fieldBoolFalse = typeof(Builtins.Bool).GetField(nameof(Builtins.Bool.boolFalse));
+	static readonly MethodInfo staticMethodIntOf = typeof(Builtins.Int).GetMethod(nameof(Builtins.Int.of));
+	static readonly MethodInfo staticMethodFloatOf = typeof(Builtins.Float).GetMethod(nameof(Builtins.Float.of));
+	static readonly MethodInfo staticMethodStrOf = typeof(Builtins.Str).GetMethod(nameof(Builtins.Str.of));
+	static readonly FieldInfo fieldVoidInstance = typeof(Builtins.Void).GetField(nameof(Builtins.Void.instance));
 	void emitLiteral(Expr.Literal li) {
 		var v = li.value;
 		var vb = v as Expr.Literal.LiteralValue.Bool;
 		if (vb != null) {
-			var b = typeof(Builtins.Bool);
-			var field = b.GetField(vb.value ? nameof(Builtins.Bool.boolTrue) : nameof(Builtins.Bool.boolFalse), BindingFlags.Static | BindingFlags.Public);
-			assert(field != null);
-			il.loadStaticField(field);
+			il.loadStaticField(vb.value ? fieldBoolTrue : fieldBoolFalse);
 			return;
 		}
 
 		var vi = v as Expr.Literal.LiteralValue.Int;
 		if (vi != null) {
 			il.constInt(vi.value);
-			il.callStaticMethod(typeof(Builtins.Int).GetMethod(nameof(Builtins.Int.of)));
+			il.callStaticMethod(staticMethodIntOf);
 			return;
 		}
 
 		var vf = v as Expr.Literal.LiteralValue.Float;
 		if (vf != null) {
 			il.constDouble(vf.value);
-			il.callStaticMethod(typeof(Builtins.Float).GetMethod(nameof(Builtins.Float.of)));
+			il.callStaticMethod(staticMethodFloatOf);
 			return;
 		}
 
 		var vs = v as Expr.Literal.LiteralValue.Str;
 		if (vs != null) {
 			il.constStr(vs.value);
-			il.callStaticMethod(typeof(Builtins.Str).GetMethod(nameof(Builtins.Str.of)));
+			il.callStaticMethod(staticMethodStrOf);
+			return;
+		}
+
+		var p = v as Expr.Literal.LiteralValue.Pass;
+		if (p != null) {
+			il.loadStaticField(fieldVoidInstance);
 			return;
 		}
 
 		throw unreachable();
 	}
 
+	static readonly FieldInfo boolValue = typeof(Builtins.Bool).GetField(nameof(Builtins.Bool.value));
 	void unpackBool() {
-		il.getField(typeof(Builtins.Bool).GetField(nameof(Builtins.Bool.value)));
+		il.getField(boolValue);
 	}
 
 	void emitWhenTest(Expr.WhenTest w) {

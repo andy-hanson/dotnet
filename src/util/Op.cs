@@ -38,6 +38,11 @@ struct Op<T> where T : class {
     internal Op<U> map<U>(Func<T, U> mapper) where U : class =>
         value != null ? Op.Some(mapper(value)) : Op<U>.None;
 
+	internal void each(Action<T> action) {
+		if (value != null)
+			action(value);
+	}
+
 	internal Op<T> or(Func<Op<T>> or) =>
 		value != null ? this : or();
 }

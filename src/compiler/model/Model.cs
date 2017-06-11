@@ -5,18 +5,6 @@ using System.Reflection;
 using static Utils;
 
 namespace Model {
-	//TODO: actual types
-	abstract class Ty : IEquatable<Ty> {
-		public override bool Equals(object o) {
-			var t = o as Ty;
-			return t != null && Equals(t);
-		}
-		public abstract bool Equals(Ty ty);
-		public override abstract int GetHashCode();
-		public static bool operator ==(Ty a, Ty b) => a.Equals(b);
-		public static bool operator !=(Ty a, Ty b) => !a.Equals(b);
-	}
-
 	sealed class Module : IEquatable<Module> {
 		internal readonly Path path;
 		internal readonly bool isMain;
@@ -52,6 +40,18 @@ namespace Model {
 		public override int GetHashCode() => path.GetHashCode();
 	}
 
+	// This is always a ClassLike currently. Eventually we'll add instantiated generic classes too.
+	abstract class Ty : IEquatable<Ty> {
+		public override bool Equals(object o) {
+			var t = o as Ty;
+			return t != null && Equals(t);
+		}
+		public abstract bool Equals(Ty ty);
+		public override abstract int GetHashCode();
+		public static bool operator ==(Ty a, Ty b) => a.Equals(b);
+		public static bool operator !=(Ty a, Ty b) => !a.Equals(b);
+	}
+
 	abstract class ClassLike : Ty {
 		internal readonly Sym name;
 		internal abstract Dict<Sym, Member> membersMap { get; }
@@ -83,6 +83,7 @@ namespace Model {
 		//void is OK for builtins, but we shouldn't attempt to create a class for it.
 		static ISet<Type> badTypes = new HashSet<Type> { typeof(void), typeof(object), typeof(string), typeof(char), typeof(uint), typeof(int), typeof(bool) };
 
+		internal static readonly BuiltinClass Void = fromDotNetType(typeof(Builtins.Void));
 		internal static readonly BuiltinClass Bool = fromDotNetType(typeof(Builtins.Bool));
 		internal static readonly BuiltinClass Int = fromDotNetType(typeof(Builtins.Int));
 		internal static readonly BuiltinClass Float = fromDotNetType(typeof(Builtins.Float));
@@ -115,7 +116,7 @@ namespace Model {
 				if (m.GetCustomAttribute<Hid>(inherit: true) != null)
 					return null;
 
-				Member m2 = new BuiltinMethod(klass, m);
+				Member m2 = new Method.BuiltinMethod(klass, m);
 				return m2.name.to(m2);
 			});
 
@@ -216,7 +217,7 @@ namespace Model {
 		internal readonly Ty returnTy;
 		internal readonly Arr<Parameter> parameters;
 
-		internal Method(ClassLike klass, Loc loc, bool isStatic, Ty returnTy, Sym name, Arr<Parameter> parameters) : base(loc, name) {
+		private Method(ClassLike klass, Loc loc, bool isStatic, Ty returnTy, Sym name, Arr<Parameter> parameters) : base(loc, name) {
 			this.klass = klass;
 			this.isStatic = isStatic;
 			this.returnTy = returnTy;
@@ -238,40 +239,41 @@ namespace Model {
 				this.index = index;
 			}
 		}
-	}
-	sealed class BuiltinMethod : Method {
-		internal BuiltinMethod(BuiltinClass klass, MethodInfo m)
-			: base(klass, Loc.zero, m.IsStatic, BuiltinClass.fromDotNetType(m.ReturnType), getName(m), mapParams(m)) {}
 
-		static Sym getName(MethodInfo m) {
-			var customName = m.GetCustomAttribute<BuiltinName>(inherit: true);
-			return customName != null ? customName.name : Sym.of(m.Name);
+		internal sealed class BuiltinMethod : Method {
+			internal BuiltinMethod(BuiltinClass klass, MethodInfo m)
+				: base(klass, Loc.zero, m.IsStatic, BuiltinClass.fromDotNetType(m.ReturnType), getName(m), mapParams(m)) {}
+
+			static Sym getName(MethodInfo m) {
+				var customName = m.GetCustomAttribute<BuiltinName>(inherit: true);
+				return customName != null ? customName.name : Sym.of(m.Name);
+			}
+
+			static Arr<Method.Parameter> mapParams(MethodInfo m) => m.GetParameters().map((p, index) => {
+				assert(!p.IsIn);
+				assert(!p.IsLcid);
+				assert(!p.IsOut);
+				assert(!p.IsOptional);
+				assert(!p.IsRetval);
+				var ty = BuiltinClass.fromDotNetType(p.ParameterType);
+				return new Method.Parameter(Loc.zero, ty, Sym.of(p.Name), index);
+			});
 		}
 
-		static Arr<Method.Parameter> mapParams(MethodInfo m) => m.GetParameters().map((p, index) => {
-			assert(!p.IsIn);
-			assert(!p.IsLcid);
-			assert(!p.IsOut);
-			assert(!p.IsOptional);
-			assert(!p.IsRetval);
-			var ty = BuiltinClass.fromDotNetType(p.ParameterType);
-			return new Method.Parameter(Loc.zero, ty, Sym.of(p.Name), index);
-		});
-	}
+		internal sealed class MethodWithBody : Method {
+			internal MethodWithBody(Klass klass, Loc loc, bool isStatic, Ty returnTy, Sym name, Arr<Parameter> parameters)
+				: base(klass, loc, isStatic, returnTy, name, parameters) { }
 
-	sealed class MethodWithBody : Method {
-		internal MethodWithBody(Klass klass, Loc loc, bool isStatic, Ty returnTy, Sym name, Arr<Parameter> parameters)
-			: base(klass, loc, isStatic, returnTy, name, parameters) { }
-
-		Op<Expr> _body;
-		internal Expr body {
-			get { return _body.force; }
-			set { assert(!_body.has); _body = Op.Some(value); }
+			Op<Expr> _body;
+			internal Expr body {
+				get { return _body.force; }
+				set { assert(!_body.has); _body = Op.Some(value); }
+			}
 		}
 	}
 
 	abstract class Pattern {
-		readonly Loc loc;
+		internal readonly Loc loc;
 		Pattern(Loc loc) { this.loc = loc; }
 
 		internal sealed class Ignore : Pattern {
@@ -292,191 +294,4 @@ namespace Model {
 			}
 		}
 	}
-
-	abstract class Expr {
-		internal readonly Loc loc;
-		internal abstract Ty ty { get; }
-		Expr(Loc loc) {
-			this.loc = loc;
-		}
-
-		internal sealed class AccessParameter : Expr {
-			internal readonly MethodWithBody.Parameter param;
-			internal AccessParameter(Loc loc, MethodWithBody.Parameter param) : base(loc) {
-				this.param = param;
-			}
-
-			internal override Ty ty => param.ty;
-		}
-
-		internal sealed class AccessLocal : Expr {
-			internal readonly Pattern.Single local;
-			internal AccessLocal(Loc loc, Pattern.Single local) : base(loc) {
-				this.local = local;
-			}
-
-			internal override Ty ty => local.ty;
-		}
-
-		internal sealed class Let : Expr {
-			internal readonly Expr value;
-			internal readonly Expr then;
-
-			internal Let(Loc loc, Pattern assigned, Expr value, Expr then) : base(loc) {
-				this.value = value;
-				this.then = then;
-			}
-
-			internal override Ty ty => then.ty;
-		}
-
-		internal sealed class Seq : Expr {
-			internal readonly Expr action;
-			internal readonly Expr then;
-
-			internal Seq(Loc loc, Expr action, Expr then) : base(loc) {
-				this.action = action;
-				this.then = then;
-			}
-
-			internal override Ty ty => GetTy();
-
-			Ty GetTy() {
-				return then.ty;
-			}
-		}
-
-		internal sealed class Literal : Expr {
-			internal readonly LiteralValue value;
-			internal Literal(Loc loc, LiteralValue value) : base(loc) { this.value = value; }
-			internal override Ty ty => value.ty;
-
-			internal abstract class LiteralValue {
-				internal abstract Ty ty { get; }
-				LiteralValue() {}
-
-				internal sealed class Bool : LiteralValue {
-					internal readonly bool value;
-					internal Bool(bool value) { this.value = value; }
-					internal override Ty ty => BuiltinClass.Bool;
-				}
-
-				internal sealed class Int : LiteralValue {
-					internal readonly int value;
-					internal Int(int value) { this.value = value; }
-					internal override Ty ty => BuiltinClass.Int;
-				}
-
-				internal sealed class Float : LiteralValue {
-					internal readonly double value;
-					internal Float(double value) { this.value = value; }
-					internal override Ty ty => BuiltinClass.Float;
-				}
-
-				internal sealed class Str : LiteralValue {
-					internal readonly string value;
-					internal Str(string value) { this.value = value; }
-					internal override Ty ty => BuiltinClass.Str;
-				}
-			}
-		}
-
-		internal sealed class WhenTest : Expr {
-			internal readonly Arr<Case> cases;
-			internal readonly Expr elseResult;
-			internal readonly Ty _ty; // Common type of all cases and elseResult.
-			internal WhenTest(Loc loc, Arr<Case> cases, Expr elseResult, Ty ty) : base(loc) { this.cases = cases; this.elseResult = elseResult; this._ty = ty; }
-
-			internal struct Case {
-				internal readonly Loc loc;
-				internal readonly Expr test;
-				internal readonly Expr result;
-				internal Case(Loc loc, Expr test, Expr result) { this.loc = loc; this.test = test; this.result = result; }
-			}
-
-			override internal Ty ty => ty;
-		}
-
-		internal sealed class StaticMethodCall : Expr {
-			internal readonly Method method;
-			internal readonly Arr<Expr> args;
-			internal StaticMethodCall(Loc loc, Method method, Arr<Expr> args) : base(loc) {
-				assert(method.isStatic);
-				this.method = method;
-				this.args = args;
-			}
-
-			internal override Ty ty => method.returnTy;
-		}
-
-		internal sealed class MethodCall : Expr {
-			internal readonly Expr target;
-			internal readonly Method method;
-			internal readonly Arr<Expr> args;
-			internal MethodCall(Loc loc, Expr target, Method method, Arr<Expr> args) : base(loc) {
-				assert(!method.isStatic);
-				this.target = target;
-				this.method = method;
-				this.args = args;
-			}
-
-			internal override Ty ty => method.returnTy;
-		}
-
-		//Share w/ GetSlot?
-		//Note: this contains a pointer to the current class for convenience.
-		//Note: this should only happen in a non-static method. Otherwise we have Expr.Error
-		internal sealed class GetMySlot : Expr {
-			internal readonly Klass klass; //This is just here for convenience. It *must* be the class of the method this expression is in.
-			internal readonly Klass.Head.Slots.Slot slot;
-			internal GetMySlot(Loc loc, Klass klass, Klass.Head.Slots.Slot slot) : base(loc) {
-				this.klass = klass;
-				this.slot = slot;
-			}
-			internal override Ty ty => slot.ty;
-		}
-
-		internal sealed class GetSlot : Expr {
-			internal readonly Klass.Head.Slots.Slot slot;
-			internal readonly Expr target;
-			internal GetSlot(Loc loc, Expr target, Klass.Head.Slots.Slot slot) : base(loc) {
-				this.target = target;
-				this.slot = slot;
-			}
-			internal override Ty ty => slot.ty;
-		}
-
-		/*internal sealed class GetMethod : Get {
-			internal readonly NzMethod method;
-			internal readonly Expr target;
-			internal GetMethod(Loc loc, Expr target, MethodWithBody method) : base(loc, target) {
-				assert(!method.isStatic);
-				this.target = target;
-				this.method = method;
-			}
-			internal override Ty ty => TODO(); //Function type for the method
-		}*/
-
-		/*internal sealed class GetStaticMethod : Expr {
-			internal readonly NzMethod method;
-			internal GetStaticMethod(Loc loc, MethodWithBody method) : base(loc) {
-				assert(method.isStatic);
-				this.method = method;
-			}
-			internal override Ty ty => TODO();
-		}*/
-	}
-
-	//LiteralValue, Literal
-	//StaticMethodCall, MethodCall
-
-	/*sealed class GetSlot : Expr {
-		readonly Expr target;
-		readonly Slot slot;
-		internal GetSlot(Loc loc, Expr target, Slot slot) : base(loc) {
-			assert(!slot.mutable);
-			this.target = target;
-			this.slot = slot;
-		}
-	}*/
 }

@@ -1,8 +1,4 @@
 static
 
-fun Int f(Bool b)
-	when
-		b
-			2
-		else
-			3
+fun Void f()
+	pass

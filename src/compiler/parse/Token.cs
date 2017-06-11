@@ -20,6 +20,7 @@ internal enum Token {
 	Generic,
 	Import,
 	If,
+	Pass,
 	Slots,
 	Static,
 	True,
@@ -59,6 +60,7 @@ static class TokenU {
 			case "generic": return Token.Generic;
 			case "if": return Token.If;
 			case "import": return Token.Import;
+			case "pass": return Token.Pass;
 			case "slots": return Token.Slots;
 			case "static": return Token.Static;
 			case "true": return Token.True;
@@ -88,6 +90,7 @@ static class TokenU {
 			case Token.Generic: return "generic";
 			case Token.Import: return "import";
 			case Token.If: return "if";
+			case Token.Pass: return "pass";
 			case Token.Slots: return "slots";
 			case Token.Static: return "static";
 			case Token.True: return "true";

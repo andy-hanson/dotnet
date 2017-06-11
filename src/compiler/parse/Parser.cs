@@ -277,12 +277,6 @@ sealed class Parser : Lexer {
 
 		while (true) {
 			switch (loopNext) {
-				case Token.True:
-				case Token.False:
-					parts.add(new Ast.Expr.Literal(locFrom(loopStart), new Model.Expr.Literal.LiteralValue.Bool(loopNext == Token.True)));
-					readAndLoop();
-					break;
-
 				case Token.Equals: {
 					var patternLoc = locFrom(loopStart);
 					if (ctx != Ctx.Line) throw TODO(); //diagnostic
@@ -346,32 +340,33 @@ sealed class Parser : Lexer {
 					next = Next.CtxEnded;
 					return;
 
-				default: {
-					// Single-token expressions:
-					var loc = locFrom(loopStart);
-					Ast.Expr e;
-					switch (loopNext) {
-						case Token.Name:
-							e = new Ast.Expr.Access(loc, tokenSym);
-							break;
-						case Token.IntLiteral:
-							e = new Ast.Expr.Literal(loc, new Model.Expr.Literal.LiteralValue.Int(int.Parse(tokenValue)));
-							break;
-						case Token.FloatLiteral:
-							e = new Ast.Expr.Literal(loc, new Model.Expr.Literal.LiteralValue.Float(double.Parse(tokenValue)));
-							break;
-						case Token.StringLiteral:
-							e = new Ast.Expr.Literal(loc, new Model.Expr.Literal.LiteralValue.Str(tokenValue));
-							break;
-						default:
-							throw TODO(); //diagnostic
-					}
-					parts.add(e);
+				default:
+					parts.add(singleTokenExpr(loopNext, locFrom(loopStart)));
 					readAndLoop();
 					break;
-				}
 			}
 		}
+	}
+
+	Ast.Expr singleTokenExpr(Token token, Loc loc) {
+		switch (token) {
+			case Token.Name:
+				return new Ast.Expr.Access(loc, tokenSym);
+			case Token.IntLiteral:
+				return new Ast.Expr.Literal(loc, new Model.Expr.Literal.LiteralValue.Int(int.Parse(tokenValue)));
+			case Token.FloatLiteral:
+				return new Ast.Expr.Literal(loc, new Model.Expr.Literal.LiteralValue.Float(double.Parse(tokenValue)));
+			case Token.StringLiteral:
+				return new Ast.Expr.Literal(loc, new Model.Expr.Literal.LiteralValue.Str(tokenValue));
+			case Token.Pass:
+				return new Ast.Expr.Literal(loc, Model.Expr.Literal.LiteralValue.Pass.instance);
+			case Token.True:
+			case Token.False:
+				return new Ast.Expr.Literal(loc, new Model.Expr.Literal.LiteralValue.Bool(token == Token.True));
+			default:
+				throw TODO(); //diagnostic
+		}
+
 	}
 
 	Ast.Expr parseWhen(Pos startPos) {

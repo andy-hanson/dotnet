@@ -12,6 +12,11 @@ sealed class BuiltinName : Attribute {
 sealed class Hid : Attribute {}
 
 public static class Builtins {
+    public sealed class Void {
+        private Void() {}
+        [Hid] public readonly static Void instance = new Void();
+    }
+
     public struct Bool {
         [Hid] public readonly bool value;
 
@@ -72,6 +77,18 @@ public static class Builtins {
         public static Str of(string value) => new Str(value);
 
         public Str _add(Str other) => of(value + other.value);
+    }
+
+    //TODO: public interface World {}
+
+    //TODO: helpers like this should really be written in Noze itself.
+    public static class Util {
+        public static Void assert(Bool condition) {
+            if (!condition.value)
+                //TODO: use a builtin exception class.
+                throw new Exception("Assertion failed.");
+            return Void.instance;
+        }
     }
 
     internal static void register() {

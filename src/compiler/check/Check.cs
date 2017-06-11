@@ -82,7 +82,7 @@ class Checker {
 		// Now that all members exist, fill in the body of each member.
 		ast.members.doZip(emptyMembers, (memberAst, member) => {
 			var methodAst = (Ast.Member.Method) memberAst; //TODO: other kinds
-			var method = (MethodWithBody) member; //similarly, TODO
+			var method = (Method.MethodWithBody) member; //similarly, TODO
 			method.body = MethodChecker.checkMethod(baseScope, method, methodAst.body);
 		});
 
@@ -112,23 +112,23 @@ class Checker {
 		var mAst = (Ast.Member.Method) ast;
 		var parameters = mAst.parameters.map((p, index) =>
 			new Method.Parameter(p.loc, baseScope.getTy(p.ty), p.name, index));
-		return new MethodWithBody(
+		return new Method.MethodWithBody(
 			klass, mAst.loc, mAst.isStatic, baseScope.getTy(mAst.returnTy), mAst.name, parameters);
 	}
 }
 
 class MethodChecker {
-	internal static Expr checkMethod(BaseScope baseScope, MethodWithBody method, Ast.Expr body) =>
+	internal static Expr checkMethod(BaseScope baseScope, Method.MethodWithBody method, Ast.Expr body) =>
 		new MethodChecker(baseScope, method).checkSubtype(method.returnTy, body);
 
 	readonly BaseScope baseScope;
 	Klass currentClass => baseScope.self;
-	readonly MethodWithBody currentMethod;
-	Arr<MethodWithBody.Parameter> parameters => currentMethod.parameters;
+	readonly Method.MethodWithBody currentMethod;
+	Arr<Method.Parameter> parameters => currentMethod.parameters;
 	readonly Stack<Pattern.Single> locals = new Stack<Pattern.Single>();
 	//TODO: Also readonly Push<Err> errors;
 
-	MethodChecker(BaseScope baseScope, MethodWithBody method) {
+	MethodChecker(BaseScope baseScope, Method.MethodWithBody method) {
 		this.baseScope = baseScope;
 		this.currentMethod = method;
 		// Assert that parameters don't shadow members.
@@ -314,7 +314,7 @@ class MethodChecker {
 			return new Expr.GetMySlot(loc, currentClass, slot);
 		}
 
-		var method = member as MethodWithBody;
+		var method = member as Method.MethodWithBody;
 		if (method != null) {
 			throw TODO();
 		}
