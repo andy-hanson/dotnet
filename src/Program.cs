@@ -7,6 +7,8 @@ using System.Reflection.Emit;
 //dotnet add package System.Collections.Immutable
 //dotnet add package AustinHarris.JsonRpc
 	//TODO: remove that.
+using Lsp;
+using Json;
 
 sealed class ConsoleLogger : Lsp.Server.Logger {
 	public void received(string s) {
@@ -18,16 +20,145 @@ sealed class ConsoleLogger : Lsp.Server.Logger {
 	}
 }
 
+//kill
+class DumbSmartness : LspImplementation {
+	readonly Range dummyRange = new Range(new Position(1, 1), new Position(2, 2));
+
+	Arr<Diagnostic> LspImplementation.diagnostics(string uri) =>
+		Arr.of(new Diagnostic(dummyRange, Op.Some(Diagnostic.Severity.Error), Op.Some("code"), Op.Some("source"), "message"));
+
+	void LspImplementation.textDocumentDidChange(string uri, uint version, string text) {
+		Console.WriteLine("text document did change");
+	}
+
+	void LspImplementation.textDocumentDidSave(string uri, uint version) {
+		Console.WriteLine($"Saved {uri}");
+	}
+
+	void LspImplementation.textDocumentDidOpen(string uri, string languageId, uint version, string text) {
+		Console.WriteLine($"Opened ${uri}");
+	}
+
+	void LspImplementation.goToDefinition(TextDocumentPositionParams pms, out string uri, out Range range) {
+		uri = pms.textDocumentUri;
+		range = new Range(new Position(1, 1), new Position(1, 2));
+	}
+
+	Arr<CompletionItem> LspImplementation.getCompletion(TextDocumentPositionParams pms) =>
+		Arr.of(new CompletionItem("myLabel"));
+
+	string LspImplementation.getHover(TextDocumentPositionParams pms) => "myHover";
+
+	Arr<DocumentHighlight> LspImplementation.getDocumentHighlights(TextDocumentPositionParams pms) =>
+		Arr.of(new DocumentHighlight(dummyRange, DocumentHighlight.Kind.Read));
+
+	Arr<Location> LspImplementation.findAllReferences(TextDocumentPositionParams pms, bool includeDeclaration) =>
+		Arr.of(new Location(pms.textDocumentUri, dummyRange));
+
+	Response.SignatureHelpResponse LspImplementation.signatureHelp(TextDocumentPositionParams pms) {
+		var parameter = new ParameterInformation("myParam", Op.Some("paramDocs"));
+		var signature = new SignatureInformation("mySignature", Op.Some("documentation"), Op.Some(Arr.of(parameter)));
+		return new Response.SignatureHelpResponse(Arr.of(signature), activeSignature: OpUint.Some(0), activeParameter: OpUint.Some(0));
+	}
+}
+
 class Program {
 	static void Main(string[] args) {
-		testService();
-		//testCompiler();
+		//testJsonParse();
+		//testService();
+		testCompiler();
+	}
+
+	static void testJsonParse() {
+		//TODO: move to a real unit test!!!
+		var source = @"{
+			'jsonrpc': '2.0',
+			'id': 0,
+			'method': 'initialize',
+			'params': {
+			'processId': 27882,
+			'rootPath': null,
+			'rootUri': null,
+			'capabilities': {
+				'workspace': {
+				'applyEdit': true,
+				'didChangeConfiguration': {
+					'dynamicRegistration': false
+				},
+				'didChangeWatchedFiles': {
+					'dynamicRegistration': false
+				},
+				'symbol': {
+					'dynamicRegistration': true
+				},
+				'executeCommand': {
+					'dynamicRegistration': true
+				}
+				},
+				'textDocument': {
+				'synchronization': {
+					'dynamicRegistration': true,
+					'willSave': true,
+					'willSaveWaitUntil': true,
+					'didSave': true
+				},
+				'completion': {
+					'dynamicRegistration': true,
+					'completionItem': {
+					'snippetSupport': true
+					}
+				},
+				'hover': {
+					'dynamicRegistration': true
+				},
+				'signatureHelp': {
+					'dynamicRegistration': true
+				},
+				'references': {
+					'dynamicRegistration': true
+				},
+				'documentHighlight': {
+					'dynamicRegistration': true
+				},
+				'documentSymbol': {
+					'dynamicRegistration': true
+				},
+				'formatting': {
+					'dynamicRegistration': true
+				},
+				'rangeFormatting': {
+					'dynamicRegistration': true
+				},
+				'onTypeFormatting': {
+					'dynamicRegistration': true
+				},
+				'definition': {
+					'dynamicRegistration': true
+				},
+				'codeAction': {
+					'dynamicRegistration': true
+				},
+				'codeLens': {
+					'dynamicRegistration': true
+				},
+				'documentLink': {
+					'dynamicRegistration': true
+				},
+				'rename': {
+					'dynamicRegistration': true
+				}
+				}
+			},
+			'trace': 'off'
+			}
+		}".Replace('\'', '"');
+		JsonParser.parseInitialize(source);
 	}
 
 	static void testService() {
 		uint port = 8124;
 		var logger = Op<Lsp.Server.Logger>.None;
-		using (var s = new Lsp.Server.JsonRpcServer(port, logger)) {
+		using (var s = new Lsp.Server.LspServer(port, logger, new DumbSmartness())) {
 			s.loop();
 		}
 
@@ -40,11 +171,14 @@ class Program {
 		//Parser.parse(Sym.of("A"), text);
 		var rootDir = Path.empty;
 
-		var cmp = new Compiler(new DefaultCompilerHost(rootDir));
-		var m = cmp.compile(Path.from("sample", "A"));
+		var host = DocumentProviders.CommandLine(rootDir);
+		var m = Compiler.compile(Path.from("sample", "A"), host, Op<CompiledProgram>.None, out var newProgram);
+
+		//var cmp = //new CompilerDaemon(DocumentProviders.CommandLine(rootDir));
+		//var m = cmp.compile(Path.from("sample", "A"));
 
 		var e = new Emitter();
-		Type t = e.compileModule(m);
+		Type t = e.emitModule(m);
 
 		var me = t.GetMethod("f");
 		Console.WriteLine(me);

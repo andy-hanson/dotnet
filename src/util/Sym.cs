@@ -33,13 +33,7 @@ struct Sym : IEquatable<Sym> {
 		}
 	}
 
-	internal string str {
-		get {
-			var got = symToString.TryGetValue(this, out var res);
-			assert(got);
-			return res;
-		}
-	}
+	internal string str => symToString.getOp(this).force;
 
 	public override string ToString() => str;
 	public override bool Equals(object o) => o is Sym && Equals((Sym)o);

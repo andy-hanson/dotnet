@@ -6,7 +6,7 @@ using Model;
 
 struct BaseScope {
 	internal readonly Klass self;
-	readonly Arr<Module> imported;
+	readonly Arr<Module> imports;
 
 	internal bool hasMember(Sym name) =>
 		self.membersMap.has(name);
@@ -14,12 +14,12 @@ struct BaseScope {
 	internal bool tryGetMember(Sym name, out Member member) =>
 		self.membersMap.get(name, out member);
 
-	internal BaseScope(Klass self, Arr<Module> imported) {
-		this.self = self; this.imported = imported;
-		imported.each((import, i) => {
+	internal BaseScope(Klass self, Arr<Module> imports) {
+		this.self = self; this.imports = imports;
+		imports.each((import, i) => {
 			if (import.name == self.name)
 				throw TODO(); // diagnostic -- can't shadow self
-			imported.eachInSlice(0, i, priorImport => {
+			imports.eachInSlice(0, i, priorImport => {
 				if (priorImport.name == import.name)
 					throw TODO(); // diagnostic -- can't shadow another import
 			});
@@ -41,7 +41,7 @@ struct BaseScope {
 		if (name == self.name)
 			return self;
 
-		if (imported.find(out var found, i => i.name == name))
+		if (imports.find(out var found, i => i.name == name))
 			return found.klass;
 
 		if (BuiltinClass.tryGet(name, out var builtin))
@@ -52,15 +52,15 @@ struct BaseScope {
 }
 
 class Checker {
-	internal static Klass checkClass(Arr<Module> imported, Ast.Klass ast) {
-		var klass = new Klass(ast.loc, ast.name);
-		return new Checker(klass, imported).checkClass(klass, ast);
+	internal static Klass checkClass(Arr<Module> imports, Ast.Klass ast, Sym name) {
+		var klass = new Klass(ast.loc, name);
+		return new Checker(klass, imports).checkClass(klass, ast);
 	}
 
 	readonly BaseScope baseScope;
 
-	Checker(Klass klass, Arr<Module> imported) {
-		this.baseScope = new BaseScope(klass, imported);
+	Checker(Klass klass, Arr<Module> imports) {
+		this.baseScope = new BaseScope(klass, imports);
 	}
 
 	Klass checkClass(Klass klass, Ast.Klass ast) {

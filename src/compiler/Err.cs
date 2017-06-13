@@ -47,7 +47,7 @@ abstract class Err {
         internal CantFindLocalModule(Path logicalPath) { this.logicalPath = logicalPath; }
 
         internal override string Show =>
-            $"Can't find module '{logicalPath}'.\nTried '{Compiler.attemptedPaths(logicalPath)}'.";
+            $"Can't find module '{logicalPath}'.\nTried '{ModuleResolver.attemptedPaths(logicalPath)}'.";
     }
 
     static string showChar(char ch) {

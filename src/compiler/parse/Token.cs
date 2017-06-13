@@ -1,6 +1,8 @@
 using System;
 
 internal enum Token {
+	Nil, // Reserved so that default(Token) is available for use by Op
+
 	// These will also write to lexer.value
 	Name,
 	TyName,
@@ -49,25 +51,42 @@ internal enum Token {
 }
 
 static class TokenU {
-	internal static Token? keywordFromName(string s) {
+	internal static Op<Token> keywordFromName(string s) {
 		switch (s) {
-			case "abstract": return Token.Abstract;
-			case "def": return Token.Def;
-			case "else": return Token.Else;
-			case "enum": return Token.Enum;
-			case "false": return Token.False;
-			case "fun": return Token.Fun;
-			case "generic": return Token.Generic;
-			case "if": return Token.If;
-			case "import": return Token.Import;
-			case "pass": return Token.Pass;
-			case "slots": return Token.Slots;
-			case "static": return Token.Static;
-			case "true": return Token.True;
-			case "val": return Token.Val;
-			case "var": return Token.Var;
-			case "when": return Token.When;
-			default: return null;
+			case "abstract":
+				return Op.Some(Token.Abstract);
+			case "def":
+				return Op.Some(Token.Def);
+			case "else":
+				return Op.Some(Token.Else);
+			case "enum":
+				return Op.Some(Token.Enum);
+			case "false":
+				return Op.Some(Token.False);
+			case "fun":
+				return Op.Some(Token.Fun);
+			case "generic":
+				return Op.Some(Token.Generic);
+			case "if":
+				return Op.Some(Token.If);
+			case "import":
+				return Op.Some(Token.Import);
+			case "pass":
+				return Op.Some(Token.Pass);
+			case "slots":
+				return Op.Some(Token.Slots);
+			case "static":
+				return Op.Some(Token.Static);
+			case "true":
+				return Op.Some(Token.True);
+			case "val":
+				return Op.Some(Token.Val);
+			case "var":
+				return Op.Some(Token.Var);
+			case "when":
+				return Op.Some(Token.When);
+			default:
+				return Op<Token>.None;
 		}
 	}
 

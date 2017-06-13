@@ -6,19 +6,9 @@ using static Utils;
 
 using Pos = System.UInt32;
 
-abstract class Lexer {
-	readonly string source;
-	// Index of the character we are *about* to take.
-	protected Pos pos = 0;
-	uint indent = 0;
-	// Number of Token.Dedent we have to output before continuing to read.
-	uint dedenting = 0;
-
-	// This is set after taking one of several kinds of token, such as Name or NumberLiteral
-	protected string tokenValue;
-	protected Sym tokenSym => Sym.of(tokenValue);
-
-	string debug() {
+//mv
+static class ReaderU {
+	internal static string debug(string source, uint pos) {
 		//Current line with a '|' in the middle.
 		var ch = pos;
 		var nlBefore = pos;
@@ -30,24 +20,47 @@ abstract class Lexer {
 
 		return $"{source.slice(nlBefore, pos)}|{source.slice(pos, nlAfter)}";
 	}
+}
 
+abstract class Reader {
+	readonly string source;
+	// Index of the character we are *about* to take.
+	protected Pos pos = 0;
 
-	protected Lexer(string source) {
+	protected Reader(string source) {
 		//Ensure "source" ends in a newline.
 		//Add an EOF too.
 		if (!source.EndsWith("\n")) {
 			source += "\n";
 		}
 		this.source = source + '\0';
+	}
 
+	protected char peek => source.at(pos);
+
+	protected char readChar() => source.at(pos++);
+
+	protected string debug() => ReaderU.debug(source, pos);
+
+	protected string sliceFrom(Pos startPos) {
+		return source.slice(startPos, pos);
+	}
+}
+
+abstract class Lexer : Reader {
+	uint indent = 0;
+	// Number of Token.Dedent we have to output before continuing to read.
+	uint dedenting = 0;
+
+	// This is set after taking one of several kinds of token, such as Name or NumberLiteral
+	protected string tokenValue;
+	protected Sym tokenSym => Sym.of(tokenValue);
+
+	protected Lexer(string source) : base(source) {
 		skipNewlines();
 	}
 
 	protected Loc locFrom(Pos start) => new Loc(start, pos);
-
-	char peek => source.at(pos);
-
-	char readChar() => source.at(pos++);
 
 	void skip() { pos++; }
 
@@ -105,10 +118,6 @@ abstract class Lexer {
 		}
 	}
 
-	string sliceFrom(Pos startPos) {
-		return source.slice(startPos, pos);
-	}
-
 	//This is called *after* having skipped the first char of the number.
 	Token takeNumber(Pos startPos) {
 		skipWhile(isDigit);
@@ -125,7 +134,7 @@ abstract class Lexer {
 		skipWhile(isNameChar);
 		var s = sliceFrom(startPos);
 		var t = TokenU.keywordFromName(s);
-		if (t != null) return t.Value;
+		if (t.get(out var tok)) return tok;
 		this.tokenValue = s;
 		return Token.Name;
 	}
@@ -361,7 +370,7 @@ abstract class Lexer {
 		expectCharacter("keyword", ch => 'a' <= ch && ch <= 'z');
 		skipWhile(isNameChar);
 		var name = sliceFrom(startPos);
-		return TokenU.keywordFromName(name) ?? throw unexpected(startPos, "keyword", name);
+		return TokenU.keywordFromName(name).or(() => throw unexpected(startPos, "keyword", name));
 	}
 
 	protected void takeSpecificKeyword(Token kw) {

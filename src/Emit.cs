@@ -40,13 +40,13 @@ class Emitter {
 		assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndCollect);
 	}
 
-	internal Type compileModule(Model.Module m) {
+	internal Type emitModule(Model.Module m) {
 		if (typeInfos.TryGetValue(m.klass, out var b)) {
 			return b.type;
 		}
 
 		foreach (var im in m.imports)
-			compileModule(im);
+			emitModule(im);
 
 		return doCompileModule(m);
 	}

@@ -5,39 +5,34 @@ using System.Reflection;
 using static Utils;
 
 namespace Model {
-	sealed class Module : IEquatable<Module> {
-		internal readonly Path path;
+	sealed class Module {
+		/**
+		For "a.nz" this is "a".
+		For "a/main.nz" this is still "a".
+		The difference is indicated by `isMain`.
+		Use `fullPath` to get the full path.
+		*/
+		internal readonly Path logicalPath;
 		internal readonly bool isMain;
-		internal readonly string source;
-		internal readonly LineColumnGetter lineColumnGetter;
+		internal readonly LineColumnGetter lineColumnGetter; //TODO: does this belong here? Or somewhere else?
+		internal readonly DocumentInfo document;
+		internal readonly Arr<Module> imports;
+		internal readonly Klass klass;
 
-		internal Module(Path path, bool isMain, string source) {
-			this.path = path;
+		internal Module(Path logicalPath, bool isMain, DocumentInfo document, Arr<Module> imports, Klass klass) {
+			this.logicalPath = logicalPath;
 			this.isMain = isMain;
-			this.source = source;
-			this.lineColumnGetter = new LineColumnGetter(source);
+			this.lineColumnGetter = new LineColumnGetter(document.text);
+			this.document = document;
+			this.imports = imports;
+			this.klass = klass;
 		}
 
-		internal Path fullPath => Compiler.fullPath(path, isMain);
-
-		Arr<Module>? _imports;
-		internal Arr<Module> imports {
-			get { return _imports.Value; }
-			set { assert(!_imports.HasValue); _imports = value; }
-		}
-
-		internal bool importsAreResolved => _imports != null;
-
-		Op<Klass> _klass;
-		internal Klass klass {
-			get { return _klass.force; }
-			set { assert(!_klass.has); _klass = Op.Some(value); }
-		}
-
+		//internal Path fullPath => ModuleResolver.fullPath(logicalPath, isMain);
 		internal Sym name => klass.name;
 
-		public bool Equals(Module other) => object.ReferenceEquals(this, other);
-		public override int GetHashCode() => path.GetHashCode();
+		//public bool Equals(Module other) => object.ReferenceEquals(this, other);
+		//public override int GetHashCode() => logicalPath.GetHashCode();
 	}
 
 	// This is always a ClassLike currently. Eventually we'll add instantiated generic classes too.
@@ -98,7 +93,6 @@ namespace Model {
 				throw new Exception($"Should not attempt to use {dotNetType} as a builtin");
 			}
 
-
 			var customName = dotNetType.GetCustomAttribute<BuiltinName>(inherit: false);
 			var name = customName != null ? customName.name : unescapeName(dotNetType.Name);
 
@@ -114,10 +108,10 @@ namespace Model {
 			//BAD! GetMethods() gets inherited methosd!
 			klass._membersMap = dotNetType.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public).mapToDict<MethodInfo, Sym, Member>(m => {
 				if (m.GetCustomAttribute<Hid>(inherit: true) != null)
-					return null;
+					return Op<KeyValuePair<Sym, Member>>.None;
 
 				Member m2 = new Method.BuiltinMethod(klass, m);
-				return m2.name.to(m2);
+				return Op.Some(m2.name.to(m2));
 			});
 
 			return klass;
@@ -161,9 +155,9 @@ namespace Model {
 			set { assert(!_head.has); _head = Op.Some(value); }
 		}
 
-		Dict<Sym, Member>? _membersMap;
-		internal override Dict<Sym, Member> membersMap => _membersMap.Value;
-		internal void setMembersMap(Dict<Sym, Member> membersMap) { assert(!_membersMap.HasValue); _membersMap = membersMap; }
+		Op<Dict<Sym, Member>> _membersMap;
+		internal override Dict<Sym, Member> membersMap => _membersMap.force;
+		internal void setMembersMap(Dict<Sym, Member> membersMap) { assert(!_membersMap.has); _membersMap = Op.Some(membersMap); }
 
 		//internal IEnumerable<MethodWithBody> methods ...
 

@@ -1,119 +1,128 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 
 using Model;
 using static Utils;
 
-interface FileInput {
-    // Null if the file was not found.
-    Op<string> read(Path path);
+/**
+Stores the state of a previously-compiled program.
+This is 100% immutable.
+*/
+struct CompiledProgram {
+	internal readonly DocumentProvider documentProvider;
+	internal readonly Dict<Path, Module> modules;
+
+	internal CompiledProgram(DocumentProvider documentProvider, Dict<Path, Module> modules) {
+		this.documentProvider = documentProvider;
+		this.modules = modules;
+	}
 }
 
-sealed class NativeFileInput : FileInput {
-    readonly Path rootDir;
-    public NativeFileInput(Path rootDir) { this.rootDir = rootDir; }
+/*
+Design notes:
 
-    public Op<string> read(Path path) {
-        var fullPath = Path.resolveWithRoot(rootDir, path).ToString();
-        if (File.Exists(fullPath)) {
-            return Op.Some(File.ReadAllText(fullPath));
-        }
-        return Op<string>.None;
-    }
-}
-
-internal interface CompilerHost {
-    FileInput io { get; }
-}
-
-class DefaultCompilerHost : CompilerHost {
-    readonly FileInput _io;
-    internal DefaultCompilerHost(Path rootDir) {
-        this._io = new NativeFileInput(rootDir);
-    }
-
-    FileInput CompilerHost.io => _io;
-}
-
+We assume that there may be file system events that we don't know about.
+Therefore, we will always ask the CompileHost for the latest versions of all files.
+The CompilerHost may implement caching. (In a command-line scenario this should not be necessary.)
+Whether a document may be reused is indicated by its version vs the version the compiler used.
+*/
 sealed class Compiler {
-    readonly CompilerHost host;
-    readonly IDictionary<Path, Module> modules = new Dictionary<Path, Module>();
-    //todo: classloader
+	readonly DocumentProvider documentProvider;
+	readonly Op<CompiledProgram> oldProgram;
+	// Keys are logical paths.
+	readonly Dictionary<Path, ModuleState> modules = new Dictionary<Path, ModuleState>();
 
-    internal Compiler(CompilerHost host) {
-        this.host = host;
-    }
+	Compiler(DocumentProvider documentProvider, Op<CompiledProgram> oldProgram) { this.documentProvider = documentProvider; this.oldProgram = oldProgram; }
 
-    internal Ast.Module debugParse(Path path) {
-        var source = host.io.read(path).force;
-        return Parser.parseOrFail(path.last, source);
-    }
+	internal static Module compile(Path path, DocumentProvider documentProvider, Op<CompiledProgram> oldProgram, out CompiledProgram newProgram) {
+		oldProgram.each(o => { assert(o.documentProvider == documentProvider); });
+		var c = new Compiler(documentProvider, oldProgram);
+		var rootModule = c.compileSingle(Op<PathLoc>.None, path, out var rootIsReused);
+		newProgram = new CompiledProgram(documentProvider, c.modules.mapValues(o => o.module));
+		return rootModule;
+	}
 
-    internal Module compile(Path path) => compileSingle(null, path);
+	/**
+	isReused: true if this is the same module from the old program.
+	*/
+	Module compileSingle(Op<PathLoc> from, Path logicalPath, out bool isReused) {
+		if (modules.TryGetValue(logicalPath, out var alreadyCompiled)) {
+			switch (alreadyCompiled.kind) {
+				case ModuleState.Kind.Compiling:
+					//TODO: attach an error to the Module.
+					//raiseWithPath(logicalPath, fromLoc ?? Loc.zero, Err.CircularDependency(logicalPath));
+					throw new Exception($"Circular dependency around {logicalPath}");
 
-    Module compileSingle(PathLoc? from, Path logicalPath) {
-        if (modules.TryGetValue(logicalPath, out var alreadyCompiled)) {
-            if (!alreadyCompiled.importsAreResolved)
-                //TODO: attach an error to the Module.
-                //raiseWithPath(logicalPath, fromLoc ?? Loc.zero, Err.CircularDependency(logicalPath));
-                throw new Exception($"Circular dependency around {logicalPath}");
-            return alreadyCompiled;
-        }
+				case ModuleState.Kind.CompiledFresh:
+				case ModuleState.Kind.CompiledReused:
+					// Already compiled in the new program.
+					// This can happen if the same module is a dependency of two other modules.
+					isReused = alreadyCompiled.kind == ModuleState.Kind.CompiledReused;
+					return alreadyCompiled.module;
 
-        var module = resolveModule(host.io, from, logicalPath);
+				default:
+					throw unreachable();
+			}
+		} else {
+			//Must make a mark in modules *before* compiling dependencies!
+			modules.Add(logicalPath, ModuleState.compiling);
+			var module = doCompileSingle(from, logicalPath, out isReused);
+			modules[logicalPath] = ModuleState.compiled(module, isReused);
+			return module;
+		}
+	}
 
-        //TODO: catch error and add it to the module, then don't do the rest.
-        var moduleName = logicalPath.last;
-        var ast = Parser.parseOrFail(moduleName, module.source);
-        var imports = ast.imports.map(import => {
-            var fromPath = module.fullPath;
-            var fromHere = new PathLoc(module.fullPath, import.loc);
-            if (import is Ast.Module.Import.Global)
-                throw TODO();
-            var rel = (Ast.Module.Import.Relative) import;
-            return compileSingle(fromHere, fromPath.resolve(rel.path));
-        });
+	Module doCompileSingle(Op<PathLoc> from, Path logicalPath, out bool isReused) {
+		if (!ModuleResolver.getDocumentFromLogicalPath(documentProvider, from, logicalPath, out var fullPath, out var isMain, out var documentInfo)) {
+			throw TODO(); //TODO: return Either<Module, CompileError> ?
+		}
 
-        module.imports = imports;
-        module.klass = Checker.checkClass(imports, ast.klass);
-        //TODO: also write bytecode!
-        return module;
-    }
+		var ast = documentInfo.parseResult.force(); // TODO: don't force
 
+		var allDependenciesReused = true;
+		var imports = ast.imports.map(import => {
+			var importedModule = compileSingle(Op.Some(new PathLoc(fullPath, import.loc)), importPath(fullPath, import), out var isImportReused);
+			allDependenciesReused = allDependenciesReused && isImportReused;
+			return importedModule;
+		});
 
-    static Module resolveModule(FileInput io, PathLoc? from, Path logicalPath) {
-        Op<Module> attempt(Path fullPath, bool isMain) =>
-            io.read(fullPath).map(source => new Module(logicalPath, isMain, source));
+		// We will only bother looking at the old module if all of our dependencies were safely reused.
+		// If oldModule doesn't exactly match, we'll ignore it completely.
+		if (allDependenciesReused && oldProgram.get(out var op) && op.modules.get(logicalPath, out var oldModule)) {
+			isReused = true;
+			return oldModule;
+		}
 
-        //var main = logicalPath.add(mainNz);
-        if (attempt(regularPath(logicalPath), false).get(out var res))
-            return res;
-        if (attempt(mainPath(logicalPath), true).get(out res))
-            return res;
+		isReused = false;
+		var klass = Checker.checkClass(imports, ast.klass, name: logicalPath.last);
+		return new Module(logicalPath, isMain, documentInfo, imports, klass);
+	}
 
-        var err = new Err.CantFindLocalModule(logicalPath);
-        //TODO: error handle better
-        if (from.HasValue) {
-            throw new Exception($"Error at {from}: {err}");
-        } else {
-            throw new Exception(err.ToString());
-        }
-    }
+	static Path importPath(Path importerPath, Ast.Module.Import import) {
+		var g = import as Ast.Module.Import.Global;
+		if (g != null)
+			throw TODO();
 
-    //kill
-    internal static Arr<Path> attemptedPaths(Path logicalPath) =>
-        Arr.of(regularPath(logicalPath), mainPath(logicalPath));
+		var rel = (Ast.Module.Import.Relative) import;
+		return importerPath.resolve(rel.path);
+	}
 
-    internal static Path fullPath(Path logicalPath, bool isMain) =>
-        isMain ? mainPath(logicalPath) : regularPath(logicalPath);
+	struct ModuleState {
+		internal readonly Op<Module> _module;
+		internal readonly Kind kind;
 
-    static Path regularPath(Path logicalPath) =>
-        logicalPath.addExtension(extension);
+		ModuleState(Op<Module> module, Kind kind) { this._module = module; this.kind = kind; }
 
-    static Path mainPath(Path logicalPath) =>
-        logicalPath.add(mainNz);
+		internal Module module => _module.force;
 
-    const string extension = ".nz";
-    static Sym mainNz = Sym.of($"main{extension}");
+		internal enum Kind {
+			CompiledReused,
+			CompiledFresh,
+			Compiling,
+			//Failed
+		}
+
+		internal static ModuleState compiling = new ModuleState(Op<Module>.None, Kind.Compiling);
+		internal static ModuleState compiled(Module module, bool isReused) => new ModuleState(Op.Some(module), isReused ? Kind.CompiledReused : Kind.CompiledFresh);
+	}
 }

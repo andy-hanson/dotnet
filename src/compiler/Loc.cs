@@ -40,6 +40,7 @@ struct LineAndColumnLoc {
 	public override string ToString() => $"{start}-{end}";
 }
 
+/** Lets us quickly convert a position to a line and column. */
 struct LineColumnGetter {
 	readonly Arr<uint> lineToPos;
 

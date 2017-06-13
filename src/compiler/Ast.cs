@@ -29,12 +29,10 @@ namespace Ast {
 	}
 
 	sealed class Klass : Node {
-		internal readonly Sym name;
 		internal readonly Head head;
 		internal readonly Arr<Member> members;
 
-		internal Klass(Loc loc, Sym name, Head head, Arr<Member> members) : base(loc) {
-			this.name = name;
+		internal Klass(Loc loc, Head head, Arr<Member> members) : base(loc) {
 			this.head = head;
 			this.members = members;
 		}

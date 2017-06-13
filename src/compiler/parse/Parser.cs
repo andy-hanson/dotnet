@@ -5,19 +5,19 @@ using static Utils;
 using Pos = System.UInt32;
 
 sealed class Parser : Lexer {
-	internal static Either<Ast.Module, CompileError> parse(Sym name, string source) {
+	internal static Either<Ast.Module, CompileError> parse(string source) {
 		try {
-			return Either<Ast.Module, CompileError>.Left(parseOrFail(name, source));
+			return Either<Ast.Module, CompileError>.Left(parseOrFail(source));
 		} catch (ParserExit e) {
 			return Either<Ast.Module, CompileError>.Right(e.err);
 		}
 	}
 
-	internal static Ast.Module parseOrFail(Sym name, string source) => new Parser(source).parseModule(name);
+	static Ast.Module parseOrFail(string source) => new Parser(source).parseModule();
 
 	Parser(string source) : base(source) {}
 
-	Ast.Module parseModule(Sym name) {
+	Ast.Module parseModule() {
 		var start = pos;
 		var kw = takeKeyword();
 
@@ -32,7 +32,7 @@ sealed class Parser : Lexer {
 			imports = Arr.empty<Ast.Module.Import>();
 		}
 
-		var klass = parseClass(name, classStart, nextKw);
+		var klass = parseClass(classStart, nextKw);
 		return new Ast.Module(locFrom(start), imports, klass);
 	}
 
@@ -58,10 +58,10 @@ sealed class Parser : Lexer {
 			: (Ast.Module.Import) new Ast.Module.Import.Relative(loc, new RelPath(leadingDots, path)));
 	}
 
-	Ast.Klass parseClass(Sym name, Pos start, Token kw) {
+	Ast.Klass parseClass(Pos start, Token kw) {
 		var head = parseHead(start, kw);
 		var members = buildUntilNull(parseMember);
-		return new Ast.Klass(locFrom(start), name, head, members);
+		return new Ast.Klass(locFrom(start), head, members);
 	}
 
 	Ast.Klass.Head parseHead(Pos start, Token kw) {

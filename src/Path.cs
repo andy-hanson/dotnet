@@ -16,6 +16,9 @@ struct Path : IEquatable<Path> {
 	internal static Path from(params string[] elements) =>
 		new Path(elements.map(Sym.of));
 
+	internal static Path fromString(string str) =>
+		new Path(str.Split('/').map(Sym.of));
+
 	internal Path resolve(RelPath rel) {
 		var nPartsToKeep = parts.length - rel.nParents;
 		if (nPartsToKeep < 0)
@@ -37,6 +40,9 @@ struct Path : IEquatable<Path> {
 	}
 
 	internal bool isEmpty => parts.isEmpty;
+
+	/** For "a/b/c", this is "b". */
+	internal Sym nameOfContainingDirectory => parts[parts.length - 1];
 
 	internal Path directory() => new Path(parts.rtail());
 
