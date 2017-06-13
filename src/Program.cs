@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Reflection;
 using System.Reflection.Emit;
+//using Xunit;
 //dotnet add package System.Runtime
 //dotnet add package System.Runtime.Loader
 //dotnet add package System.Reflection.Emit
 //dotnet add package System.Collections.Immutable
-//dotnet add package AustinHarris.JsonRpc
-	//TODO: remove that.
+
 using Lsp;
 using Json;
 
