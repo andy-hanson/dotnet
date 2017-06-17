@@ -1,0 +1,4 @@
+static
+
+fun Void foo()
+	pass

@@ -1,0 +1,11 @@
+Klass(
+  loc: 0-29,
+  head: Static(
+    loc: 0-8),
+  membersMap: Dict<Sym, Member>(
+    foo: MethodWithBody(
+      loc: 8-29,
+      isStatic: true,
+      returnTy: "Void",
+      name: "foo",
+      parameters: [])))
