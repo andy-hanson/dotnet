@@ -4,28 +4,16 @@
    // For further information visit https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md
    "version": "0.2.0",
    "configurations": [
-        /*{
-            "name": "Launch Cli",
-            "type": "coreclr",
-            "request": "launch",
-            "preLaunchTask": "build cli",
-            // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceRoot}/Cli/bin/Debug/netcoreapp2.0/Cli.dll",
-            "args": [],
-            "cwd": "${workspaceRoot}/Cli",
-            // For more information about the 'console' field, see https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md#console-terminal-window
-            "console": "internalConsole",
-            "stopAtEntry": false,
-            "internalConsoleOptions": "openOnSessionStart"
-        },*/
         {
-            "name": "Launch Test",
+            "name": "Launch",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceRoot}/Test/bin/Debug/netcoreapp2.0/Test.dll",
+            // If you have changed target frameworks, make sure to update the program path.
+            "program": "${workspaceRoot}/bin/Debug/netcoreapp2.0/dotnet.dll",
             "args": [],
-            "cwd": "${workspaceRoot}/Test",
+            "cwd": "${workspaceRoot}",
+            // For more information about the 'console' field, see https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md#console-terminal-window
             "console": "internalConsole",
             "stopAtEntry": false,
             "internalConsoleOptions": "openOnSessionStart"
