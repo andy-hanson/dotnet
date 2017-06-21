@@ -78,7 +78,7 @@ sealed class Compiler {
 	}
 
 	(Module, bool isReused) doCompileSingle(Op<PathLoc> from, Path logicalPath) {
-		if (!ModuleResolver.getDocumentFromLogicalPath(documentProvider, from, logicalPath, out var fullPath, out var isMain, out var documentInfo)) {
+		if (!ModuleResolver.getDocumentFromLogicalPath(documentProvider, from, logicalPath, out var fullPath, out var isIndex, out var documentInfo)) {
 			throw TODO(); //TODO: return Either<Module, CompileError> ?
 		}
 
@@ -97,11 +97,11 @@ sealed class Compiler {
 			return (oldModule, isReused: true);
 		}
 
-		var module = new Module(logicalPath, isMain, documentInfo, imports);
-		module.klass = Checker.checkClass(module, imports, ast.klass, name: logicalPath.opLast.or(() => symMain));
+		var module = new Module(logicalPath, isIndex, documentInfo, imports);
+		module.klass = Checker.checkClass(module, imports, ast.klass, name: logicalPath.opLast.or(() => symIndex));
 		return (module, isReused: false);
 	}
-	static readonly Sym symMain = Sym.of("main");
+	static readonly Sym symIndex = Sym.of("index");
 
 	static Path importPath(Path importerPath, Ast.Module.Import import) {
 		switch (import) {

@@ -46,6 +46,7 @@ struct Path : ToData<Path>, IEquatable<Path> {
 	}
 
 	internal Path add(Sym next) => new Path(parts.rcons(next));
+	internal Path add(Sym next, Sym nextNext) => new Path(parts.rcons(next, nextNext));
 
 	internal Path parent() => new Path(parts.rtail());
 

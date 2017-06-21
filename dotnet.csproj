@@ -4,6 +4,9 @@
     <TargetFramework>netcoreapp2.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Jint" Version="3.0.0-beta" />
+    <PackageReference Include="Jurassic" Version="2.2.1" />
+    <PackageReference Include="NiL.JS.NetCore" Version="2.4.1056" />
     <PackageReference Include="System.Reflection.Emit" Version="4.3.0" />
     <PackageReference Include="System.Runtime" Version="4.3.0" />
     <PackageReference Include="System.Runtime.Loader" Version="4.3.0" />

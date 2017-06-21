@@ -14,12 +14,36 @@ class TestAttribute : Attribute {}
 
 class Program {
 	static void Main(string[] _) {
-		TestCompile.runCompilerTest(Path.from("1"));
+		var engine = new Jint.Engine();
+		try {
+			var x = JsRunner.evalScript(engine, Path.from("tests", "dummy.js"));
+			Console.WriteLine(x);
+		} catch (Jint.Runtime.JavaScriptException e) {
+			var line = e.LineNumber;
+			var col = e.Column;
+			Console.WriteLine($"Error at {line}:{col}: {e.Message}\n{e.StackTrace}");
+		}
+
+		//testNil();
+		//testJint2();
+
+		//TestCompile.runCompilerTest(Path.from("1"));
 		//TestCompile.runAllCompilerTests();
 
 		//var (stdout, stderr) = execJs("test.js");
 		//Console.WriteLine($"stdout: {stdout}");
 		//Console.WriteLine($"stderr: {stderr}");
+	}
+
+	static void testNil() {
+		var context = new NiL.JS.Core.Context();
+		context.Eval(@"() => 1");
+	}
+
+	static void testJurassic() {
+		var engine = new Jurassic.ScriptEngine();
+		// Crash! Method not found: 'System.Reflection.Emit.AssemblyBuilder System.AppDomain.DefineDynamicAssembly...
+		Console.WriteLine(engine.Evaluate("5 * 10 + 2"));
 	}
 
 	static (string stdout, string stderr) execJs(string scriptName) {

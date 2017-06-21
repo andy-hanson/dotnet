@@ -1,36 +1,30 @@
 static class ModuleResolver {
-	internal static bool getDocumentFromLogicalPath(DocumentProvider dp, Op<PathLoc> from, Path logicalPath, out Path fullPath, out bool isMain, out DocumentInfo di) {
-		isMain = false;
+	internal static bool getDocumentFromLogicalPath(DocumentProvider dp, Op<PathLoc> from, Path logicalPath, out Path fullPath, out bool isIndex, out DocumentInfo di) {
+		isIndex = false;
 		fullPath = regularPath(logicalPath);
 		if (dp.getDocument(fullPath).get(out di))
 			return true;
 
-		isMain = true;
-		fullPath = mainPath(logicalPath);
+		isIndex = true;
+		fullPath = indexPath(logicalPath);
 		if (dp.getDocument(fullPath).get(out di))
 			return true;
 
 		return false;
 	}
 
-	/*internal static Sym nameFromPath(Path path) {
-		var last = path.last;
-		assert(last.str.EndsWith(extension));
-		return last == mainNz ? path.nameOfContainingDirectory : last;
-	}*/
-
 	internal static Arr<Path> attemptedPaths(Path logicalPath) =>
-		Arr.of(regularPath(logicalPath), mainPath(logicalPath));
+		Arr.of(regularPath(logicalPath), indexPath(logicalPath));
 
-	internal static Path fullPath(Path logicalPath, bool isMain) =>
-		isMain ? mainPath(logicalPath) : regularPath(logicalPath);
+	internal static Path fullPath(Path logicalPath, bool isIndex) =>
+		isIndex ? indexPath(logicalPath) : regularPath(logicalPath);
 
 	static Path regularPath(Path logicalPath) =>
 		logicalPath.addExtension(extension);
 
-	static Path mainPath(Path logicalPath) =>
-		logicalPath.add(mainNz);
+	static Path indexPath(Path logicalPath) =>
+		logicalPath.add(indexNz);
 
 	internal const string extension = ".nz";
-	static Sym mainNz = Sym.of($"main{extension}");
+	static Sym indexNz = Sym.of($"index{extension}");
 }

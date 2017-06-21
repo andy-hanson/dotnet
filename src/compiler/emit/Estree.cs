@@ -94,8 +94,10 @@ namespace Estree {
 			this.declarations = declarations;
 			this.kind = kind;
 		}
-		internal static VariableDeclaration constant(Loc loc, Pattern id, Expression init) =>
-			new VariableDeclaration(loc, Arr.of(new VariableDeclarator(loc, id, Op.Some(init))), "const");
+		internal static VariableDeclaration var(Loc loc, Identifier id, Expression init) =>
+			new VariableDeclaration(loc, Arr.of(new VariableDeclarator(loc, id, Op.Some(init))), "var");
+		internal static VariableDeclaration var(Loc loc, Sym id, Expression init) =>
+			var(loc, new Identifier(loc, id), init);
 	}
 
 	sealed class VariableDeclarator : Node {
@@ -120,6 +122,10 @@ namespace Estree {
 			this.property = property;
 			this.computed = false;
 		}
+		internal static MemberExpression simple(Loc loc, Sym left, Sym right) =>
+			new MemberExpression(loc, new Identifier(loc, left), new Identifier(loc, right));
+		internal static MemberExpression simple(Loc loc, Sym a, Sym b, Sym c) =>
+			new MemberExpression(loc, new MemberExpression(loc, new Identifier(loc, a), new Identifier(loc, b)), new Identifier(loc, c));
 	}
 
 	sealed class ConditionalExpression : Node, Expression {
@@ -148,6 +154,22 @@ namespace Estree {
 
 	sealed class NewExpression : CallOrNewExpression {
 		internal NewExpression(Loc loc, Expression callee, Arr<Expression> arguments) : base(loc, callee, arguments) {}
+	}
+
+	sealed class ObjectExpression : Node, Expression {
+		internal readonly Arr<Property> properties;
+		internal ObjectExpression(Loc loc, Arr<Property> properties) : base(loc) { this.properties = properties; }
+	}
+
+	sealed class Property : Node {
+		internal readonly Identifier key;
+		internal readonly Expression value;
+		internal readonly string kind; // "init" | "get" | "set"
+		internal Property(Loc loc, Identifier key, Expression value, string kind) : base(loc) {
+			this.key = key;
+			this.value = value;
+			this.kind = kind;
+		}
 	}
 
 	abstract class Class : Node {

@@ -15,7 +15,9 @@ class JsEmitter {
 		foreach (var import in m.imports)
 			body.add(emitImport(m, import));
 
-		body.add(moduleExportsEquals(emitClass(m.klass)));
+		emitClass(body, m.klass);
+
+		body.add(moduleExportsEquals(new Estree.Identifier(m.klass.loc, m.klass.name)));
 
 		return new Estree.Program(Loc.zero, body.finish());
 	}
@@ -30,7 +32,7 @@ class JsEmitter {
 		var relPath = importer.fullPath().relTo(imported.fullPath());
 		Estree.Expression required = new Estree.Literal(loc, new Expr.Literal.LiteralValue.Str(relPath.ToString()));
 		var require = new Estree.CallExpression(loc, requireId, Arr.of(required));
-		return Estree.VariableDeclaration.constant(loc, new Estree.Identifier(loc, imported.name), require);
+		return Estree.VariableDeclaration.var(loc, imported.name, require);
 	}
 
 	static readonly Estree.MemberExpression moduleExports = new Estree.MemberExpression(Loc.zero, baseId("module"), baseId("exports"));
@@ -39,17 +41,33 @@ class JsEmitter {
 			Loc.zero,
 			new Estree.AssignmentExpression(Loc.zero, moduleExports, e));
 
-	static Estree.ClassExpression emitClass(Klass klass) {
-		var methods = klass.methods.map(emitMethod);
-		var body = new Estree.ClassBody(klass.loc, methods);
-		return new Estree.ClassExpression(klass.loc, new Estree.Identifier(klass.loc, klass.name), Op<Estree.Expression>.None, body);
+	static void emitClass(Arr.Builder<Estree.Statement> body, Klass klass) {
+		if (klass.head is Klass.Head.Static) {
+			//var cls = {};
+			body.add(Estree.VariableDeclaration.var(klass.loc, klass.name, new Estree.ObjectExpression(klass.loc, Arr.empty<Estree.Property>())));
+		} else {
+			//function cls() {}
+			//TODO: need to assign to slots.
+			throw TODO();
+			//new Estree.FunctionDeclaration(klass.loc, new Estree.Identifier(klass.loc, klass.name), Arr.empty<Estree.Pattern>(), body);
+		}
+
+		foreach (var method in  klass.methods)
+			body.add(emitMethod(klass.name, method));
+
+		//var body = new Estree.ClassBody(klass.loc, methods);
+		//return new Estree.ClassExpression(klass.loc, new Estree.Identifier(klass.loc, klass.name), Op<Estree.Expression>.None, body);
 	}
 
-	static Estree.MethodDefinition emitMethod(Method.MethodWithBody method) {
-		var pms = method.parameters.map(emitParameter);
+	static readonly Sym symPrototype = Sym.of("prototype");
+	static Estree.Statement emitMethod(Sym klassName, Method.MethodWithBody method) {
 		var body = exprToBlockStatement(method.body);
-		var fn = new Estree.FunctionExpression(method.loc, pms, body);
-		return new Estree.MethodDefinition(method.loc, new Estree.Identifier(method.loc, method.name), fn, "method", method.isStatic);
+		var fn = new Estree.FunctionExpression(method.loc, method.parameters.map(emitParameter), body);
+		var loc = method.loc;
+		var lhs = method.isStatic
+			? Estree.MemberExpression.simple(loc, klassName, method.name)
+			: Estree.MemberExpression.simple(loc, klassName, symPrototype, method.name);
+		return new Estree.ExpressionStatement(loc, new Estree.AssignmentExpression(loc, lhs, fn));
 	}
 
 	static Estree.Pattern emitParameter(Method.Parameter p) => new Estree.Identifier(p.loc, p.name);
@@ -62,7 +80,7 @@ class JsEmitter {
 			switch (expr) {
 				case Expr.Let l:
 					var x = (Pattern.Single) l.assigned; // TODO: handle other patterns
-					parts.add(Estree.VariableDeclaration.constant(loc, new Estree.Identifier(x.loc, x.name), exprToExpr(l.value)));
+					parts.add(Estree.VariableDeclaration.var(loc, new Estree.Identifier(x.loc, x.name), exprToExpr(l.value)));
 					expr = l.then;
 					break;
 				case Expr.Seq s:

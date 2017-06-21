@@ -32,7 +32,7 @@ interface SourceMapSource {
 	//uint skipTrivia(uint pos);
 }
 
-struct SourceMapData { //kill
+/*struct SourceMapData { //kill
 	internal readonly string sourceMapFilePath;           // Where the sourcemap file is written
 	internal readonly string jsSourceMappingURL;          // source map URL written in the .js file
 	internal readonly string sourceMapFile;               // Source map's file field - .js file name
@@ -42,7 +42,7 @@ struct SourceMapData { //kill
 	internal readonly Arr<string> inputSourceFileNames;      // Input source file (which one can use on program to get the file), 1:1 mapping with the sourceMapSources list
 	//internal readonly Op<Arr<string>> sourceMapNames;           // Source map's names field - list of names that can be indexed in this source map
 	internal readonly string sourceMapMappings;           // Source map's mapping field - encoded source map spans
-}
+}*/
 
 struct SourceMapDataBuilder {
 	internal  string sourceMapFilePath;           // Where the sourcemap file is written
@@ -91,8 +91,7 @@ struct SourceMap : ToData<SourceMap> {
 
 class SourceMapWriter {
 	readonly EmitTextWriter writer;
-	SourceMapSource currentSource;
-	string currentSourceText;
+	SourceMapSource currentSource; // TODO: write to!
 	readonly string sourceMapDir;
 
 	Op<SourceMapSpan> lastRecordedSourceMapSpan;
@@ -102,6 +101,10 @@ class SourceMapWriter {
 
 	internal SourceMapWriter(EmitTextWriter writer, Path filePath, string fileText, string sourceMapFilePath, Estree.Program sourceFile) {
 		this.writer = writer;
+
+		currentSource = null;
+		if (Math.Abs(1) == 1) throw TODO();
+
 		//currentSource = null; //!
 		//currentSourceText = null; //!
 

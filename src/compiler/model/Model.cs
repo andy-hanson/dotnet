@@ -14,12 +14,12 @@ namespace Model {
 	sealed class Module : M, ToData<Module>, Identifiable<Path> {
 		/**
 		For "a.nz" this is "a".
-		For "a/main.nz" this is still "a".
-		The difference is indicated by `isMain`.
+		For "a/index.nz" this is still "a".
+		The difference is indicated by `isIndex`.
 		Use `fullPath` to get the full path.
 		*/
 		internal readonly Path logicalPath;
-		internal readonly bool isMain;
+		internal readonly bool isIndex;
 		internal readonly DocumentInfo document;
 		// Technically these form a tree and thus aren't up-pointers, but don't want to serialize imports when serializing a module.
 		[UpPointer] internal readonly Arr<Module> imports;
@@ -34,27 +34,27 @@ namespace Model {
 		//TODO: does this belong here? Or somewhere else?
 		[NotData] internal readonly LineColumnGetter lineColumnGetter;
 
-		internal Module(Path logicalPath, bool isMain, DocumentInfo document, Arr<Module> imports) {
+		internal Module(Path logicalPath, bool isIndex, DocumentInfo document, Arr<Module> imports) {
 			this.logicalPath = logicalPath;
-			this.isMain = isMain;
+			this.isIndex = isIndex;
 			this.document = document;
 			this.imports = imports;
 			this.lineColumnGetter = new LineColumnGetter(document.text);
 		}
 
-		internal Path fullPath() => ModuleResolver.fullPath(logicalPath, isMain);
+		internal Path fullPath() => ModuleResolver.fullPath(logicalPath, isIndex);
 		internal Sym name => klass.name;
 
 		public bool deepEqual(Module m) =>
 			logicalPath.Equals(m.logicalPath) &&
-			isMain == m.isMain &&
+			isIndex == m.isIndex &&
 			document.Equals(m.document) &&
 			imports.deepEqual(m.imports, IdentifiableU.equalsId<Module, Path>) &&
 			klass.Equals(m.klass);
 
 		public Dat toDat() => Dat.of(this,
 			nameof(logicalPath), logicalPath,
-			nameof(isMain), Dat.boolean(isMain),
+			nameof(isIndex), Dat.boolean(isIndex),
 			nameof(document), document,
 			nameof(imports), Dat.arr(imports),
 			nameof(klass), klass);

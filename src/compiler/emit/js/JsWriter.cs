@@ -128,9 +128,35 @@ class JsWriter : EmitTextWriter {
 			case Estree.AssignmentExpression ae:
 				writeAssignmentExpression(ae);
 				break;
+			case Estree.ObjectExpression o:
+				writeObjectExpression(o);
+				break;
 			default:
 				throw unreachable();
 		}
+	}
+
+	void writeObjectExpression(Estree.ObjectExpression o) {
+		if (o.properties.isEmpty) {
+			writeRaw("{}");
+			return;
+		}
+
+		writeRaw('{');
+		indent++;
+		foreach (var prop in o.properties) {
+			writeLine();
+			writeProperty(prop);
+		}
+		doDedent();
+		writeRaw('}');
+	}
+
+	void writeProperty(Estree.Property p) {
+		writeId(p.key);
+		writeRaw(": ");
+		writeExpr(p.value);
+		writeRaw(',');
 	}
 
 	void writeMember(Estree.MemberExpression m) {

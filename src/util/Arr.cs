@@ -53,6 +53,15 @@ struct Arr<T> {
         return new Arr<T>(b);
     }
 
+    internal Arr<T> rcons(T next, T nextNext) {
+        var b = new T[length + 2];
+        for (uint i = 0; i < length; i++)
+            b[i] = this[i];
+        b[length] = next;
+        b[length + 1] = nextNext;
+        return new Arr<T>(b);
+    }
+
     internal Arr<T> rtail() => slice(0, length - 1);
     internal Arr<T> tail() => slice(1);
 

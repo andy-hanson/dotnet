@@ -45,7 +45,7 @@ static class TestCompile {
 		//var x = CsonWriter.write(program);
 		//var moduleAst = new Ast.Module()
 		//var document = new DocumentInfo("static\n\nfun Void foo()\n\tpass\n", 1, Either<Module, CompileError>.Left(moduleAst))
-		//var moduleA = new Module(Path.from("A"), isMain: false, document: document, klass: klass);
+		//var moduleA = new Module(Path.from("A"), isIndex: false, document: document, klass: klass);
 		//var expected = new CompiledProgram(host, Dict.of(Sym.of("A"), moduleA));
 
 		//Console.WriteLine(x);

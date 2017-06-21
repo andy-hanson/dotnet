@@ -1,3 +1,3 @@
-module.exports = class main {
-	static foo() {}
-};
+var main = {};
+main.foo = function () {};
+module.exports = main;
