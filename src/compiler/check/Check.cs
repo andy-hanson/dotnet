@@ -82,11 +82,17 @@ class Checker {
 		klass.setMembersMap(new Dict<Sym, Member>(b));
 
 		// Now that all members exist, fill in the body of each member.
-		klass.methods = ast.members.zip(emptyMembers, (memberAst, member) => {
-			var methodAst = (Ast.Member.Method) memberAst; //TODO: other kinds
-			var method = (Method.MethodWithBody) member; //similarly, TODO
-			method.body = MethodChecker.checkMethod(baseScope, method, methodAst.body);
-			return method;
+		klass.methods = ast.members.zip<Member, Method>(emptyMembers, (memberAst, member) => {
+			switch (memberAst) {
+				case Ast.Member.Method methodAst:
+					var method = (Method.MethodWithBody) member;
+					method.body = MethodChecker.checkMethod(baseScope, method, methodAst.body);
+					return method;
+				case Ast.Member.AbstractMethod _:
+					return (Method.AbstractMethod) member;
+				default:
+					throw unreachable();
+			}
 		});
 
 		return klass;
@@ -95,8 +101,12 @@ class Checker {
 	Klass.Head checkHead(Klass klass, Ast.Klass.Head ast, Action<Member> addMember) {
 		var loc = ast.loc;
 		switch (ast) {
-			case Ast.Klass.Head.Static staticAst:
+			case Ast.Klass.Head.Static _:
 				return new Klass.Head.Static(loc);
+
+			case Ast.Klass.Head.Abstract _:
+				return new Klass.Head.Abstract(loc);
+
 
 			case Ast.Klass.Head.Slots slotsAst:
 				var slots = slotsAst.slots.map(var =>
@@ -111,12 +121,21 @@ class Checker {
 	}
 
 	Member emptyMember(Klass klass, Ast.Member ast) {
-		var mAst = (Ast.Member.Method) ast;
-		var parameters = mAst.parameters.map((p, index) =>
-			new Method.Parameter(p.loc, baseScope.getTy(p.ty), p.name, index));
-		return new Method.MethodWithBody(
-			klass, mAst.loc, mAst.isStatic, baseScope.getTy(mAst.returnTy), mAst.name, parameters);
+		switch (ast) {
+			case Ast.Member.Method m:
+				return new Method.MethodWithBody(
+					klass, m.loc, m.isStatic, baseScope.getTy(m.returnTy), m.name, getParams(m.parameters));
+			case Ast.Member.AbstractMethod a:
+				return new Method.AbstractMethod(
+					klass, a.loc, baseScope.getTy(a.returnTy), a.name, getParams(a.parameters));
+			default:
+				throw unreachable();
+		}
 	}
+
+	Arr<Method.Parameter> getParams(Arr<Ast.Member.Parameter> pms) =>
+		pms.map((p, index) =>
+			new Method.Parameter(p.loc, baseScope.getTy(p.ty), p.name, index));
 }
 
 class MethodChecker {
@@ -276,7 +295,7 @@ class MethodChecker {
 		var method = (Method) member; //TODO: error handling
 		if (method.isStatic) throw TODO();
 		var args = checkCall(loc, method, argAsts);
-		var call = new Expr.MethodCall(loc, target, method, args);
+		var call = new Expr.InstanceMethodCall(loc, target, method, args);
 		return handle(ref expected, loc, call);
 	}
 

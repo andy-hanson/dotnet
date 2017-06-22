@@ -43,5 +43,5 @@ class Either<L, R> {
 
 static class EitherU {
 	internal static bool deepEq<L, R>(this Either<L, R> a, Either<L, R> b) where L : DeepEqual<L> where R : DeepEqual<R> =>
-		a.isLeft ? b.isLeft && a.left.Equals(b.left) : b.isRight && a.right.Equals(b.right);
+		a.isLeft ? b.isLeft && a.left.deepEqual(b.left) : b.isRight && a.right.deepEqual(b.right);
 }

@@ -7,7 +7,7 @@ struct PathLoc : ToData<PathLoc> {
 
 	public override bool Equals(object o) => throw new NotImplementedException();
 	public override int GetHashCode() => throw new NotImplementedException();
-	public bool deepEqual(PathLoc p) => path.Equals(p.path) && loc.Equals(p.loc);
+	public bool deepEqual(PathLoc p) => path.deepEqual(p.path) && loc.deepEqual(p.loc);
 	public Dat toDat() => Dat.of(this, nameof(path), path, nameof(loc), loc);
 }
 
@@ -62,7 +62,7 @@ struct LineAndColumnLoc : ToData<LineAndColumnLoc> {
 	public override string ToString() => $"{start}-{end}";
 	public override bool Equals(object o) => throw new NotImplementedException();
 	public override int GetHashCode() => throw new NotImplementedException();
-	public bool deepEqual(LineAndColumnLoc l) => start.Equals(l.start) && end.Equals(l.end);
+	public bool deepEqual(LineAndColumnLoc l) => start.deepEqual(l.start) && end.deepEqual(l.end);
 	public Dat toDat() => Dat.of(this, nameof(start), end, nameof(end), end);
 }
 

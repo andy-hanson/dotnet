@@ -47,9 +47,9 @@ sealed class Parser : Lexer {
 		uint leadingDots = 0;
 		while (tryTakeDot()) leadingDots++;
 
-		var pathParts = Arr.builder<Sym>();
-		pathParts.add(takeName());
-		while (tryTakeDot()) pathParts.add(takeName());
+		var pathParts = Arr.builder<string>();
+		pathParts.add(takeNameString());
+		while (tryTakeDot()) pathParts.add(takeNameString());
 
 		var path = new Path(pathParts.finish());
 		var loc = locFrom(startPos);
@@ -111,53 +111,68 @@ sealed class Parser : Lexer {
 		if (atEOF) {
 			return Op<Ast.Member>.None;
 		}
+		return Op.Some<Ast.Member>(doParseMember());
+	}
 
+	Ast.Member doParseMember() {
 		var start = pos;
 		var next = takeKeyword();
-		bool isStatic;
 		switch (next) {
 			case Token.Fun:
-				isStatic = true;
-				break;
+				return parseMethodWithBody(start, isStatic: true);
 			case Token.Def:
-				isStatic = false;
-				break;
+				return parseMethodWithBody(start, isStatic: false);
+			case Token.Abstract:
+				return parseAbstractMethod(start);
 			default:
-				throw unexpected(start, "'fun' or 'def'", next);
+				throw unexpected(start, "'fun' or 'def' or 'abstract'", next);
 		}
+	}
 
+	Ast.Member.AbstractMethod parseAbstractMethod(Pos start) {
+		var (returnTy, name, parameters) = parseMethodHead();
+		takeNewline();
+		return new Ast.Member.AbstractMethod(locFrom(start), returnTy, name, parameters);
+	}
+
+	(Ast.Ty, Sym, Arr<Ast.Member.Parameter>) parseMethodHead() {
 		takeSpace();
 		var returnTy = parseTy();
 		takeSpace();
 		var name = takeName();
 		takeLparen();
-		Arr<Ast.Member.Method.Parameter> parameters;
+		Arr<Ast.Member.Parameter> parameters;
 		if (tryTakeRparen())
-			parameters = Arr.empty<Ast.Member.Method.Parameter>();
+			parameters = Arr.empty<Ast.Member.Parameter>();
 		else {
 			var first = parseJustParameter();
 			parameters = buildUntilNullWithFirst(first, parseParameter);
 		}
 
+		return (returnTy, name, parameters);
+	}
+
+	Ast.Member.Method parseMethodWithBody(Pos start, bool isStatic) {
+		var (returnTy, name, parameters) = parseMethodHead();
 		takeIndent();
 		var body = parseBlock();
-		return Op.Some<Ast.Member>(new Ast.Member.Method(locFrom(start), isStatic, returnTy, name, parameters, body));
+		return new Ast.Member.Method(locFrom(start), isStatic, returnTy, name, parameters, body);
 	}
 
 	Op<Ast.Member.Method.Parameter> parseParameter() {
 		if (tryTakeRparen())
-			return Op<Ast.Member.Method.Parameter>.None;
+			return Op<Ast.Member.Parameter>.None;
 		takeComma();
 		takeSpace();
 		return Op.Some(parseJustParameter());
 	}
 
-	Ast.Member.Method.Parameter parseJustParameter() {
+	Ast.Member.Parameter parseJustParameter() {
 		var start = pos;
 		var ty = parseTy();
 		takeSpace();
 		var name = takeName();
-		return new Ast.Member.Method.Parameter(locFrom(start), ty, name);
+		return new Ast.Member.Parameter(locFrom(start), ty, name);
 	}
 
 	Ast.Ty parseTy() {
@@ -277,6 +292,12 @@ sealed class Parser : Lexer {
 
 		while (true) {
 			switch (loopNext) {
+				case Token.Dot:
+					var name = takeName();
+					parts.setLast(new Ast.Expr.GetProperty(locFrom(loopStart), parts.last, name));
+					readAndLoop();
+					break;
+
 				case Token.Equals: {
 					var patternLoc = locFrom(loopStart);
 					if (ctx != Ctx.Line) throw TODO(); //diagnostic
@@ -293,8 +314,7 @@ sealed class Parser : Lexer {
 					if (parts.isEmpty)
 						throw TODO();
 					var left = finishRegular();
-					Ast.Expr right;
-					parseExpr(ctx, out right, out next);
+					parseExpr(ctx, out var right, out next);
 					expr = new Ast.Expr.OperatorCall(locFrom(exprStart), left, tokenSym, right);
 					return;
 				}
@@ -315,6 +335,14 @@ sealed class Parser : Lexer {
 					expr = finishRegular();
 					return;
 				}
+
+				case Token.Lparen:
+					if (parts.isEmpty)
+						throw TODO();
+					takeRparen();
+					parts.setLast(new Ast.Expr.Call(locFrom(loopStart), parts.last, Arr.empty<Ast.Expr>()));
+					readAndLoop();
+					break;
 
 				case Token.TyName: {
 					var className = tokenSym;
@@ -368,7 +396,6 @@ sealed class Parser : Lexer {
 			default:
 				throw TODO(); //diagnostic
 		}
-
 	}
 
 	Ast.Expr parseWhen(Pos startPos) {

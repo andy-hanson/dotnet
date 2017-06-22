@@ -1,0 +1,18 @@
+Module(
+  loc: 0-30,
+  imports: [],
+  klass: Klass(
+    loc: 0-30,
+    head: Static(
+      loc: 0-8),
+    members: [Method(
+      loc: 8-30,
+      isStatic: true,
+      returnTy: Access(
+        loc: 12-16,
+        name: "Void"),
+      name: "main",
+      parameters: [],
+      body: Literal(
+        loc: 25-29,
+        value: Pass()))]))

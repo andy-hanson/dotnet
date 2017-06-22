@@ -7,7 +7,7 @@ namespace Ast {
 		public override bool Equals(object o) => throw new NotImplementedException();
 		public override int GetHashCode() => throw new NotImplementedException();
 		public abstract bool deepEqual(Node n);
-		protected bool locEq(Node n) => loc.Equals(n.loc);
+		protected bool locEq(Node n) => loc.deepEqual(n.loc);
 		public abstract Dat toDat();
 	}
 
@@ -20,8 +20,8 @@ namespace Ast {
 			this.klass = klass;
 		}
 
-		public override bool deepEqual(Node n) => n is Module m && Equals(m);
-		public bool deepEqual(Module m) => locEq(m) && imports.deepEqual(m.imports) && klass.Equals(m.klass);
+		public override bool deepEqual(Node n) => n is Module m && deepEqual(m);
+		public bool deepEqual(Module m) => locEq(m) && imports.deepEqual(m.imports) && klass.deepEqual(m.klass);
 		public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(imports), Dat.arr(imports), nameof(klass), klass);
 
 		internal abstract class Import : Node, ToData<Import> {
@@ -31,8 +31,8 @@ namespace Ast {
 			internal sealed class Global : Import, ToData<Global> {
 				internal readonly Path path;
 				internal Global(Loc loc, Path path) : base(loc) { this.path = path; }
-				public override bool deepEqual(Node n) => n is Global g && Equals(g);
-				public override bool deepEqual(Import o) => o is Global g && Equals(g);
+				public override bool deepEqual(Node n) => n is Global g && deepEqual(g);
+				public override bool deepEqual(Import o) => o is Global g && deepEqual(g);
 				public bool deepEqual(Global g) => locEq(g) && path == g.path;
 				public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(path), path);
 			}
@@ -40,8 +40,8 @@ namespace Ast {
 			internal sealed class Relative : Import, ToData<Relative> {
 				internal readonly RelPath path;
 				internal Relative(Loc loc, RelPath path) : base(loc) { this.path = path; }
-				public override bool deepEqual(Node n) => n is Relative r && Equals(r);
-				public override bool deepEqual(Import o) => o is Relative r && Equals(r);
+				public override bool deepEqual(Node n) => n is Relative r && deepEqual(r);
+				public override bool deepEqual(Import o) => o is Relative r && deepEqual(r);
 				public bool deepEqual(Relative r) => locEq(r) && path == r.path;
 				public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(path), path);
 			}
@@ -57,8 +57,8 @@ namespace Ast {
 			this.members = members;
 		}
 
-		public override bool deepEqual(Node n) => n is Klass k && Equals(k);
-		public bool deepEqual(Klass k) => locEq(k) && head.Equals(k.head) && members.Equals(k.members);
+		public override bool deepEqual(Node n) => n is Klass k && deepEqual(k);
+		public bool deepEqual(Klass k) => locEq(k) && head.deepEqual(k.head) && members.deepEqual(k.members);
 		public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(head), head, nameof(members), Dat.arr(members));
 
 		internal abstract class Head : Node, ToData<Head> {
@@ -68,14 +68,14 @@ namespace Ast {
 
 			internal sealed class Static : Head, ToData<Static> {
 				internal Static(Loc loc) : base(loc) {}
-				public override bool deepEqual(Node n) => n is Static s && Equals(s);
+				public override bool deepEqual(Node n) => n is Static s && deepEqual(s);
 				public bool deepEqual(Static s) => locEq(s);
 				public override Dat toDat() => Dat.of(this, nameof(loc), loc);
 			}
 
 			internal sealed class Abstract : Head, ToData<Abstract> {
 				internal Abstract(Loc loc) : base(loc) {}
-				public override bool deepEqual(Node n) => n is Abstract a && Equals(a);
+				public override bool deepEqual(Node n) => n is Abstract a && deepEqual(a);
 				public bool deepEqual(Abstract a) => locEq(a);
 				public override Dat toDat() => Dat.of(this, nameof(loc), loc);
 			}
@@ -84,7 +84,7 @@ namespace Ast {
 				internal readonly Arr<Slot> slots;
 				internal Slots(Loc loc, Arr<Slot> vars) : base(loc) { this.slots = vars; }
 
-				public override bool deepEqual(Node n) => n is Slots s && Equals(s);
+				public override bool deepEqual(Node n) => n is Slots s && deepEqual(s);
 				public bool deepEqual(Slots s) => locEq(s) && slots.deepEqual(s.slots);
 				public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(slots), Dat.arr(slots));
 
@@ -98,8 +98,8 @@ namespace Ast {
 						this.name = name;
 					}
 
-					public override bool deepEqual(Node n) => n is Slot s && Equals(s);
-					public bool deepEqual(Slot s) => locEq(s) && mutable == s.mutable && ty.Equals(s.ty) && name.Equals(s.name);
+					public override bool deepEqual(Node n) => n is Slot s && deepEqual(s);
+					public bool deepEqual(Slot s) => locEq(s) && mutable == s.mutable && ty.deepEqual(s.ty) && name.deepEqual(s.name);
 					public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(mutable), Dat.boolean(mutable), nameof(ty), ty, nameof(name), name);
 				}
 			}
@@ -110,7 +110,8 @@ namespace Ast {
 		internal readonly Sym name;
 		Member(Loc loc, Sym name) : base(loc) { this.name = name; }
 
-		public bool deepEqual(Member m) => Equals((Node) m);
+		public override bool deepEqual(Node n) => n is Member m && deepEqual(m);
+		public abstract bool deepEqual(Member m);
 
 		internal sealed class Method : Member, ToData<Method> {
 			internal readonly bool isStatic;
@@ -124,27 +125,56 @@ namespace Ast {
 				this.body = body;
 			}
 
-			public override bool deepEqual(Node n) => n is Method m && Equals(m);
+			public override bool deepEqual(Member m) => m is Method me && deepEqual(me);
 			public bool deepEqual(Method m) =>
 				locEq(m) &&
 				isStatic == m.isStatic &&
-				returnTy.Equals(m.returnTy) &&
+				returnTy.deepEqual(m.returnTy) &&
+				name.deepEqual(m.name) &&
 				parameters.deepEqual(m.parameters) &&
-				body.Equals(m.body);
-			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(isStatic), Dat.boolean(isStatic), nameof(returnTy), returnTy, nameof(parameters), Dat.arr(parameters), nameof(body), body);
+				body.deepEqual(m.body);
+			public override Dat toDat() => Dat.of(this,
+				nameof(loc), loc,
+				nameof(isStatic), Dat.boolean(isStatic),
+				nameof(returnTy), returnTy,
+				nameof(name), name,
+				nameof(parameters), Dat.arr(parameters),
+				nameof(body), body);
 
-			internal sealed class Parameter : Node, ToData<Parameter> {
-				internal readonly Ty ty;
-				internal readonly Sym name;
-				internal Parameter(Loc loc, Ty ty, Sym name) : base(loc) {
-					this.ty = ty;
-					this.name = name;
-				}
+		}
 
-				public override bool deepEqual(Node n) => n is Parameter p && Equals(p);
-				public bool deepEqual(Parameter p) => locEq(p) && ty.Equals(p.ty) && name.Equals(p.name);
-				public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(ty), ty, nameof(name), name);
+		internal sealed class AbstractMethod : Member, ToData<AbstractMethod> {
+			internal readonly Ty returnTy;
+			internal readonly Arr<Parameter> parameters;
+			internal AbstractMethod(Loc loc, Ty returnTy, Sym name, Arr<Parameter> parameters) : base(loc, name) {
+				this.returnTy = returnTy;
+				this.parameters = parameters;
 			}
+
+			public override bool deepEqual(Member m) => m is AbstractMethod a && deepEqual(a);
+			public bool deepEqual(AbstractMethod a) =>
+				locEq(a) &&
+				returnTy.deepEqual(a.returnTy) &&
+				name.deepEqual(a.name) &&
+				parameters.deepEqual(a.parameters);
+			public override Dat toDat() => Dat.of(this,
+				nameof(loc), loc,
+				nameof(returnTy), returnTy,
+				nameof(name), name,
+				nameof(parameters), Dat.arr(parameters));
+		}
+
+		internal sealed class Parameter : Node, ToData<Parameter> {
+			internal readonly Ty ty;
+			internal readonly Sym name;
+			internal Parameter(Loc loc, Ty ty, Sym name) : base(loc) {
+				this.ty = ty;
+				this.name = name;
+			}
+
+			public override bool deepEqual(Node n) => n is Parameter p && deepEqual(p);
+			public bool deepEqual(Parameter p) => locEq(p) && ty.deepEqual(p.ty) && name.deepEqual(p.name);
+			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(ty), ty, nameof(name), name);
 		}
 	}
 
@@ -156,8 +186,8 @@ namespace Ast {
 			internal readonly Sym name;
 			internal Access(Loc loc, Sym name) : base(loc) { this.name = name; }
 
-			public override bool deepEqual(Node n) => n is Access a && Equals(a);
-			public bool deepEqual(Access a) => locEq(a) && name.Equals(a.name);
+			public override bool deepEqual(Node n) => n is Access a && deepEqual(a);
+			public bool deepEqual(Access a) => locEq(a) && name.deepEqual(a.name);
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(name), name);
 		}
 
@@ -169,8 +199,8 @@ namespace Ast {
 				this.tyArgs = tyArgs;
 			}
 
-			public override bool deepEqual(Node n) => n is Inst i && Equals(i);
-			public bool deepEqual(Inst i) => locEq(i) && instantiated.Equals(i.instantiated) && tyArgs.deepEqual(i.tyArgs);
+			public override bool deepEqual(Node n) => n is Inst i && deepEqual(i);
+			public bool deepEqual(Inst i) => locEq(i) && instantiated.deepEqual(i.instantiated) && tyArgs.deepEqual(i.tyArgs);
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(instantiated), instantiated, nameof(tyArgs), Dat.arr(tyArgs));
 		}
 	}
@@ -184,8 +214,8 @@ namespace Ast {
 			internal readonly Sym name;
 			internal Access(Loc loc, Sym name) : base(loc) { this.name = name; }
 
-			public override bool deepEqual(Node n) => n is Access a && Equals(a);
-			public bool deepEqual(Access a) => locEq(a) && name.Equals(a.name);
+			public override bool deepEqual(Node n) => n is Access a && deepEqual(a);
+			public bool deepEqual(Access a) => locEq(a) && name.deepEqual(a.name);
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(name), name);
 		}
 
@@ -197,8 +227,8 @@ namespace Ast {
 				this.staticMethodName = staticMethodName;
 			}
 
-			public override bool deepEqual(Node n) => n is StaticAccess s && Equals(s);
-			public bool deepEqual(StaticAccess s) => locEq(s) && className.Equals(s.className) && staticMethodName.Equals(s.staticMethodName);
+			public override bool deepEqual(Node n) => n is StaticAccess s && deepEqual(s);
+			public bool deepEqual(StaticAccess s) => locEq(s) && className.deepEqual(s.className) && staticMethodName.deepEqual(s.staticMethodName);
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(className), className, nameof(staticMethodName), staticMethodName);
 		}
 
@@ -212,12 +242,12 @@ namespace Ast {
 				this.right = right;
 			}
 
-			public override bool deepEqual(Node n) => n is OperatorCall o && Equals(o);
+			public override bool deepEqual(Node n) => n is OperatorCall o && deepEqual(o);
 			public bool deepEqual(OperatorCall o) =>
 				locEq(o) &&
-				left.Equals(o.left) &&
-				oper.Equals(o.oper) &&
-				right.Equals(o.right);
+				left.deepEqual(o.left) &&
+				oper.deepEqual(o.oper) &&
+				right.deepEqual(o.right);
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(oper), oper, nameof(right), right);
 		}
 
@@ -229,8 +259,8 @@ namespace Ast {
 				this.args = args;
 			}
 
-			public override bool deepEqual(Node n) => n is Call c && Equals(c);
-			public bool deepEqual(Call c) => locEq(c) && target.Equals(c.target) && args.deepEqual(c.args);
+			public override bool deepEqual(Node n) => n is Call c && deepEqual(c);
+			public bool deepEqual(Call c) => locEq(c) && target.deepEqual(c.target) && args.deepEqual(c.args);
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(target), target, nameof(args), Dat.arr(args));
 		}
 
@@ -242,8 +272,8 @@ namespace Ast {
 				this.propertyName = propertyName;
 			}
 
-			public override bool deepEqual(Node n) => n is GetProperty g && Equals(g);
-			public bool deepEqual(GetProperty g) => locEq(g) && target.Equals(g.target) && propertyName.Equals(g.propertyName);
+			public override bool deepEqual(Node n) => n is GetProperty g && deepEqual(g);
+			public bool deepEqual(GetProperty g) => locEq(g) && target.deepEqual(g.target) && propertyName.deepEqual(g.propertyName);
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(target), target, nameof(propertyName), propertyName);
 		}
 
@@ -257,12 +287,12 @@ namespace Ast {
 				this.then = then;
 			}
 
-			public override bool deepEqual(Node n) => n is Let l && Equals(l);
+			public override bool deepEqual(Node n) => n is Let l && deepEqual(l);
 			public bool deepEqual(Let l) =>
 				locEq(l) &&
-				assigned.Equals(l.assigned) &&
-				value.Equals(l.value) &&
-				then.Equals(l.then);
+				assigned.deepEqual(l.assigned) &&
+				value.deepEqual(l.value) &&
+				then.deepEqual(l.then);
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(assigned), assigned, nameof(value), value, nameof(then), then);
 		}
 
@@ -274,8 +304,8 @@ namespace Ast {
 				this.then = then;
 			}
 
-			public override bool deepEqual(Node n) => n is Seq s && Equals(s);
-			public bool deepEqual(Seq s) => locEq(s) && first.Equals(s.first) && then.Equals(s.then);
+			public override bool deepEqual(Node n) => n is Seq s && deepEqual(s);
+			public bool deepEqual(Seq s) => locEq(s) && first.deepEqual(s.first) && then.deepEqual(s.then);
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(first), first, nameof(then), then);
 		}
 
@@ -283,15 +313,15 @@ namespace Ast {
 			internal readonly Model.Expr.Literal.LiteralValue value;
 			internal Literal(Loc loc, Model.Expr.Literal.LiteralValue value) : base(loc) { this.value = value; }
 
-			public override bool deepEqual(Node n) => n is Literal l && Equals(l);
-			public bool deepEqual(Literal l) => locEq(l) && value.Equals(l.value);
+			public override bool deepEqual(Node n) => n is Literal l && deepEqual(l);
+			public bool deepEqual(Literal l) => locEq(l) && value.deepEqual(l.value);
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(value), value);
 		}
 
 		internal sealed class Self : Expr, ToData<Self> {
 			internal Self(Loc loc) : base(loc) {}
 
-			public override bool deepEqual(Node n) => n is Self s && Equals(s);
+			public override bool deepEqual(Node n) => n is Self s && deepEqual(s);
 			public bool deepEqual(Self s) => locEq(s);
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc);
 		}
@@ -301,8 +331,8 @@ namespace Ast {
 			internal readonly Expr elseResult;
 			internal WhenTest(Loc loc, Arr<Case> cases, Expr elseResult) : base(loc) { this.cases = cases; this.elseResult = elseResult; }
 
-			public override bool deepEqual(Node n) => n is WhenTest w && Equals(w);
-			public bool deepEqual(WhenTest w) => locEq(w) && cases.deepEqual(w.cases) && elseResult.Equals(w.elseResult);
+			public override bool deepEqual(Node n) => n is WhenTest w && deepEqual(w);
+			public bool deepEqual(WhenTest w) => locEq(w) && cases.deepEqual(w.cases) && elseResult.deepEqual(w.elseResult);
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(cases), Dat.arr(cases), nameof(elseResult), elseResult);
 
 			internal struct Case : ToData<Case> {
@@ -311,7 +341,7 @@ namespace Ast {
 				internal readonly Expr result;
 				internal Case(Loc loc, Expr test, Expr result) { this.loc = loc; this.test = test; this.result = result; }
 
-				public bool deepEqual(Case c) => loc.Equals(c.loc) && test.Equals(c.test) && result.Equals(c.result);
+				public bool deepEqual(Case c) => loc.deepEqual(c.loc) && test.deepEqual(c.test) && result.deepEqual(c.result);
 				public Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(test), test, nameof(result), result);
 			}
 		}
@@ -324,7 +354,7 @@ namespace Ast {
 		internal sealed class Ignore : Pattern, ToData<Ignore> {
 			internal Ignore(Loc loc) : base(loc) {}
 
-			public override bool deepEqual(Node n) => n is Ignore i && Equals(i);
+			public override bool deepEqual(Node n) => n is Ignore i && deepEqual(i);
 			public bool deepEqual(Ignore i) => locEq(i);
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc);
 		}
@@ -333,8 +363,8 @@ namespace Ast {
 			internal readonly Sym name;
 			internal Single(Loc loc, Sym name) : base(loc) { this.name = name; }
 
-			public override bool deepEqual(Node n) => n is Single s && Equals(s);
-			public bool deepEqual(Single s) => locEq(s) && name.Equals(s.name);
+			public override bool deepEqual(Node n) => n is Single s && deepEqual(s);
+			public bool deepEqual(Single s) => locEq(s) && name.deepEqual(s.name);
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(name), name);
 		}
 
@@ -342,7 +372,7 @@ namespace Ast {
 			internal readonly Arr<Pattern> destructed;
 			internal Destruct(Loc loc, Arr<Pattern> destructed) : base(loc) { this.destructed = destructed; }
 
-			public override bool deepEqual(Node n) => n is Destruct d && Equals(d);
+			public override bool deepEqual(Node n) => n is Destruct d && deepEqual(d);
 			public bool deepEqual(Destruct d) => locEq(d) && destructed.deepEqual(d.destructed);
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(destructed), Dat.arr(destructed));
 		}

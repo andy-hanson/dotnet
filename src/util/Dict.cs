@@ -15,6 +15,13 @@ struct Dict<K, V> where K : IEquatable<K> {
 		return new Dict<K2, V>(b);
 	}
 
+	internal Arr<T> map<T>(Func<K, V, T> mapper) {
+		var b = Arr.builder<T>();
+		foreach (var pair in inner)
+			b.add(mapper(pair.Key, pair.Value));
+		return b.finish();
+	}
+
 	public Dictionary<K, V>.Enumerator GetEnumerator() => inner.GetEnumerator();
 
 	internal bool has(K k) => inner.ContainsKey(k);

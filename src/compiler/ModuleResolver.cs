@@ -26,5 +26,5 @@ static class ModuleResolver {
 		logicalPath.add(indexNz);
 
 	internal const string extension = ".nz";
-	static Sym indexNz = Sym.of($"index{extension}");
+	const string indexNz = "index.nz";
 }

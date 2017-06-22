@@ -1,0 +1,38 @@
+Module(
+  loc: 0-65,
+  imports: [],
+  klass: Klass(
+    loc: 0-65,
+    head: Abstract(
+      loc: 0-10),
+    members: [
+      AbstractMethod(
+        loc: 10-28,
+        returnTy: Access(
+          loc: 19-22,
+          name: "Int"),
+        name: "n",
+        parameters: []),
+      Method(
+        loc: 28-65,
+        isStatic: true,
+        returnTy: Access(
+          loc: 32-35,
+          name: "Int"),
+        name: "main",
+        parameters: [Parameter(
+          loc: 41-56,
+          ty: Access(
+            loc: 41-54,
+            name: "AbstractClass"),
+          name: "a")],
+        body: Call(
+          loc: 62-64,
+          target: GetProperty(
+            loc: 60-62,
+            target: Access(
+              loc: 59-60,
+              name: "a"),
+            propertyName: "n"),
+          args: []))
+    ]))

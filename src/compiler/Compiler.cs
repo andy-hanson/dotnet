@@ -82,6 +82,11 @@ sealed class Compiler {
 			throw TODO(); //TODO: return Either<Module, CompileError> ?
 		}
 
+		if (documentInfo.parseResult.isRight) {
+			Console.WriteLine(CsonWriter.write(documentInfo.parseResult.right));
+			throw TODO("Bad Parse");
+		}
+
 		var ast = documentInfo.parseResult.force(); // TODO: don't force
 
 		var allDependenciesReused = true;
@@ -98,10 +103,9 @@ sealed class Compiler {
 		}
 
 		var module = new Module(logicalPath, isIndex, documentInfo, imports);
-		module.klass = Checker.checkClass(module, imports, ast.klass, name: logicalPath.opLast.or(() => symIndex));
+		module.klass = Checker.checkClass(module, imports, ast.klass, name: logicalPath.opLast.map(Sym.of).or(() => documentProvider.rootName));
 		return (module, isReused: false);
 	}
-	static readonly Sym symIndex = Sym.of("index");
 
 	static Path importPath(Path importerPath, Ast.Module.Import import) {
 		switch (import) {

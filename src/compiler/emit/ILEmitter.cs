@@ -7,7 +7,7 @@ using Model;
 using static Utils;
 
 struct TypeBuilding {
-	readonly TypeInfo info;
+	internal readonly TypeInfo info;
 	readonly Op<Type> _type;
 	internal Type type => _type.force;
 
@@ -19,28 +19,31 @@ struct TypeBuilding {
 /**
 Note: We *lazily* compile modules. But we must compile all of a module's imports before we compile it.
 */
-class ILEmitter {
+sealed class ILEmitter {
 	readonly AssemblyName assemblyName = new AssemblyName("noze");
 	readonly Dictionary<Klass, TypeBuilding> typeInfos = new Dictionary<Klass, TypeBuilding>();
+	// This will not be filled for a BuiltinMethod
+	readonly Dictionary<Method, MethodInfo> methodInfos = new Dictionary<Method, MethodInfo>();
 	readonly AssemblyBuilder assemblyBuilder;
 	readonly ModuleBuilder moduleBuilder;
-
-	internal Type getClass(Klass k) => typeInfos[k].type;
 
 	internal Type toType(Ty ty) {
 		switch (ty) {
 			case BuiltinClass b:
 				return b.dotNetType;
 			case Klass k:
-				return typeInfos[k].type;
+				return typeInfos[k].info;
 			default:
 				throw TODO();
 		}
 	}
 
+	internal MethodInfo toMethodInfo(Method method) =>
+		method is Method.BuiltinMethod b ? b.methodInfo : methodInfos[method];
+
 	internal ILEmitter() {
 		assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndCollect);
-		moduleBuilder = assemblyBuilder.DefineDynamicModule("noze");
+		moduleBuilder = assemblyBuilder.DefineDynamicModule(assemblyName.Name);
 
 		//??? https://stackoverflow.com/questions/17995945/how-to-debug-dynamically-generated-method
 		/*var daType = typeof(DebuggableAttribute);
@@ -75,7 +78,7 @@ class ILEmitter {
 		fillMethods(typeBuilder, klass);
 
 		var type = typeBuilder.CreateTypeInfo();
-		typeInfos[klass] = typeInfos[klass].withType(type);
+		typeInfos[klass] = typeInfos[klass].withType(type); //!!! Too late, it might refer to itself!
 		return type;
 	}
 
@@ -99,7 +102,8 @@ class ILEmitter {
 				return;
 
 			case Klass.Head.Abstract a:
-				throw TODO();
+				// Nothing to do.
+				return;
 
 			case Klass.Head.Slots slots:
 				foreach (var slot in slots.slots)
@@ -112,23 +116,44 @@ class ILEmitter {
 	}
 
 	void fillMethods(TypeBuilder tb, Klass klass) {
+		// Since methods might recursively call each other, must fill them all in first.
+		foreach (var method in klass.methods)
+			methodInfos.Add(
+				method,
+				tb.DefineMethod(
+					method.name.str,
+					methodAttributes(method),
+					toType(method.returnTy),
+					method.parameters.mapToArray(p => toType(p.ty))));
+
 		foreach (var method in klass.methods) {
-			var attr = MethodAttributes.Public;
-			if (method.isStatic)
-				attr |= MethodAttributes.Static;
-			else
-				attr |= MethodAttributes.Final;
+			switch (method) {
+				case Method.MethodWithBody mwb:
+					var mb = (MethodBuilder) methodInfos[mwb];
+					var methIl = mb.GetILGenerator();
+					var iw = new ILWriter(methIl, isStatic: mwb.isStatic);
+					new ExprEmitter(this, iw).emitAny(mwb.body);
+					iw.ret();
+					break;
+				case Method.AbstractMethod a:
+					break;
+				default:
+					throw unreachable();
+			}
+		}
+	}
 
-			var mb = tb.DefineMethod(method.name.str, attr);
 
-			mb.SetParameters(method.parameters.mapToArray(p => toType(p.ty)));
-			mb.SetReturnType(toType(method.returnTy));
-
-
-			var methIl = mb.GetILGenerator();
-			var iw = new ILWriter(methIl);
-			new ExprEmitter(this, iw).emitAny(method.body);
-			iw.ret();
+	static MethodAttributes methodAttributes(Method method) {
+		switch (method) {
+			case Method.MethodWithBody mwb:
+				return mwb.isStatic
+					? MethodAttributes.Public | MethodAttributes.Static
+					: MethodAttributes.Public | MethodAttributes.Final;
+			case Method.AbstractMethod a:
+				return MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual;
+			default:
+				throw unreachable();
 		}
 	}
 }
@@ -136,8 +161,10 @@ class ILEmitter {
 sealed class ILWriter {
 	//readonly Arr.Builder<string> logs;
 	readonly ILGenerator il;
-	internal ILWriter(ILGenerator il) {
+	readonly bool isStatic;
+	internal ILWriter(ILGenerator il, bool isStatic) {
 		this.il = il;
+		this.isStatic = isStatic;
 		//this.logs = Arr.builder<string>();
 	}
 
@@ -205,10 +232,11 @@ sealed class ILWriter {
 
 	internal void getParameter(Method.Parameter p) {
 		log($"get parameter {p.name}");
-		il.Emit(ldargOperation(p.index));
+		il.Emit(ldargOperation(p.index, isStatic));
 	}
 
-	OpCode ldargOperation(uint index) {
+	internal static OpCode ldargOperation(uint index, bool isStatic) {
+		if (!isStatic) index++;
 		switch (index) {
 			case 0:
 				return OpCodes.Ldarg_0;
@@ -223,9 +251,10 @@ sealed class ILWriter {
 		}
 	}
 
-	//internal void construct(ConstructorInfo c) {
-	//	il.Emit(OpCodes.Newobj, c);
-	//}
+	internal void callInstanceMethod(bool isVirtual, MethodInfo mi) {
+		var opcode = isVirtual ? OpCodes.Callvirt : OpCodes.Call;
+		il.Emit(opcode, mi);
+	}
 }
 
 sealed class ExprEmitter {
@@ -252,6 +281,9 @@ sealed class ExprEmitter {
 				return;
 			case Expr.StaticMethodCall sm:
 				emitStaticMethodCall(sm);
+				return;
+			case Expr.InstanceMethodCall m:
+				emitInstanceMethodCall(m);
 				return;
 			case Expr.GetSlot g:
 				emitGetSlot(g);
@@ -358,6 +390,13 @@ sealed class ExprEmitter {
 
 	void emitStaticMethodCall(Expr.StaticMethodCall s) {
 		throw TODO();
+	}
+
+	void emitInstanceMethodCall(Expr.InstanceMethodCall m) {
+		emitAny(m.target);
+		foreach (var arg in m.args)
+			emitAny(arg);
+		il.callInstanceMethod(m.method is Method.AbstractMethod, emitter.toMethodInfo(m.method));
 	}
 
 	void emitGetSlot(Expr.GetSlot g) {

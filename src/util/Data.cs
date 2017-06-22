@@ -25,7 +25,7 @@ interface Identifiable<IdType> where IdType : ToData<IdType> {
 	For example, two Module objects with the same path have equalId,
 	When an object has an up-pointer, its Equals implementation should call equalsId on its up-pointers to avoid infinite recursion.
 
-	`a.equalsId(b)` should be true iff `a.getId().Equals(b.getId())`.
+	`a.equalsId(b)` should be true iff `a.getId().deepEqual(b.getId())`.
 	*/
 	IdType getId();
 }
@@ -42,13 +42,13 @@ static class IdentifiableU {
 	Unlike `fastEquals`, this will be true for corresponding objects in identical trees.
 	*/
 	public static bool equalsId<T, U>(this T a, T b) where T : Identifiable<U> where U : ToData<U> =>
-		a.getId().Equals(b.getId());
+		a.getId().deepEqual(b.getId());
 }
 
-abstract class Dat : ToData<Dat> {
+public abstract class Dat : ToData<Dat> {
 	Dat() {}
 
-	public abstract void write(Writer w);
+	internal abstract void write(Writer w);
 
 	public Dat toDat() => this;
 
@@ -77,7 +77,7 @@ abstract class Dat : ToData<Dat> {
 		readonly Op<T> value;
 		internal OpDat(Op<T> value) { this.value = value; }
 		public override Type type => typeof(Op<T>);
-		public override void write(Writer w) {
+		internal override void write(Writer w) {
 			if (value.get(out var o))
 				o.toDat().write(w);
 			else
@@ -89,49 +89,49 @@ abstract class Dat : ToData<Dat> {
 		readonly bool value;
 		internal BoolDat(bool value) { this.value = value; }
 		public override Type type => typeof(bool);
-		public override void write(Writer w) => w.writeBool(value);
+		internal override void write(Writer w) => w.writeBool(value);
 	}
 
 	internal class IntDat : Dat {
 		readonly int value;
 		internal IntDat(int value) { this.value = value; }
 		public override Type type => typeof(int);
-		public override void write(Writer w) => w.writeInt(value);
+		internal override void write(Writer w) => w.writeInt(value);
 	}
 
 	internal class UintDat : Dat {
 		readonly uint value;
 		internal UintDat(uint value) { this.value = value; }
 		public override Type type => typeof(uint);
-		public override void write(Writer w) => w.writeUint(value);
+		internal override void write(Writer w) => w.writeUint(value);
 	}
 
 	internal class FloatDat : Dat {
 		readonly double value;
 		internal FloatDat(double value) { this.value = value; }
 		public override Type type => typeof(float);
-		public override void write(Writer w) => w.writeFloat(value);
+		internal override void write(Writer w) => w.writeFloat(value);
 	}
 
 	internal class StrDat : Dat {
 		readonly string value;
 		internal StrDat(string value) { this.value = value; }
 		public override Type type => typeof(string);
-		public override void write(Writer w) => w.writeQuotedString(value);
+		internal override void write(Writer w) => w.writeQuotedString(value);
 	}
 
 	internal class ArrDat<T> : Dat where T : ToData<T> {
 		readonly Arr<T> value;
 		internal ArrDat(Arr<T> value) { this.value = value; }
 		public override Type type => typeof(Arr<T>);
-		public override void write(Writer w) => w.writeArray(value);
+		internal override void write(Writer w) => w.writeArray(value);
 	}
 
 	internal class DictDat<T> : Dat where T : ToData<T> {
 		readonly Dict<string, T> value;
 		internal DictDat(Dict<string, T> value) { this.value = value; }
 		public override Type type => typeof(Dict<string, T>);
-		public override void write(Writer w) => w.writeDict(value);
+		internal override void write(Writer w) => w.writeDict(value);
 	}
 
 	internal static Dat of<T>(T o) where T : ToData<T> => new Dat0<T>();
@@ -223,7 +223,7 @@ abstract class Dat : ToData<Dat> {
 		internal Dat0() {}
 
 		public override Type type => typeof(T);
-		public override void write(Writer w) => w.writeDict(this);
+		internal override void write(Writer w) => w.writeDict(this);
 	}
 	internal sealed class Dat1<T, V1> : Dat where T : ToData<T> where V1 : ToData<V1> {
 		internal readonly string key1;
@@ -231,7 +231,7 @@ abstract class Dat : ToData<Dat> {
 		internal Dat1(string key1, V1 value1) { this.key1 = key1; this.value1 = value1; }
 
 		public override Type type => typeof(T);
-		public override void write(Writer w) => w.writeDict(this);
+		internal override void write(Writer w) => w.writeDict(this);
 	}
 	internal sealed class Dat2<T, V1, V2> : Dat where T : ToData<T> where V1 : ToData<V1> where V2 : ToData<V2> {
 		internal readonly string key1; internal readonly V1 value1;
@@ -242,7 +242,7 @@ abstract class Dat : ToData<Dat> {
 		}
 
 		public override Type type => typeof(T);
-		public override void write(Writer w) => w.writeDict(this);
+		internal override void write(Writer w) => w.writeDict(this);
 	}
 	internal sealed class Dat3<T, V1, V2, V3> : Dat where T : ToData<T> where V1 : ToData<V1> where V2 : ToData<V2> where V3 : ToData<V3> {
 		internal readonly string key1; internal readonly V1 value1;
@@ -255,7 +255,7 @@ abstract class Dat : ToData<Dat> {
 		}
 
 		public override Type type => typeof(T);
-		public override void write(Writer w) => w.writeDict(this);
+		internal override void write(Writer w) => w.writeDict(this);
 	}
 	internal sealed class Dat4<T, V1, V2, V3, V4> : Dat where T : ToData<T> where V1 : ToData<V1> where V2 : ToData<V2> where V3 : ToData<V3> where V4 : ToData<V4> {
 		internal readonly string key1; internal readonly V1 value1;
@@ -270,7 +270,7 @@ abstract class Dat : ToData<Dat> {
 		}
 
 		public override Type type => typeof(T);
-		public override void write(Writer w) => w.writeDict(this);
+		internal override void write(Writer w) => w.writeDict(this);
 	}
 	internal sealed class Dat5<T, V1, V2, V3, V4, V5> : Dat where T : ToData<T> where V1 : ToData<V1> where V2 : ToData<V2> where V3 : ToData<V3> where V4 : ToData<V4> where V5 : ToData<V5> {
 		internal readonly string key1; internal readonly V1 value1;
@@ -287,7 +287,7 @@ abstract class Dat : ToData<Dat> {
 		}
 
 		public override Type type => typeof(T);
-		public override void write(Writer w) => w.writeDict(this);
+		internal override void write(Writer w) => w.writeDict(this);
 	}
 	internal sealed class Dat6<T, V1, V2, V3, V4, V5, V6> : Dat where T : ToData<T> where V1 : ToData<V1> where V2 : ToData<V2> where V3 : ToData<V3> where V4 : ToData<V4> where V5 : ToData<V5> where V6 : ToData<V6> {
 		internal readonly string key1; internal readonly V1 value1;
@@ -306,7 +306,7 @@ abstract class Dat : ToData<Dat> {
 		}
 
 		public override Type type => typeof(T);
-		public override void write(Writer w) => w.writeDict(this);
+		internal override void write(Writer w) => w.writeDict(this);
 	}
 	internal sealed class Dat6<T, V1, V2, V3, V4, V5, V6, V7> : Dat where T : ToData<T> where V1 : ToData<V1> where V2 : ToData<V2> where V3 : ToData<V3> where V4 : ToData<V4> where V5 : ToData<V5> where V6 : ToData<V6> where V7 : ToData<V7> {
 		internal readonly string key1; internal readonly V1 value1;
@@ -327,6 +327,6 @@ abstract class Dat : ToData<Dat> {
 		}
 
 		public override Type type => typeof(T);
-		public override void write(Writer w) => w.writeDict(this);
+		internal override void write(Writer w) => w.writeDict(this);
 	}
 }

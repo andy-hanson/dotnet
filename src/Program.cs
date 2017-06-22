@@ -12,20 +12,28 @@ using Lsp;
 [AttributeUsage(AttributeTargets.Method)]
 class TestAttribute : Attribute {}
 
+
+abstract class ImplementMe {
+	public abstract void m();
+}
+//Must be public so a dynamic assembly can access it
+public sealed class Implementation {
+	public void m() {
+		Console.WriteLine("Implementation");
+	}
+}
+
 class Program {
+
 	static void Main(string[] _) {
-		var engine = new Jint.Engine();
-		try {
-			var x = JsRunner.evalScript(engine, Path.from("tests", "dummy.js"));
-			Console.WriteLine(x);
-		} catch (Jint.Runtime.JavaScriptException e) {
-			var line = e.LineNumber;
-			var col = e.Column;
-			Console.WriteLine($"Error at {line}:{col}: {e.Message}\n{e.StackTrace}");
-		}
+		dynamic impl = Tests.implementType(typeof(ImplementMe), new Implementation());
+		impl.m();
+
+		//TestCompile.runSingle("AbstractClass");
 
 		//testNil();
 		//testJint2();
+
 
 		//TestCompile.runCompilerTest(Path.from("1"));
 		//TestCompile.runAllCompilerTests();

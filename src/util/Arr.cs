@@ -45,6 +45,16 @@ struct Arr<T> {
         return new Arr<U>(b);
     }
 
+    internal Arr<U> mapDefined<U>(Func<T, Op<U>> mapper) {
+        var b = Arr.builder<U>();
+        for (uint i = 0; i < length; i++) {
+            var res = mapper(this[i]);
+            if (res.get(out var r))
+                b.add(r);
+        }
+        return b.finish();
+    }
+
     internal Arr<T> rcons(T next) {
         var b = new T[length + 1];
         for (uint i = 0; i < length; i++)
@@ -154,18 +164,15 @@ static class Arr {
     }
 
     //Have to define this here to get the type constraint.
-    internal static bool deepEqual<T>(this Arr<T> a, Arr<T> b) where T : DeepEqual<T> {
-        if (a.length != b.length)
-            return false;
+    internal static bool deepEqual<T>(this Arr<T> a, Arr<T> b) where T : DeepEqual<T> =>
+        deepEqual(a, b, (x, y) => x.deepEqual(y));
 
-        for (uint i = 0; i < a.length; i++)
-            if (!a[i].deepEqual(b[i]))
-                return false;
+    internal static bool deepEqual(this Arr<string> a, Arr<string> b) => deepEqual(a, b, (x, y) => x == y);
 
-        return true;
-    }
+    internal static bool eachEqualId<T, U>(this Arr<T> a, Arr<T> b) where T : Identifiable<U> where U : ToData<U> =>
+        deepEqual(a, b, (x, y) => x.equalsId<T, U>(y));
 
-    internal static bool deepEqual<T>(this Arr<T> a, Arr<T> b, Func<T, T, bool> equal) {
+    static bool deepEqual<T>(this Arr<T> a, Arr<T> b, Func<T, T, bool> equal) {
         if (a.length != b.length)
             return false;
 
@@ -193,11 +200,13 @@ static class Arr {
 
     internal static Builder<T> builder<T>() => new Builder<T>(true);
 
-    internal static Arr<U> map<T, U>(this T[] xs, Func<T, U> mapper) {
+    internal static Arr<U> map<T, U>(this T[] xs, Func<T, U> mapper) => new Arr<U>(mapToArray(xs, mapper));
+
+    internal static U[] mapToArray<T, U>(this T[] xs, Func<T, U> mapper) {
         var b = new U[xs.Length];
         for (uint i = 0; i < xs.Length; i++)
             b[i] = mapper(xs[i]);
-        return new Arr<U>(b);
+        return b;
     }
 
     internal static Arr<U> map<T, U>(this T[] xs, Func<T, uint, U> mapper) {
@@ -232,6 +241,11 @@ static class Arr {
             for (uint i = 0; i < curLength; i++)
                 b[i] = mapper(this[i]);
             return new Arr<U>(b);
+        }
+
+        internal T last => b[b.Count - 1];
+        internal void setLast(T last) {
+            b[b.Count - 1] = last;
         }
 
         internal bool isEmpty => curLength == 0;

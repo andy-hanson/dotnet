@@ -42,6 +42,11 @@ sealed class CsonWriter : Writer {
 	}
 
 	protected override void writeDictStart<T>() {
+		if (indent > 50) {
+			// Probably infinite recursion.
+			throw TODO();
+		}
+
 		writeType(typeof(T));
 		writeRaw('(');
 		indent++;

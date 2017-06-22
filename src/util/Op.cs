@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 using static Utils;
@@ -18,6 +17,8 @@ struct Op<T> {
 	internal T unsafeValue => value;
 
 	internal bool has => !RuntimeHelpers.Equals(value, default(T));
+	internal bool equalsRaw(Op<T> other) =>
+		RuntimeHelpers.Equals(value, other.value);
 
 	internal bool get(out T v) {
 		v = value;
@@ -55,21 +56,18 @@ struct Op<T> {
 	internal Op<T> orTry(Func<Op<T>> orTry) =>
 		has ? this : orTry();
 
-	internal bool equalsRaw(Op<T> other) =>
-		EqualityComparer<T>.Default.Equals(value, other.value);
-
 	public override bool Equals(object o) => throw new NotImplementedException();
 	public override int GetHashCode() => throw new NotImplementedException();
 }
 
 static class OpU {
-	public static bool deepEqual(this Op<string> a, Op<string> b) =>
-		a.get(out var av) ? b.get(out var bv) && av.Equals(bv) : !b.has;
-
 	public static bool deepEqual<T>(this Op<T> a, Op<T> b) where T : DeepEqual<T> =>
 		a.get(out var av)
 			? b.get(out var bv) && av.deepEqual(bv)
 			: !b.has;
+
+	public static bool deepEqual(this Op<string> a, Op<string> b) =>
+		a.get(out var av) ? b.get(out var bv) && av == bv : !b.has;
 
 	public static bool deepEqual<U>(this Op<U> a, Op<U> b, Func<U, U, bool> compare) =>
 		a.get(out var av)
@@ -109,8 +107,8 @@ struct OpUint : ToData<OpUint> {
 	internal uint or(Func<uint> or) =>
 		has ? value : or();
 
-	bool DeepEqual<OpUint>.deepEqual(OpUint u) => value == u.value;
-	public bool Equals(OpUint u) => throw TODO();//value == u.value;
+	public bool Equals(OpUint u) => throw new NotImplementedException();
+	public bool deepEqual(OpUint u) => value == u.value;
 
 	public Dat toDat() =>
 		Dat.op(map(Dat.num));

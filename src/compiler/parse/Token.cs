@@ -15,13 +15,18 @@ internal enum Token {
 	// Keywords
 	Abstract,
 	Def,
+	Do,
 	Enum,
 	Else,
 	False,
+	For,
 	Fun,
 	Generic,
-	Import,
 	If,
+	Impl,
+	Import,
+	In,
+	Is,
 	Pass,
 	Self,
 	Slots,
@@ -58,20 +63,30 @@ static class TokenU {
 				return Op.Some(Token.Abstract);
 			case "def":
 				return Op.Some(Token.Def);
+			case "do":
+				return Op.Some(Token.Do);
 			case "else":
 				return Op.Some(Token.Else);
 			case "enum":
 				return Op.Some(Token.Enum);
 			case "false":
 				return Op.Some(Token.False);
+			case "for":
+				return Op.Some(Token.For);
 			case "fun":
 				return Op.Some(Token.Fun);
 			case "generic":
 				return Op.Some(Token.Generic);
 			case "if":
 				return Op.Some(Token.If);
+			case "impl":
+				return Op.Some(Token.Impl);
 			case "import":
 				return Op.Some(Token.Import);
+			case "in":
+				return Op.Some(Token.In);
+			case "is":
+				return Op.Some(Token.Is);
 			case "pass":
 				return Op.Some(Token.Pass);
 			case "self":
@@ -105,13 +120,18 @@ static class TokenU {
 
 			case Token.Abstract: return "abstract";
 			case Token.Def: return "def";
+			case Token.Do: return "do";
 			case Token.Enum: return "enum";
 			case Token.Else: return "else";
 			case Token.False: return "false";
+			case Token.For: return "for";
 			case Token.Fun: return "fun";
 			case Token.Generic: return "generic";
-			case Token.Import: return "import";
 			case Token.If: return "if";
+			case Token.Impl: return "impl";
+			case Token.Import: return "import";
+			case Token.In: return "in";
+			case Token.Is: return "is";
 			case Token.Pass: return "pass";
 			case Token.Self: return "self";
 			case Token.Slots: return "slots";

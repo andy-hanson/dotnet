@@ -360,18 +360,11 @@ abstract class Lexer : Reader {
 
 	protected void takeSpace() => expectCharacter(' ');
 	protected void takeLparen() => expectCharacter('(');
+	protected void takeRparen() => expectCharacter(')');
 	protected void takeComma() => expectCharacter(',');
 	protected void takeDot() => expectCharacter('.');
 	protected bool tryTakeRparen() => tryTake(')');
 	protected bool tryTakeDot() => tryTake('.');
-
-	protected Token takeKeyword() {
-		var startPos = pos;
-		expectCharacter("keyword", ch => 'a' <= ch && ch <= 'z');
-		skipWhile(isNameChar);
-		var name = sliceFrom(startPos);
-		return TokenU.keywordFromName(name).or(() => throw unexpected(startPos, "keyword", name));
-	}
 
 	protected void takeSpecificKeyword(Token kw) {
 		var startPos = pos;
@@ -379,12 +372,14 @@ abstract class Lexer : Reader {
 		if (actual != kw) throw unexpected(startPos, TokenU.TokenName(kw), TokenU.TokenName(actual));
 	}
 
-	protected Sym takeName() {
+	protected string takeNameString() {
 		var startPos = pos;
 		expectCharacter("(non-type) name", ch => 'a' <= ch && ch <= 'z');
 		skipWhile(isNameChar);
-		return Sym.of(sliceFrom(startPos));
+		return sliceFrom(startPos);
 	}
+
+	protected Sym takeName() => Sym.of(takeNameString());
 
 	protected Sym takeTyName() {
 		var startPos = pos;
@@ -395,4 +390,12 @@ abstract class Lexer : Reader {
 
 	protected ParserExit unexpected(Pos startPos, string expectedDesc, Token token) => unexpected(startPos, expectedDesc,TokenU.TokenName(token));
 	protected ParserExit unexpected(Pos startPos, string expectedDesc, string actualDesc) => exit(locFrom(startPos), new Err.UnexpectedToken(expectedDesc, actualDesc));
+
+	protected Token takeKeyword() {
+		var startPos = pos;
+		expectCharacter("keyword", ch => 'a' <= ch && ch <= 'z');
+		skipWhile(isNameChar);
+		var name = sliceFrom(startPos);
+		return TokenU.keywordFromName(name).or(() => throw unexpected(startPos, "keyword", name));
+	}
 }

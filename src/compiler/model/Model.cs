@@ -46,11 +46,11 @@ namespace Model {
 		internal Sym name => klass.name;
 
 		public bool deepEqual(Module m) =>
-			logicalPath.Equals(m.logicalPath) &&
+			logicalPath.deepEqual(m.logicalPath) &&
 			isIndex == m.isIndex &&
-			document.Equals(m.document) &&
-			imports.deepEqual(m.imports, IdentifiableU.equalsId<Module, Path>) &&
-			klass.Equals(m.klass);
+			document.deepEqual(m.document) &&
+			imports.eachEqualId<Module, Path>(m.imports) &&
+			klass.deepEqual(m.klass);
 
 		public Dat toDat() => Dat.of(this,
 			nameof(logicalPath), logicalPath,
@@ -82,18 +82,8 @@ namespace Model {
 			Id(string id) { this.id = id; }
 			internal static Id ofPath(Path path) => new Id(path.ToString());
 			internal static Id ofBuiltin(Sym name) => new Id(name.str);
-			public bool deepEqual(Id i) => id.Equals(i.id);
+			public bool deepEqual(Id i) => id == i.id;
 			public Dat toDat() => Dat.str(id);
-
-			/*internal readonly Op<Path> module;
-			internal readonly Sym name;
-			internal Id(Op<Path> module, Sym name) { this.module = module; this.name = name; }
-			public bool Equals(Id c) => module.eq(c.module) && name.Equals(c.name);
-			public Dat toDat() =>
-				module.get(out var mod)
-					? Dat.str(mod.ToString())
-					: Dat.str(name.str);//Dat.of(this, nameof(module), Dat.op(module), nameof(name), name);
-			*/
 		}
 
 		internal readonly Sym name;
@@ -211,8 +201,8 @@ namespace Model {
 			set { assert(!_head.has); _head = Op.Some(value); }
 		}
 
-		Op<Arr<Method.MethodWithBody>> _methods;
-		internal Arr<Method.MethodWithBody> methods {
+		Op<Arr<Method>> _methods;
+		internal Arr<Method> methods {
 			get => _methods.force;
 			set { assert(!_methods.has); _methods = Op.Some(value); }
 		}
@@ -237,16 +227,16 @@ namespace Model {
 			// Static class: May only contain "fun"
 			internal class Static : Head, ToData<Static> {
 				internal Static(Loc loc) : base(loc) {}
-				public override bool deepEqual(Head h) => h is Static s && Equals(s);
-				public bool deepEqual(Static s) => loc.Equals(s.loc);
+				public override bool deepEqual(Head h) => h is Static s && deepEqual(s);
+				public bool deepEqual(Static s) => loc.deepEqual(s.loc);
 				public override Dat toDat() => Dat.of(this, nameof(loc), loc);
 			}
 
 			// Abstract class: Never instantiated.
 			internal class Abstract : Head, ToData<Abstract> {
 				internal Abstract(Loc loc) : base(loc) {}
-				public override bool deepEqual(Head h) => h is Abstract a && Equals(a);
-				public bool deepEqual(Abstract a) => loc.Equals(a.loc);
+				public override bool deepEqual(Head h) => h is Abstract a && deepEqual(a);
+				public bool deepEqual(Abstract a) => loc.deepEqual(a.loc);
 				public override Dat toDat() => Dat.of(this, nameof(loc), loc);
 			}
 
@@ -256,7 +246,7 @@ namespace Model {
 					this.slots = slots;
 				}
 
-				public override bool deepEqual(Head h) => h is Slots s && Equals(s);
+				public override bool deepEqual(Head h) => h is Slots s && deepEqual(s);
 				public bool deepEqual(Slots s) => slots.deepEqual(s.slots);
 				public override Dat toDat() => Dat.of(this, nameof(slots), Dat.arr(slots));
 
@@ -265,7 +255,7 @@ namespace Model {
 						internal readonly ClassLike.Id klass;
 						internal readonly Sym name;
 						internal Id(ClassLike.Id klass, Sym name) { this.klass = klass; this.name = name; }
-						public bool deepEqual(Id i) => klass.Equals(i) && name.Equals(i.name);
+						public bool deepEqual(Id i) => klass.deepEqual(i.klass) && name.deepEqual(i.name);
 						public Dat toDat() => Dat.of(this, nameof(klass), klass, nameof(name), name);
 					}
 
@@ -279,8 +269,8 @@ namespace Model {
 						this.ty = ty;
 					}
 
-					public override bool deepEqual(Member m) => m is Slot s && Equals(s);
-					public bool deepEqual(Slot s) => loc.Equals(s.loc) && name.Equals(s.name) && mutable == s.mutable && ty.Equals(s.ty);
+					public override bool deepEqual(Member m) => m is Slot s && deepEqual(s);
+					public bool deepEqual(Slot s) => loc.deepEqual(s.loc) && name.deepEqual(s.name) && mutable == s.mutable && ty.equalsId<Ty, ClassLike.Id>(s.ty);
 					public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(name), name, nameof(mutable), Dat.boolean(mutable), nameof(ty), ty);
 					public Id getId() => new Id(klass.getId(), name);
 				}
@@ -298,33 +288,39 @@ namespace Model {
 
 	abstract class Method : Member, ToData<Method>, Identifiable<Method.Id> {
 		internal struct Id : ToData<Id> {
-			internal readonly ClassLike.Id klass;
+			internal readonly ClassLike.Id klassId;
 			internal readonly Sym name;
-			internal Id(ClassLike.Id klass, Sym name) { this.klass = klass; this.name = name; }
-			public bool deepEqual(Id m) => klass.Equals(m.klass) && name.Equals(m.name);
-			public Dat toDat() => Dat.of(this, nameof(klass), klass, nameof(name), name);
+			internal Id(ClassLike.Id klass, Sym name) { this.klassId = klass; this.name = name; }
+			public bool deepEqual(Id m) => klassId.deepEqual(m.klassId) && name.deepEqual(m.name);
+			public Dat toDat() => Dat.of(this, nameof(klassId), klassId, nameof(name), name);
 		}
 
+		// Method is used in a Dictionary in ILEmitter.cs
+		public sealed override bool Equals(object o) => object.ReferenceEquals(o, this);
+		public sealed override int GetHashCode() => name.GetHashCode();
+
 		[ParentPointer] internal readonly ClassLike klass;
-		internal readonly bool isStatic;//TODO: just store static methods elsewhere?
+		//internal readonly bool isStatic;//TODO: just store static methods elsewhere?
+		internal abstract bool isStatic { get; }
 		[UpPointer] internal readonly Ty returnTy;
 		internal readonly Arr<Parameter> parameters;
 
+		public sealed override bool deepEqual(Member m) => m is Method mt && deepEqual(mt);
 		public abstract bool deepEqual(Method m);
 		public Id getId() => new Id(klass.getId(), name);
 
-		private Method(ClassLike klass, Loc loc, bool isStatic, Ty returnTy, Sym name, Arr<Parameter> parameters) : base(loc, name) {
+		private Method(ClassLike klass, Loc loc, Ty returnTy, Sym name, Arr<Parameter> parameters) : base(loc, name) {
 			this.klass = klass;
-			this.isStatic = isStatic;
 			this.returnTy = returnTy;
 			this.parameters = parameters;
 		}
 
 		internal uint arity => parameters.length;
 
-		internal sealed class Parameter : M, ToData<Parameter> {
+		// Since there's no shadowing allowed, parameters can be identified by just their name.
+		internal sealed class Parameter : M, ToData<Parameter>, Identifiable<Sym> {
 			internal readonly Loc loc;
-			internal readonly Ty ty;
+			[UpPointer] internal readonly Ty ty;
 			internal readonly Sym name;
 			internal readonly uint index;
 
@@ -335,18 +331,24 @@ namespace Model {
 				this.index = index;
 			}
 
-			public bool deepEqual(Parameter p) => loc.Equals(p.loc) && ty.Equals(p.ty) && name.Equals(p.name) && index == p.index;
-			public Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(ty), ty, nameof(name), name, nameof(index), Dat.num(index));
+			public bool deepEqual(Parameter p) => loc.deepEqual(p.loc) && ty.equalsId<Ty, ClassLike.Id>(p.ty) && name.deepEqual(p.name) && index == p.index;
+			public Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(ty), ty.getId(), nameof(name), name, nameof(index), Dat.num(index));
+			Sym Identifiable<Sym>.getId() => name;
 		}
 
 		internal sealed class BuiltinMethod : Method, ToData<BuiltinMethod> {
-			internal BuiltinMethod(BuiltinClass klass, MethodInfo m)
-				: base(klass, Loc.zero, m.IsStatic, BuiltinClass.fromDotNetType(m.ReturnType), getName(m), mapParams(m)) {}
+			internal readonly MethodInfo methodInfo;
 
-			public override bool deepEqual(Member m) => m is BuiltinMethod b && Equals(b);
-			public override bool deepEqual(Method m) => m is BuiltinMethod b && Equals(b);
+			internal BuiltinMethod(BuiltinClass klass, MethodInfo methodInfo)
+				: base(klass, Loc.zero, BuiltinClass.fromDotNetType(methodInfo.ReturnType), getName(methodInfo), mapParams(methodInfo)) {
+				this.methodInfo = methodInfo;
+			}
+
+			internal override bool isStatic => methodInfo.IsStatic;
+
+			public override bool deepEqual(Method m) => m is BuiltinMethod b && deepEqual(b);
 			public bool deepEqual(BuiltinMethod m) =>
-				name.Equals(m.name) && isStatic == m.isStatic && returnTy.Equals(m.returnTy) && parameters.deepEqual(m.parameters);
+				name.deepEqual(m.name) && isStatic == m.isStatic && returnTy.equalsId<Ty, ClassLike.Id>(m.returnTy) && parameters.deepEqual(m.parameters);
 			public override Dat toDat() => Dat.of(this, "name", name, nameof(isStatic), Dat.boolean(isStatic), nameof(returnTy), returnTy.getId(), nameof(parameters), Dat.arr(parameters));
 
 			static Sym getName(MethodInfo m) {
@@ -366,11 +368,15 @@ namespace Model {
 		}
 
 		internal sealed class MethodWithBody : Method, ToData<MethodWithBody> {
-			internal MethodWithBody(Klass klass, Loc loc, bool isStatic, Ty returnTy, Sym name, Arr<Parameter> parameters)
-				: base(klass, loc, isStatic, returnTy, name, parameters) { }
+			internal readonly bool _isStatic;
+			internal override bool isStatic => _isStatic;
 
-			public override bool deepEqual(Member m) => m is MethodWithBody mb && Equals(mb);
-			public override bool deepEqual(Method m) => m is MethodWithBody mb && Equals(mb);
+			internal MethodWithBody(Klass klass, Loc loc, bool isStatic, Ty returnTy, Sym name, Arr<Parameter> parameters)
+				: base(klass, loc, returnTy, name, parameters) {
+				this._isStatic = isStatic;
+			}
+
+			public override bool deepEqual(Method m) => m is MethodWithBody mb && deepEqual(mb);
 			public bool deepEqual(MethodWithBody m) => throw TODO(); // TODO: should methods with different (reference identity) parent be not equal?
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(isStatic), Dat.boolean(isStatic), nameof(returnTy), returnTy.getId(), nameof(name), name, nameof(parameters), Dat.arr(parameters));
 
@@ -379,6 +385,17 @@ namespace Model {
 				get => _body.force;
 				set { assert(!_body.has); _body = Op.Some(value); }
 			}
+		}
+
+		internal sealed class AbstractMethod : Method, ToData<AbstractMethod> {
+			internal override bool isStatic => false;
+
+			internal AbstractMethod(Klass klass, Loc loc, Ty returnTy, Sym name, Arr<Parameter> parameters)
+				: base(klass, loc, returnTy, name, parameters) {}
+
+			public override bool deepEqual(Method m) => m is AbstractMethod a && deepEqual(a);
+			public bool deepEqual(AbstractMethod a) => throw TODO();
+			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(returnTy), returnTy.getId(), nameof(name), name, nameof(parameters), Dat.arr(parameters));
 		}
 	}
 
@@ -391,8 +408,8 @@ namespace Model {
 
 		internal sealed class Ignore : Pattern, ToData<Ignore> {
 			internal Ignore(Loc loc) : base(loc) { }
-			public override bool deepEqual(Pattern p) => p is Ignore i && Equals(i);
-			public bool deepEqual(Ignore i) => loc.Equals(i.loc);
+			public override bool deepEqual(Pattern p) => p is Ignore i && deepEqual(i);
+			public bool deepEqual(Ignore i) => loc.deepEqual(i.loc);
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc);
 		}
 		internal sealed class Single : Pattern, ToData<Single>, Identifiable<Sym> {
@@ -403,8 +420,8 @@ namespace Model {
 				this.name = name;
 			}
 
-			public override bool deepEqual(Pattern p) => p is Single s && Equals(s);
-			public bool deepEqual(Single s) => loc.Equals(s.loc) && ty.Equals(s.ty) && name.Equals(s.name);
+			public override bool deepEqual(Pattern p) => p is Single s && deepEqual(s);
+			public bool deepEqual(Single s) => loc.deepEqual(s.loc) && ty.equalsId<Ty, ClassLike.Id>(s.ty) && name.deepEqual(s.name);
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(ty), ty, nameof(name), name);
 			public Sym getId() => name;
 		}
@@ -414,8 +431,8 @@ namespace Model {
 				this.destructuredInto = destructuredInto;
 			}
 
-			public override bool deepEqual(Pattern p) => p is Destruct d && Equals(d);
-			public bool deepEqual(Destruct d) => loc.Equals(d.loc) && destructuredInto.deepEqual(d.destructuredInto);
+			public override bool deepEqual(Pattern p) => p is Destruct d && deepEqual(d);
+			public bool deepEqual(Destruct d) => loc.deepEqual(d.loc) && destructuredInto.deepEqual(d.destructuredInto);
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(destructuredInto), Dat.arr(destructuredInto));
 		}
 	}

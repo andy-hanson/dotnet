@@ -11,30 +11,30 @@ namespace Model {
 		public abstract bool deepEqual(Expr e);
 		public abstract Dat toDat();
 
-		protected bool locEq(Expr e) => loc.Equals(e.loc);
+		protected bool locEq(Expr e) => loc.deepEqual(e.loc);
 
 		internal sealed class AccessParameter : Expr, ToData<AccessParameter> {
-			internal readonly Method.MethodWithBody.Parameter param;
-			internal AccessParameter(Loc loc, Method.MethodWithBody.Parameter param) : base(loc) {
+			[UpPointer] internal readonly Method.Parameter param;
+			internal AccessParameter(Loc loc, Method.Parameter param) : base(loc) {
 				this.param = param;
 			}
 
 			internal override Ty ty => param.ty;
 
-			public override bool deepEqual(Expr e) => e is AccessParameter a && Equals(a);
-			public bool deepEqual(AccessParameter a) => locEq(a) && a.param.Equals(param);
+			public override bool deepEqual(Expr e) => e is AccessParameter a && deepEqual(a);
+			public bool deepEqual(AccessParameter a) => locEq(a) && a.param.equalsId<Method.Parameter, Sym>(param);
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(param), param);
 		}
 
 		internal sealed class AccessLocal : Expr, ToData<AccessLocal> {
-			internal readonly Pattern.Single local;
+			[UpPointer] internal readonly Pattern.Single local;
 			internal AccessLocal(Loc loc, Pattern.Single local) : base(loc) {
 				this.local = local;
 			}
 
 			internal override Ty ty => local.ty;
 
-			public override bool deepEqual(Expr e) => e is AccessLocal a && Equals(a);
+			public override bool deepEqual(Expr e) => e is AccessLocal a && deepEqual(a);
 			public bool deepEqual(AccessLocal a) => locEq(a) && local.equalsId<Pattern.Single, Sym>(a.local);
 			public override Dat toDat() => Dat.of(this, nameof(local), local.getId());
 		}
@@ -52,9 +52,9 @@ namespace Model {
 
 			internal override Ty ty => then.ty;
 
-			public override bool deepEqual(Expr e) => e is Let l && Equals(l);
-			public bool deepEqual(Let l) => locEq(l) && value.Equals(l.value) && then.Equals(l.then);
-			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(value), value, nameof(then), then);
+			public override bool deepEqual(Expr e) => e is Let l && deepEqual(l);
+			public bool deepEqual(Let l) => locEq(l) && assigned.deepEqual(l.assigned) && value.deepEqual(l.value) && then.deepEqual(l.then);
+			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(assigned), assigned, nameof(value), value, nameof(then), then);
 		}
 
 		internal sealed class Seq : Expr, ToData<Seq> {
@@ -72,8 +72,8 @@ namespace Model {
 				return then.ty;
 			}
 
-			public override bool deepEqual(Expr e) => e is Seq s && Equals(s);
-			public bool deepEqual(Seq s) => locEq(s) && action.Equals(s.action) && then.Equals(s.then);
+			public override bool deepEqual(Expr e) => e is Seq s && deepEqual(s);
+			public bool deepEqual(Seq s) => locEq(s) && action.deepEqual(s.action) && then.deepEqual(s.then);
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(action), action, nameof(then), then);
 		}
 
@@ -102,7 +102,7 @@ namespace Model {
 					internal Bool(bool value) { this.value = value; }
 					internal override Ty ty => BuiltinClass.Bool;
 
-					public override bool deepEqual(LiteralValue l) => l is Bool b && Equals(b);
+					public override bool deepEqual(LiteralValue l) => l is Bool b && deepEqual(b);
 					public bool deepEqual(Bool b) => value == b.value;
 					public override Dat toDat() => Dat.boolean(value);
 				}
@@ -112,7 +112,7 @@ namespace Model {
 					internal Int(int value) { this.value = value; }
 					internal override Ty ty => BuiltinClass.Int;
 
-					public override bool deepEqual(LiteralValue l) => l is Int i && Equals(i);
+					public override bool deepEqual(LiteralValue l) => l is Int i && deepEqual(i);
 					public bool deepEqual(Int i) => value == i.value;
 					public override Dat toDat() => Dat.inum(value);
 				}
@@ -122,7 +122,7 @@ namespace Model {
 					internal Float(double value) { this.value = value; }
 					internal override Ty ty => BuiltinClass.Float;
 
-					public override bool deepEqual(LiteralValue l) => l is Float f && Equals(f);
+					public override bool deepEqual(LiteralValue l) => l is Float f && deepEqual(f);
 					public bool deepEqual(Float f) => value == f.value;
 					public override Dat toDat() => Dat.floatDat(value);
 				}
@@ -132,14 +132,14 @@ namespace Model {
 					internal Str(string value) { this.value = value; }
 					internal override Ty ty => BuiltinClass.Str;
 
-					public override bool deepEqual(LiteralValue l) => l is Str s && Equals(s);
+					public override bool deepEqual(LiteralValue l) => l is Str s && deepEqual(s);
 					public bool deepEqual(Str s) => value == s.value;
 					public override Dat toDat() => Dat.str(value);
 				}
 			}
 
-			public override bool deepEqual(Expr e) => e is Literal l && Equals(l);
-			public bool deepEqual(Literal l) => locEq(l) && value.Equals(l.value);
+			public override bool deepEqual(Expr e) => e is Literal l && deepEqual(l);
+			public bool deepEqual(Literal l) => locEq(l) && value.deepEqual(l.value);
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(value), value);
 		}
 
@@ -151,8 +151,8 @@ namespace Model {
 
 			override internal Ty ty => ty;
 
-			public override bool deepEqual(Expr e) => e is WhenTest w && Equals(w);
-			public bool deepEqual(WhenTest w) => cases.deepEqual(w.cases) && elseResult.Equals(w.elseResult);
+			public override bool deepEqual(Expr e) => e is WhenTest w && deepEqual(w);
+			public bool deepEqual(WhenTest w) => cases.deepEqual(w.cases) && elseResult.deepEqual(w.elseResult);
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(cases), Dat.arr(cases), nameof(elseResult), elseResult);
 
 			internal struct Case : ToData<Case> {
@@ -161,7 +161,7 @@ namespace Model {
 				internal readonly Expr result;
 				internal Case(Loc loc, Expr test, Expr result) { this.loc = loc; this.test = test; this.result = result; }
 
-				public bool deepEqual(Case c) => loc.Equals(c.loc) && test.Equals(c.test) && result.Equals(c.result);
+				public bool deepEqual(Case c) => loc.deepEqual(c.loc) && test.deepEqual(c.test) && result.deepEqual(c.result);
 				public Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(test), test, nameof(result), result);
 			}
 		}
@@ -177,16 +177,16 @@ namespace Model {
 
 			internal override Ty ty => method.returnTy;
 
-			public override bool deepEqual(Expr e) => e is StaticMethodCall s && Equals(s);
+			public override bool deepEqual(Expr e) => e is StaticMethodCall s && deepEqual(s);
 			public bool deepEqual(StaticMethodCall s) => method.equalsId<Method, Method.Id>(s.method) && args.deepEqual(s.args);
 			public override Dat toDat() => Dat.of(this, nameof(method), method.getId(), nameof(args), Dat.arr(args));
 		}
 
-		internal sealed class MethodCall : Expr, ToData<MethodCall> {
+		internal sealed class InstanceMethodCall : Expr, ToData<InstanceMethodCall> {
 			internal readonly Expr target;
 			[UpPointer] internal readonly Method method;
 			internal readonly Arr<Expr> args;
-			internal MethodCall(Loc loc, Expr target, Method method, Arr<Expr> args) : base(loc) {
+			internal InstanceMethodCall(Loc loc, Expr target, Method method, Arr<Expr> args) : base(loc) {
 				assert(!method.isStatic);
 				this.target = target;
 				this.method = method;
@@ -195,8 +195,8 @@ namespace Model {
 
 			internal override Ty ty => method.returnTy;
 
-			public override bool deepEqual(Expr e) => e is MethodCall m && Equals(m);
-			public bool deepEqual(MethodCall m) => target.Equals(m.target) && method.equalsId<Method, Method.Id>(m.method) && args.deepEqual(m.args);
+			public override bool deepEqual(Expr e) => e is InstanceMethodCall m && deepEqual(m);
+			public bool deepEqual(InstanceMethodCall m) => target.deepEqual(m.target) && method.equalsId<Method, Method.Id>(m.method) && args.deepEqual(m.args);
 			public override Dat toDat() => Dat.of(this, nameof(target), target, nameof(method), method.getId(), nameof(args), Dat.arr(args));
 		}
 
@@ -211,7 +211,7 @@ namespace Model {
 			}
 			internal override Ty ty => slot.ty;
 
-			public override bool deepEqual(Expr e) => e is GetMySlot g && Equals(g);
+			public override bool deepEqual(Expr e) => e is GetMySlot g && deepEqual(g);
 			public bool deepEqual(GetMySlot g) => slot.equalsId<Klass.Head.Slots.Slot, Klass.Head.Slots.Slot.Id>(g.slot);
 			public override Dat toDat() => Dat.of(this, nameof(slot), slot.getId());
 		}
@@ -225,7 +225,7 @@ namespace Model {
 			}
 			internal override Ty ty => slot.ty;
 
-			public override bool deepEqual(Expr e) => e is GetSlot g && Equals(g);
+			public override bool deepEqual(Expr e) => e is GetSlot g && deepEqual(g);
 			public bool deepEqual(GetSlot g) => throw TODO(); // TODO: handle "slot" up-pointer
 			public override Dat toDat() => throw TODO();
 		}
@@ -236,7 +236,7 @@ namespace Model {
 
 			internal override Ty ty => klass;
 
-			public override bool deepEqual(Expr e) => e is Self s && Equals(s);
+			public override bool deepEqual(Expr e) => e is Self s && deepEqual(s);
 			public bool deepEqual(Self s) {
 				assert(klass.equalsId<ClassLike, ClassLike.Id>(s.klass));
 				return locEq(s);

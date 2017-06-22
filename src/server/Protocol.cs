@@ -214,8 +214,8 @@ namespace Lsp {
 				this.range = range;
 			}
 
-			public override bool deepEqual(Response r) => r is DefinitionResponse d && Equals(d);
-			public bool deepEqual(DefinitionResponse d) => uri == d.uri && range.Equals(d.range);
+			public override bool deepEqual(Response r) => r is DefinitionResponse d && deepEqual(d);
+			public bool deepEqual(DefinitionResponse d) => uri == d.uri && range.deepEqual(d.range);
 			public override Dat toDat() => Dat.of(this, nameof(uri), Dat.str(uri), nameof(range), range);
 		}
 
@@ -223,7 +223,7 @@ namespace Lsp {
 			internal readonly Arr<Location> refs;
 			internal FindAllReferencesResponse(Arr<Location> refs) { this.refs = refs; }
 
-			public override bool deepEqual(Response r) => r is FindAllReferencesResponse f && Equals(f);
+			public override bool deepEqual(Response r) => r is FindAllReferencesResponse f && deepEqual(f);
 			public bool deepEqual(FindAllReferencesResponse f) => refs.deepEqual(f.refs);
 			public override Dat toDat() => Dat.of(this, nameof(refs), Dat.arr(refs));
 		}
@@ -232,7 +232,7 @@ namespace Lsp {
 			internal readonly Arr<DocumentHighlight> highlights;
 			internal DocumentHighlightsResponse(Arr<DocumentHighlight> highlights) { this.highlights = highlights; }
 
-			public override bool deepEqual(Response r) => r is DocumentHighlightsResponse && Equals(r);
+			public override bool deepEqual(Response r) => r is DocumentHighlightsResponse && deepEqual(r);
 			public bool deepEqual(DocumentHighlightsResponse d) => highlights.deepEqual(d.highlights);
 			public override Dat toDat() => Dat.of(this, nameof(highlights), Dat.arr(highlights));
 		}
@@ -247,9 +247,9 @@ namespace Lsp {
 				this.activeParameter = activeParameter;
 			}
 
-			public override bool deepEqual(Response r) => r is SignatureHelpResponse s && Equals(s);
+			public override bool deepEqual(Response r) => r is SignatureHelpResponse s && deepEqual(s);
 			public bool deepEqual(SignatureHelpResponse s) =>
-				signatures.deepEqual(s.signatures) && activeSignature.Equals(s.activeSignature) && activeParameter.Equals(s.activeParameter);
+				signatures.deepEqual(s.signatures) && activeSignature.deepEqual(s.activeSignature) && activeParameter.deepEqual(s.activeParameter);
 			public override Dat toDat() => Dat.of(this, nameof(signatures), Dat.arr(signatures), nameof(activeSignature), activeSignature, nameof(activeParameter), activeParameter);
 			void ToJsonSpecial.toJsonSpecial(JsonWriter j) =>
 				j.writeDictWithTwoOptionalValues("signatures", signatures, "activeSignature", activeSignature, "activeParameter", activeParameter);
@@ -260,7 +260,7 @@ namespace Lsp {
 			internal readonly Arr<CompletionItem> completions;
 			internal CompletionResponse(Arr<CompletionItem> completions) { this.completions = completions; }
 
-			public override bool deepEqual(Response r) => r is CompletionResponse c && Equals(c);
+			public override bool deepEqual(Response r) => r is CompletionResponse c && deepEqual(c);
 			public bool deepEqual(CompletionResponse c) => completions.deepEqual(c.completions);
 			public override Dat toDat() => Dat.arr(completions);
 			//void ToJsonSpecial.toJsonSpecial(JsonWriter j) =>
@@ -271,8 +271,8 @@ namespace Lsp {
 			internal readonly string contents;
 			internal HoverResponse(string contents) { this.contents = contents; }
 
-			public override bool deepEqual(Response r) => r is HoverResponse h && Equals(h);
-			public bool deepEqual(HoverResponse h) => contents.Equals(h.contents);
+			public override bool deepEqual(Response r) => r is HoverResponse h && deepEqual(h);
+			public bool deepEqual(HoverResponse h) => contents == h.contents;
 			public override Dat toDat() => Dat.of(this, nameof(contents), Dat.str(contents));
 		}
 	}
@@ -326,7 +326,7 @@ namespace Lsp {
 		internal readonly Position end;
 		internal Range(Position start, Position end) { this.start = start; this.end = end; }
 
-		public bool deepEqual(Range r) => start.Equals(r.start) && end.Equals(r.end);
+		public bool deepEqual(Range r) => start.deepEqual(r.start) && end.deepEqual(r.end);
 		public Dat toDat() => Dat.of(this, nameof(start), start, nameof(end), end);
 	}
 
@@ -336,7 +336,7 @@ namespace Lsp {
 		internal readonly Range range;
 		internal Location(string uri, Range range) { this.uri = uri; this.range = range; }
 
-		public bool deepEqual(Location l) => uri.Equals(l.uri) && range.Equals(l.range);
+		public bool deepEqual(Location l) => uri == l.uri && range.deepEqual(l.range);
 		public Dat toDat() => Dat.of(this, nameof(uri), Dat.str(uri), nameof(range), range);
 	}
 
@@ -356,11 +356,11 @@ namespace Lsp {
 		}
 
 		public bool deepEqual(Diagnostic d) =>
-			range.Equals(d.range) &&
+			range.deepEqual(d.range) &&
 			severity.equalsRaw(d.severity) &&
 			code.deepEqual(d.code) &&
 			source.deepEqual(d.source) &&
-			message.Equals(d.message);
+			message == d.message;
 
 		public Dat toDat() => Dat.of(this,
 			nameof(range), range,
@@ -398,7 +398,7 @@ namespace Lsp {
 			Write = 3,
 		}
 
-		public bool deepEqual(DocumentHighlight d) => range.Equals(d.range) && kind.Equals(d.kind);
+		public bool deepEqual(DocumentHighlight d) => range.deepEqual(d.range) && kind == d.kind;
 		public Dat toDat() => Dat.of(this, nameof(range), range, nameof(kind), Dat.num((uint) kind));
 	}
 
@@ -410,7 +410,7 @@ namespace Lsp {
 			this.position = position;
 		}
 
-		public bool deepEqual(TextDocumentPositionParams t) => textDocumentUri.Equals(t.textDocumentUri) && position.Equals(position);
+		public bool deepEqual(TextDocumentPositionParams t) => textDocumentUri == t.textDocumentUri && position.deepEqual(position);
 		public Dat toDat() => Dat.of(this, nameof(textDocumentUri), Dat.str(textDocumentUri), nameof(position), position);
 	}
 
@@ -419,7 +419,7 @@ namespace Lsp {
 		internal readonly string label;
 		internal CompletionItem(string label) { this.label = label; }
 
-		public bool deepEqual(CompletionItem c) => label.Equals(c.label);
+		public bool deepEqual(CompletionItem c) => label == c.label;
 		public Dat toDat() => Dat.of(this, nameof(label), Dat.str(label));
 	}
 
@@ -433,7 +433,7 @@ namespace Lsp {
 			this.parameters = parameters;
 		}
 
-		public bool deepEqual(SignatureInformation s) => label.Equals(s.label) && documentation.deepEqual(s.documentation) && parameters.deepEqual(s.parameters, Arr.deepEqual);
+		public bool deepEqual(SignatureInformation s) => label == s.label && documentation.deepEqual(s.documentation) && parameters.deepEqual(s.parameters, Arr.deepEqual);
 		public Dat toDat() =>
 			Dat.of(this, nameof(label), Dat.str(label), nameof(documentation), Dat.op(documentation), nameof(parameters), Dat.op(parameters.map(Dat.arr)));
 		void ToJsonSpecial.toJsonSpecial(JsonWriter j) =>
@@ -445,7 +445,7 @@ namespace Lsp {
 		internal readonly Op<string> documentation;
 		internal ParameterInformation(string label, Op<string> documentation) { this.label = label; this.documentation = documentation; }
 
-		public bool deepEqual(ParameterInformation p) => label.Equals(p.label) && documentation.deepEqual(p.documentation);
+		public bool deepEqual(ParameterInformation p) => label == p.label && documentation.deepEqual(p.documentation);
 		public Dat toDat() =>
 			Dat.of(this, nameof(label), Dat.str(label), nameof(documentation), Dat.op(documentation));
 
@@ -462,7 +462,7 @@ namespace Lsp {
 			this.diagnostics = diagnostics;
 		}
 
-		public bool deepEqual(PublishDiagnostics p) => uri.Equals(p.uri) && diagnostics.deepEqual(p.diagnostics);
+		public bool deepEqual(PublishDiagnostics p) => uri == p.uri && diagnostics.deepEqual(p.diagnostics);
 		public Dat toDat() => Dat.of(this, nameof(uri), Dat.str(uri), nameof(diagnostics), Dat.arr(diagnostics));
 	}
 

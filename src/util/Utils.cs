@@ -54,4 +54,11 @@ static class Utils {
 			action();
 		}
 	}
+
+	internal static void doTimes(uint times, Action<uint> action) {
+		assert(times >= 0);
+		for (var i = times; i != 0; i--) {
+			action(i);
+		}
+	}
 }

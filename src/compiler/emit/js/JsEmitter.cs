@@ -42,33 +42,57 @@ class JsEmitter {
 			new Estree.AssignmentExpression(Loc.zero, moduleExports, e));
 
 	static void emitClass(Arr.Builder<Estree.Statement> body, Klass klass) {
-		if (klass.head is Klass.Head.Static) {
-			//var cls = {};
-			body.add(Estree.VariableDeclaration.var(klass.loc, klass.name, new Estree.ObjectExpression(klass.loc, Arr.empty<Estree.Property>())));
-		} else {
-			//function cls() {}
-			//TODO: need to assign to slots.
-			throw TODO();
-			//new Estree.FunctionDeclaration(klass.loc, new Estree.Identifier(klass.loc, klass.name), Arr.empty<Estree.Pattern>(), body);
+		var loc = klass.loc;
+		var name = klass.name;
+		switch (klass.head) {
+			case Klass.Head.Static _:
+				body.add(Estree.VariableDeclaration.var(loc, name, new Estree.ObjectExpression(loc, Arr.empty<Estree.Property>())));
+				break;
+			case Klass.Head.Abstract _:
+				body.add(new Estree.FunctionDeclaration(loc, new Estree.Identifier(loc, name), Arr.empty<Estree.Pattern>(), Estree.BlockStatement.empty(loc)));
+				break;
+			case Klass.Head.Slots s:
+				throw TODO();
+			default:
+				throw TODO();
 		}
 
-		foreach (var method in  klass.methods)
-			body.add(emitMethod(klass.name, method));
-
-		//var body = new Estree.ClassBody(klass.loc, methods);
-		//return new Estree.ClassExpression(klass.loc, new Estree.Identifier(klass.loc, klass.name), Op<Estree.Expression>.None, body);
+		foreach (var method in klass.methods)
+			emitMethod(body, name, method);
 	}
 
+	static readonly Sym symSuperClass = Sym.of("superClass");
+
 	static readonly Sym symPrototype = Sym.of("prototype");
-	static Estree.Statement emitMethod(Sym klassName, Method.MethodWithBody method) {
-		var body = exprToBlockStatement(method.body);
-		var fn = new Estree.FunctionExpression(method.loc, method.parameters.map(emitParameter), body);
+	static void emitMethod(Arr.Builder<Estree.Statement> body, Sym klassName, Method method) {
+		switch (method) {
+			case Method.MethodWithBody mb:
+				body.add(emitMethodWithBody(klassName, mb));
+				break;
+			case Method.AbstractMethod a:
+				// These compile to nothing -- they are abstract.
+				break;
+			default:
+				throw unreachable();
+		}
+	}
+
+	static Estree.Statement emitMethodWithBody(Sym klassName, Method.MethodWithBody method) {
 		var loc = method.loc;
 		var lhs = method.isStatic
 			? Estree.MemberExpression.simple(loc, klassName, method.name)
 			: Estree.MemberExpression.simple(loc, klassName, symPrototype, method.name);
-		return new Estree.ExpressionStatement(loc, new Estree.AssignmentExpression(loc, lhs, fn));
+		return new Estree.ExpressionStatement(loc, new Estree.AssignmentExpression(loc, lhs, methodExpression(method)));
 	}
+
+	static Estree.Statement assignMethod(Estree.Pattern lhs, Method.MethodWithBody method) =>
+		new Estree.ExpressionStatement(method.loc, new Estree.AssignmentExpression(method.loc, lhs, methodExpression(method)));
+
+	static Estree.FunctionExpression methodExpression(Method.MethodWithBody method) {
+		var body = exprToBlockStatement(method.body);
+		return new Estree.FunctionExpression(method.loc, method.parameters.map(emitParameter), body);
+	}
+
 
 	static Estree.Pattern emitParameter(Method.Parameter p) => new Estree.Identifier(p.loc, p.name);
 
@@ -124,6 +148,9 @@ class JsEmitter {
 				return new Estree.MemberExpression(loc, exprToExpr(g.target), new Estree.Identifier(g.loc, g.slot.name));
 			case Expr.WhenTest w:
 				return whenToExpr(w);
+			case Expr.InstanceMethodCall m:
+				var member = new Estree.MemberExpression(loc, exprToExpr(m.target), new Estree.Identifier(m.loc, m.method.name));
+				return new Estree.CallExpression(loc, member, m.args.map(exprToExpr));
 			default:
 				throw TODO();
 		}

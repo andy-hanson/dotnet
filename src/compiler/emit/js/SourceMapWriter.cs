@@ -115,7 +115,7 @@ class SourceMapWriter {
 		smd = new SourceMapDataBuilder() {
 			sourceMapFilePath = sourceMapFilePath,
 			jsSourceMappingURL = null, // We will inline source maps.
-			sourceMapFile = filePath.last.str,
+			sourceMapFile = filePath.last,
 			sourceMapSourceRoot = "",
 			sourceMapSources = Arr.of(fileText),
 			inputSourceFileNames = Arr.of(filePath.ToString()),

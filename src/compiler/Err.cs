@@ -26,7 +26,7 @@ abstract class Err : ToData<Err> {
 	internal abstract string Show { get; }
 
 	internal abstract class ErrImpl<Self> : Err, ToData<Self> where Self : Err, ToData<Self> {
-		public override bool deepEqual(Err e) => e is Self s && Equals(s);
+		public override bool deepEqual(Err e) => e is Self s && deepEqual(s);
 		public abstract bool deepEqual(Self s);
 	}
 
@@ -69,7 +69,7 @@ abstract class Err : ToData<Err> {
 		internal CircularDependency(Path path) { this.path = path; }
 		internal override string Show => $"Circular dependency at module {path}";
 
-		public override bool deepEqual(CircularDependency c) => path.Equals(c.path);
+		public override bool deepEqual(CircularDependency c) => path.deepEqual(c.path);
 		public override Dat toDat() => Dat.of(this, nameof(path), path);
 	}
 
@@ -80,7 +80,7 @@ abstract class Err : ToData<Err> {
 		internal override string Show =>
 			$"Can't find module '{logicalPath}'.\nTried '{ModuleResolver.attemptedPaths(logicalPath)}'.";
 
-		public override bool deepEqual(CantFindLocalModule c) => logicalPath.Equals(c.logicalPath);
+		public override bool deepEqual(CantFindLocalModule c) => logicalPath.deepEqual(c.logicalPath);
 		public override Dat toDat() => Dat.of(this, nameof(logicalPath), logicalPath);
 	}
 

@@ -74,6 +74,8 @@ namespace Estree {
 		internal BlockStatement(Loc loc, Arr<Statement> body) : base(loc) {
 			this.body = body;
 		}
+
+		internal static BlockStatement empty(Loc loc) => new BlockStatement(loc, Arr.empty<Statement>());
 	}
 
 	sealed class ReturnStatement : Node, Statement {

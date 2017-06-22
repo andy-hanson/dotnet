@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 
 interface FileInput {
+	/** Name of the module at "/index.nz" */
+	Sym rootName { get; }
 	// Null if the file was not found.
 	Op<string> read(Path path);
 }
@@ -11,7 +13,9 @@ sealed class NativeFileInput : FileInput {
 	readonly Path rootDir;
 	public NativeFileInput(Path rootDir) { this.rootDir = rootDir; }
 
-	public Op<string> read(Path path) {
+	Sym FileInput.rootName => Sym.of(rootDir.last);
+
+	Op<string> FileInput.read(Path path) {
 		var fullPath = Path.resolveWithRoot(rootDir, path).ToString();
 		if (File.Exists(fullPath)) {
 			return Op.Some(File.ReadAllText(fullPath));
@@ -44,6 +48,8 @@ struct DocumentInfo : ToData<DocumentInfo> {
 }
 
 interface DocumentProvider {
+	/** Name of the module at "/index.nz" */
+	Sym rootName { get; }
 	Op<DocumentInfo> getDocument(Path path);
 }
 
@@ -58,6 +64,8 @@ Does not cache anything.
 sealed class FileLoadingDocumentProvider : DocumentProvider {
 	readonly FileInput fileInput;
 	internal FileLoadingDocumentProvider(FileInput fileInput) { this.fileInput = fileInput; }
+
+	Sym DocumentProvider.rootName => fileInput.rootName;
 
 	Op<DocumentInfo> DocumentProvider.getDocument(Path path) =>
 		fileInput.read(path).map(text => DocumentInfo.parse(text, version: 0));
@@ -92,6 +100,8 @@ sealed class DocumentsCache : DocumentProvider {
 		x.each(v => pathToText.Add(path, v));
 		return x;
 	}
+
+	Sym DocumentProvider.rootName => fallback.rootName;
 
 	DocumentInfo getInfo(Path path, string text, uint version) => DocumentInfo.parse(text, version);
 }
