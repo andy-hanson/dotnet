@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -114,6 +115,13 @@ sealed class TestFor : Attribute {
 	internal TestFor(string testRootDir) { this.testPath = testRootDir; }
 }
 
+
+public sealed class T2Impl {
+	public Builtins.Int n() {
+		return Builtins.Int.of(1);
+	}
+}
+
 static class Tests {
 	[TestFor("Main")]
 	static void T1(TestData t) {
@@ -125,14 +133,153 @@ static class Tests {
 		// We need to implement its abstract class.
 		var cls = t.emittedRoot;
 		var impl = implementType(cls, new T2Impl());
-		var csres = cls.GetMethod("main").Invoke(null, new object[] { impl });
-		assertEqual(Builtins.Int.of(2), csres);
+		object csres;
+		try {
+			csres = cls.GetMethod("main").Invoke(null, new object[] { impl });
+		} catch (TargetInvocationException e) {
+			throw e.InnerException;
+		}
+		var expected = Builtins.Int.of(1);
+		assertEqual(expected, csres);
+
+
+		//Also in JS
+		var engine = new Jint.Engine();
+		var jscls = JsRunner.evalScript(engine, t.indexJs);
+		var jsImpl = Jint.Native.JsValue.FromObject(engine, foooo(engine, jscls, impl));
+
+		var jsres = jscls.invokeMethod("main", jsImpl);
+		assertEqual2(JsConvert.toJsValue(expected), jsres);
 	}
 
-	sealed class T2Impl {
-		public Builtins.Int n() {
-			return Builtins.Int.of(1);
+	/*internal static JsValue toJs(Jint.Engine e, Jint.Native.JsValue abstractClass, object o) {
+		/* //Jint.Object
+
+		//new object
+		var ctr = abstractClass.TryCast<Jint.Native.IConstructor>();
+		var instance = ctr.Construct(Array.Empty<Jint.Native.JsValue>());
+
+		//For each public methon on "o", make a function instance wrapping it.
+
+
+		Jint.Native.Function.BindFunctionInstance
+
+		instance.Put("n", )* /
+
+		//For each public property in o, assign to the instance.
+
+
+
+		//new Jint.Runtime.ExpressionInterpreter(e).EvaluateNewExpression()
+
+
+		//e.Object.Create(e.Object, abstractClass.AsObject().Get("prototype"));
+
+		//abstractClass.Invoke();
+
+		//e.Object.
+		//instantiate the class, then copy properties.
+		//Jint.Native.Object.ObjectConstructor.
+	}*/
+
+	static Jint.Native.JsValue foooo(Jint.Engine engine, Jint.Native.JsValue clsToImplement, object o) {
+		var x = clsToImplement.As<Jint.Native.Function.FunctionInstance>();
+		var clsToImplementName = Jint.Runtime.TypeConverter.ToString(x.Get("name"));
+
+		var wrapper = wrapMethodsInJsValueConversion(clsToImplementName, o);
+		var instance = Jint.Native.JsValue.FromObject(engine, wrapper).AsObject();
+		instance.Prototype = x.Get("prototype").AsObject();
+
+		return instance;
+
+		//var instance = new Jint.Native.Object.ObjectInstance(engine);
+		//instance.Prototype = x.Get("prototype").AsObject();
+
+
+	}
+
+	static object wrapMethodsInJsValueConversion(string clsToImplementName, object o) {
+		//Creates a type that wraps o's methods and converts things.
+		//For example, if a parameter is of type Builtins.Bool, we will change it to a function taking a Jint.Native.JsValue that's expected to be a Bool.
+
+		//duplicate code in implementType
+		var implementerName = $"implement_{clsToImplementName}";
+		var assemblyName = new AssemblyName(implementerName);
+		var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndCollect);
+		var moduleBuilder = assemblyBuilder.DefineDynamicModule(implementerName);
+		var implementer = moduleBuilder.DefineType(implementerName, TypeAttributes.Public | TypeAttributes.Sealed);
+
+		var oType = o.GetType();
+		assert(oType.IsSealed);
+
+		var field = implementer.DefineField("implementation", oType, FieldAttributes.Public);
+
+		var overrides = oType.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance);
+		foreach (var implementationMethod in overrides) {
+			var name = implementationMethod.Name;
+			var implementationParams = implementationMethod.GetParameters();
+			var convertedParameters = implementationParams.mapToArray(p => JsConvert.mpType(p.ParameterType));
+			var convertedReturnType = JsConvert.mpType(implementationMethod.ReturnType);
+			var mb = implementer.DefineMethod(
+				name,
+				MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final,
+				convertedReturnType,
+				convertedParameters);
+
+			var il = mb.GetILGenerator();
+
+			implementationParams.each((param, idx) => {
+				il.Emit(ILWriter.ldargOperation(idx, isStatic: false));
+				var convertedParameterType = convertedParameters[idx];
+				// Might have to convert it.
+				if (JsConvert.converterFromJs(param.ParameterType, out var mi)) {
+					var miParams = mi.GetParameters();
+					assert(miParams.Length == 1);
+					assert(miParams[0].ParameterType == convertedParameterType);
+					assert(mi.ReturnType == param.ParameterType);
+
+					il.Emit(OpCodes.Call, mi);
+				} else {
+					assert(param.ParameterType == convertedParameterType);
+				}
+			});
+
+			//var nParameters = unsigned(methodToOverride.GetParameters().Length);
+			//doTimes(nParameters, idx => { il.Emit(ILWriter.ldargOperation(idx, isStatic: false)); });
+
+			//Ld field
+			il.Emit(OpCodes.Ldarg_0);
+			il.Emit(OpCodes.Ldfld, field);
+
+			//Call its method.
+			il.Emit(OpCodes.Call, implementationMethod);
+
+			// Might have to convert the return value.
+			if (JsConvert.converterToJs(implementationMethod.ReturnType, out var miCnv)) {
+				var miParams = miCnv.GetParameters();
+				assert(miParams.Length == 1);
+				assert(miParams[0].ParameterType == implementationMethod.ReturnType);
+				assert(miCnv.ReturnType == convertedReturnType);
+				il.Emit(OpCodes.Call, miCnv);
+			} else {
+				assert(implementationMethod.ReturnType == convertedReturnType);
+			}
+
+			il.Emit(OpCodes.Ret);
 		}
+
+		//dup
+		var ctrBuilder = implementer.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[] { oType });
+		ctrBuilder.DefineParameter(0, ParameterAttributes.None, "field");
+		var ctrIl = ctrBuilder.GetILGenerator();
+		//Set the field
+		ctrIl.Emit(OpCodes.Ldarg_0);
+		ctrIl.Emit(OpCodes.Ldarg_1);
+		ctrIl.Emit(OpCodes.Stfld, field);
+		ctrIl.Emit(OpCodes.Ret);
+
+		var type = implementer.CreateType();
+		return Activator.CreateInstance(type, o);
 	}
 
 	//mv
@@ -150,7 +297,6 @@ static class Tests {
 		var oType = o.GetType();
 		assert(oType.IsSealed);
 
-		//It will have a field of type 'o'.
 		var field = implementer.DefineField("implementation", oType, FieldAttributes.Public);
 
 		var overrides = oType.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance);
@@ -160,12 +306,19 @@ static class Tests {
 			assert(methodToOverride != null);
 			assert(methodToOverride.IsAbstract);
 
+			assert(implementationMethod.ReturnType == methodToOverride.ReturnType);
+			var paramTypes = implementationMethod.GetParameters().zip(methodToOverride.GetParameters(), (imParam, oParam) => {
+				assert(imParam.ParameterType == oParam.ParameterType);
+				return oParam.ParameterType;
+			});
+
 			//Override the method!
 			var mb = implementer.DefineMethod(
 				name,
-				MethodAttributes.Public,
+				// Virtual and final? Yes. Virtual means: overrides something. Final means: Can't be overridden itself.
+				MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final,
 				methodToOverride.ReturnType,
-				methodToOverride.GetParameters().mapToArray(p => p.ParameterType));
+				paramTypes);
 
 			var il = mb.GetILGenerator();
 			var nParameters = unsigned(methodToOverride.GetParameters().Length);
@@ -192,9 +345,81 @@ static class Tests {
 		var type = implementer.CreateType();
 		//Instantiate it
 
-		var instance = Activator.CreateInstance(type, o);
-		return instance;
+		return Activator.CreateInstance(type, o);
 	}
+}
+
+//NOT public, treat as private to JsConvert
+public static class Converters {
+	public static Jint.Native.JsValue __voidToJs(Builtins.Void v) =>
+		Jint.Native.JsValue.Undefined;
+	public static Jint.Native.JsValue __boolToJs(Builtins.Bool b) =>
+		b.value ? Jint.Native.JsValue.True : Jint.Native.JsValue.False;
+	public static Jint.Native.JsValue __intToJs(Builtins.Int i) =>
+		new Jint.Native.JsValue(i.value);
+	public static Jint.Native.JsValue __floatToJs(Builtins.Float f) =>
+		new Jint.Native.JsValue(f.value);
+	public static Jint.Native.JsValue __strToJs(Builtins.Str s) =>
+		new Jint.Native.JsValue(s.value);
+
+	public static Builtins.Void __voidFromJs(Jint.Native.JsValue j) {
+		assert(j == Jint.Native.JsValue.Undefined);
+		return Builtins.Void.instance;
+	}
+	public static Builtins.Bool __boolFromJs(Jint.Native.JsValue j) =>
+		Builtins.Bool.of(j.AsBoolean());
+	public static Builtins.Int __intFromJs(Jint.Native.JsValue j) {
+		var n = j.AsNumber();
+		assert(n % 1 == 0);
+		return Builtins.Int.of((int) n);
+	}
+	public static Builtins.Float __floatFromJs(Jint.Native.JsValue j) =>
+		Builtins.Float.of(j.AsNumber());
+	public static Builtins.Str __strFromJs(Jint.Native.JsValue j) =>
+		Builtins.Str.of(j.AsString());
+}
+
+//mv
+static class JsConvert {
+	internal static Type mpType(Type t) =>
+		convertersToJs.ContainsKey(t) ? typeof(Jint.Native.JsValue) : t;
+
+	internal static Jint.Native.JsValue toJsValue(object o) {
+		switch (o) {
+			case Builtins.Void v:
+				return Converters.__voidToJs(v);
+			case Builtins.Bool b:
+				return Converters.__boolToJs(b);
+			case Builtins.Int i:
+				return Converters.__intToJs(i);
+			case Builtins.Float f:
+				return Converters.__floatToJs(f);
+			case Builtins.Str s:
+				return Converters.__strToJs(s);
+			default:
+				throw TODO();
+		}
+	}
+
+	static Dictionary<Type, MethodInfo> convertersToJs = new Dictionary<Type, string>() {
+		{ typeof(Builtins.Void), nameof(Converters.__voidToJs) },
+		{ typeof(Builtins.Bool), nameof(Converters.__boolToJs) },
+		{ typeof(Builtins.Int), nameof(Converters.__intToJs) },
+		{ typeof(Builtins.Float), nameof(Converters.__floatToJs) },
+		{ typeof(Builtins.Str), nameof(Converters.__strToJs) }
+	}.mapValuesToDictionary(typeof(Converters).GetMethod);
+
+	internal static bool converterToJs(Type t, out MethodInfo m) => convertersToJs.TryGetValue(t, out m);
+
+	static Dictionary<Type, MethodInfo> convertersFromJs = new Dictionary<Type, string>() {
+		{ typeof(Builtins.Void), nameof(Converters.__voidFromJs) },
+		{ typeof(Builtins.Bool), nameof(Converters.__boolFromJs) },
+		{ typeof(Builtins.Int), nameof(Converters.__intFromJs) },
+		{ typeof(Builtins.Float), nameof(Converters.__floatFromJs) },
+		{ typeof(Builtins.Str), nameof(Converters.__strFromJs) }
+	}.mapValuesToDictionary(typeof(Converters).GetMethod);
+
+	internal static bool converterFromJs(Type t, out MethodInfo m) => convertersFromJs.TryGetValue(t, out m);
 }
 
 static class TestUtils {
@@ -203,35 +428,16 @@ static class TestUtils {
 		var csres = csmethod.Invoke(null, arguments);
 		assertEqual(expected, csres);
 
-		var jscls = JsRunner.evalScript(t.indexJs);
-		var jsres = jscls.invokeMethod("main", arguments.mapToArray(toJsValue));
-		assertEqual2(toJsValue(expected), jsres);
-	}
-
-	//mv
-	internal static Jint.Native.JsValue toJsValue(object o) {
-		switch (o) {
-			case Builtins.Void v:
-				return Jint.Native.JsValue.Undefined;
-			case Builtins.Bool b:
-				return b.value ? Jint.Native.JsValue.True : Jint.Native.JsValue.False;
-			case Builtins.Int i:
-				//TODO: this gives me a primitive, right?
-				return new Jint.Native.JsValue(i.value);
-			case Builtins.Float f:
-				return new Jint.Native.JsValue(f.value);
-			case Builtins.Str s:
-				return new Jint.Native.JsValue(s.value);
-			default:
-				throw TODO();
-		}
+		var engine = new Jint.Engine();
+		var jscls = JsRunner.evalScript(engine, t.indexJs);
+		var jsres = jscls.invokeMethod("main", arguments.mapToArray(JsConvert.toJsValue));
+		assertEqual2(JsConvert.toJsValue(expected), jsres);
 	}
 
 	internal static void assertEqual2(Jint.Native.JsValue expected, Jint.Native.JsValue actual) {
 		if (!expected.Equals(actual)) {
-			Console.WriteLine(expected);
-			Console.WriteLine($"Expected: {expected}");
-			Console.WriteLine($"Actual: {actual}");
+			Console.WriteLine($"Expected: {expected.GetType()} {expected}");
+			Console.WriteLine($"Actual: {actual.GetType()} {actual}");
 			throw TODO();
 		}
 	}

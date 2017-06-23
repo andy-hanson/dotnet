@@ -151,6 +151,19 @@ struct Arr<T> {
 }
 
 static class Arr {
+    internal static void each<T>(this T[] a, Action<T, uint> action) {
+        for (uint i = 0; i < a.Length; i++)
+            action(a[i], i);
+    }
+
+    internal static V[] zip<T, U, V>(this T[] a, U[] b, Func<T, U, V> zipper) {
+        assert(a.Length == b.Length);
+        var res = new V[a.Length];
+        for (uint i = 0; i < a.Length; i++)
+            res[i] = zipper(a[i], b[i]);
+        return res;
+    }
+
     internal static string join<T>(this Arr<T> xs, string joiner) {
         if (xs.length == 0) return "";
 

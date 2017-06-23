@@ -82,15 +82,18 @@ static class Dict {
 		return new Dict<K, V>(b);
 	}
 
-	internal static Dict<K, V2> mapValues<K, V1, V2>(this IDictionary<K, V1> d, Func<V1, V2> mapper) where K : IEquatable<K> {
-		var b = new Dictionary<K, V2>();
-		foreach (var pair in d)
-			b[pair.Key] = mapper(pair.Value);
-		return new Dict<K, V2>(b);
-	}
+	internal static Dict<K, V2> mapValues<K, V1, V2>(this IDictionary<K, V1> d, Func<V1, V2> mapper) where K : IEquatable<K> =>
+		new Dict<K, V2>(d.mapValuesToDictionary(mapper));
 }
 
 static class DictionaryUtils {
+	internal static Dictionary<K, V2> mapValuesToDictionary<K, V1, V2>(this IDictionary<K, V1> dict, Func<V1, V2> mapper) {
+		var b = new Dictionary<K, V2>();
+		foreach (var pair in dict)
+			b[pair.Key] = mapper(pair.Value);
+		return b;
+	}
+
 	internal static Op<V> getOp<K, V>(this IDictionary<K, V> dict, K key) =>
 		dict.TryGetValue(key, out var value) ? Op.Some(value) : Op<V>.None;
 

@@ -16,8 +16,7 @@ static class JsValueUtils {
 }
 
 static class JsRunner {
-	internal static Jint.Native.JsValue evalScript(Path path) {
-		var engine = new Jint.Engine();
+	internal static Jint.Native.JsValue evalScript(Jint.Engine engine, Path path) {
 		try {
 			return evalScriptAtFile(engine, path);
 		} catch (Jint.Runtime.JavaScriptException e) {

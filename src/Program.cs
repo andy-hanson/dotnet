@@ -13,7 +13,7 @@ using Lsp;
 class TestAttribute : Attribute {}
 
 
-abstract class ImplementMe {
+public abstract class ImplementMe {
 	public abstract void m();
 }
 //Must be public so a dynamic assembly can access it
@@ -26,10 +26,10 @@ public sealed class Implementation {
 class Program {
 
 	static void Main(string[] _) {
-		dynamic impl = Tests.implementType(typeof(ImplementMe), new Implementation());
-		impl.m();
+		//dynamic impl = Tests.implementType(typeof(ImplementMe), new Implementation());
+		//impl.m();
 
-		//TestCompile.runSingle("AbstractClass");
+		TestCompile.runSingle("AbstractClass");
 
 		//testNil();
 		//testJint2();

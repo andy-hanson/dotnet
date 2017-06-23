@@ -1,5 +1,5 @@
-function AbstractClass() {}
-AbstractClass.main = function (a,) {
+function AbstractClass(){}
+AbstractClass.main = function (a) {
 	return a.n();
 };
 module.exports = AbstractClass;

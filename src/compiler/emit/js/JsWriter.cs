@@ -260,11 +260,17 @@ class JsWriter : EmitTextWriter {
 	}
 
 	void writeParameters(Arr<Estree.Pattern> pms) {
+		if (pms.length == 0) {
+			writeRaw("()");
+			return;
+		}
+
 		writeRaw('(');
-		foreach (var param in pms) {
-			writePattern(param);
+		for (uint i = 0; i < pms.length - 1; i++) {
+			writePattern(pms[i]);
 			writeRaw(',');
 		}
+		writePattern(pms.last);
 		writeRaw(") ");
 	}
 
