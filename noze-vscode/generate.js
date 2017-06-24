@@ -21,6 +21,7 @@ const keywords = [
 	"impl",
 	"import",
 	"in",
+	"new",
 	"pass",
 	"self",
 	"slots",

@@ -105,4 +105,3 @@ abstract class Err : ToData<Err> {
 		public override Dat toDat() => Dat.of(this, nameof(ty1), ty1, nameof(ty2), ty2);
 	}
 }
-

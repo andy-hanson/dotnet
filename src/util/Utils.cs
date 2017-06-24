@@ -29,13 +29,20 @@ static class Utils {
 		writeChar('"');
 	}
 
-	internal static int signed(uint u) => (int) u;
-	internal static uint unsigned(int i) => (uint) i;
+	internal static int signed(uint u) => checked((int)u);
+	internal static uint unsigned(int i) => checked((uint)i);
 
 	internal static int hashCombine(int a, int b) =>
 		a * 17 + b;
 
-	internal static Exception TODO(string message = "TODO") {
+	#pragma warning disable CC0057 // unused argument 'value'
+	internal static void unused<T>(Action<T> method) {}
+	internal static void unused<T, U>(Func<T, U> method) {}
+	internal static void unused<T>(T value) {}
+	internal static void unused<T, U>(T value1, U value2) {}
+	#pragma warning restore
+
+	internal static Exception TODO(string message = "TODO!") {
 		Debugger.Break();
 		return new Exception(message);
 	}

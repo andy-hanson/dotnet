@@ -52,6 +52,7 @@ static class Dict {
 		if (dict.ContainsKey(key)) {
 			return false;
 		}
+
 		dict[key] = value;
 		return true;
 	}
@@ -79,6 +80,7 @@ static class Dict {
 			if (pair.get(out var p))
 				b[p.Item1] = p.Item2;
 		}
+
 		return new Dict<K, V>(b);
 	}
 

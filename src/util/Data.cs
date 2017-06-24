@@ -134,90 +134,55 @@ public abstract class Dat : ToData<Dat> {
 		internal override void write(Writer w) => w.writeDict(value);
 	}
 
-	internal static Dat of<T>(T o) where T : ToData<T> => new Dat0<T>();
+	internal static Dat of<T>(T o) where T : ToData<T> {
+		unused(o);
+		return new Dat0<T>();
+	}
 
 	internal static Dat of<T, V1>(T o, string key1, V1 value1) where T : ToData<T> where V1 : ToData<V1> {
-		#if false
-			var type = typeof(T);
-			assert(o.GetType() == type);
-			var fields = getFields<T>();
-			assert(fields.Length == 1);
-			checkField(fields[0], o, key1, value1);
-		#endif
+		unused(o);
 		return new Dat1<T, V1>(key1, value1);
 	}
 
 	internal static Dat of<T, V1, V2>(T o, string key1, V1 value1, string key2, V2 value2) where T : ToData<T> where V1 : ToData<V1> where V2 : ToData<V2> {
-		#if false
-			assert(o.GetType() == typeof(T));
-			var fields = getFields<T>();
-			assert(fields.Length == 2);
-			checkField(fields[0], o, key1, value1);
-			checkField(fields[1], o, key2, value2);
-		#endif
+		unused(o);
 		return new Dat2<T, V1, V2>(key1, value1, key2, value2);
 	}
 
-	internal static Dat of<T, V1, V2, V3>(T o, string key1, V1 value1, string key2, V2 value2, string key3, V3 value3) where T : ToData<T> where V1 : ToData<V1> where V2 : ToData<V2> where V3 : ToData<V3> {
-		#if false
-			assert(o.GetType() == typeof(T));
-			var fields = getFields<T>();
-			assert(fields.Length == 3);
-			checkField(fields[0], o, key1, value1);
-			checkField(fields[1], o, key2, value2);
-			checkField(fields[2], o, key3, value3);
-		#endif
+	internal static Dat of<T, V1, V2, V3>(
+		T o, string key1, V1 value1, string key2, V2 value2, string key3, V3 value3)
+		where T : ToData<T> where V1 : ToData<V1> where V2 : ToData<V2> where V3 : ToData<V3> {
+		unused(o);
 		return new Dat3<T, V1, V2, V3>(key1, value1, key2, value2, key3, value3);
 	}
 
 	internal static Dat of<T, V1, V2, V3, V4>(
 		T o, string key1, V1 value1, string key2, V2 value2, string key3, V3 value3, string key4, V4 value4)
 		where T : ToData<T> where V1 : ToData<V1> where V2 : ToData<V2> where V3 : ToData<V3> where V4 : ToData<V4> {
-		#if false
-			assert(o.GetType() == typeof(T));
-			var fields = getFields<T>();
-			assert(fields.Length == 4);
-			checkField(fields[0], o, key1, value1);
-			checkField(fields[1], o, key2, value2);
-			checkField(fields[2], o, key3, value3);
-			checkField(fields[3], o, key4, value4);
-		#endif
+		unused(o);
 		return new Dat4<T, V1, V2, V3, V4>(key1, value1, key2, value2, key3, value3, key4, value4);
 	}
 
 	internal static Dat of<T, V1, V2, V3, V4, V5>(
 		T o, string key1, V1 value1, string key2, V2 value2, string key3, V3 value3, string key4, V4 value4, string key5, V5 value5)
 		where T : ToData<T> where V1 : ToData<V1> where V2 : ToData<V2> where V3 : ToData<V3> where V4 : ToData<V4> where V5 : ToData<V5> {
-		#if false
-			assert(o.GetType() == typeof(T));
-			var fields = getFields<T>();
-			assert(fields.Length == 5);
-			checkField(fields[0], o, key1, value1);
-			checkField(fields[1], o, key2, value2);
-			checkField(fields[2], o, key3, value3);
-			checkField(fields[3], o, key4, value4);
-			checkField(fields[4], o, key5, value5);
-		#endif
+		unused(o);
 		return new Dat5<T, V1, V2, V3, V4, V5>(key1, value1, key2, value2, key3, value3, key4, value4, key5, value5);
 	}
 
 	internal static Dat of<T, V1, V2, V3, V4, V5, V6>(
 		T o, string key1, V1 value1, string key2, V2 value2, string key3, V3 value3, string key4, V4 value4, string key5, V5 value5, string key6, V6 value6)
 		where T : ToData<T> where V1 : ToData<V1> where V2 : ToData<V2> where V3 : ToData<V3> where V4 : ToData<V4> where V5 : ToData<V5> where V6 : ToData<V6> {
+		unused(o);
 		return new Dat6<T, V1, V2, V3, V4, V5, V6>(key1, value1, key2, value2, key3, value3, key4, value4, key5, value5, key6, value6);
 	}
 
 	internal static Dat of<T, V1, V2, V3, V4, V5, V6, V7>(
 		T o, string key1, V1 value1, string key2, V2 value2, string key3, V3 value3, string key4, V4 value4, string key5, V5 value5, string key6, V6 value6, string key7, V7 value7)
 		where T : ToData<T> where V1 : ToData<V1> where V2 : ToData<V2> where V3 : ToData<V3> where V4 : ToData<V4> where V5 : ToData<V5> where V6 : ToData<V6> where V7 : ToData<V7> {
+		unused(o);
 		return new Dat6<T, V1, V2, V3, V4, V5, V6, V7>(key1, value1, key2, value2, key3, value3, key4, value4, key5, value5, key6, value6, key7, value7);
 	}
-
-	static void checkField(FieldInfo f, object o, string key, object value) {
-		assert(f.Name == key);
-		assert(f.GetValue(o) == value);
-	}
-	static FieldInfo[] getFields<T>() { return typeof(T).GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.FlattenHierarchy); }
 
 	internal sealed class Dat0<T> : Dat where T : ToData<T> {
 		internal Dat0() {}
@@ -225,6 +190,7 @@ public abstract class Dat : ToData<Dat> {
 		public override Type type => typeof(T);
 		internal override void write(Writer w) => w.writeDict(this);
 	}
+
 	internal sealed class Dat1<T, V1> : Dat where T : ToData<T> where V1 : ToData<V1> {
 		internal readonly string key1;
 		internal readonly V1 value1;
@@ -233,6 +199,7 @@ public abstract class Dat : ToData<Dat> {
 		public override Type type => typeof(T);
 		internal override void write(Writer w) => w.writeDict(this);
 	}
+
 	internal sealed class Dat2<T, V1, V2> : Dat where T : ToData<T> where V1 : ToData<V1> where V2 : ToData<V2> {
 		internal readonly string key1; internal readonly V1 value1;
 		internal readonly string key2; internal readonly V2 value2;
@@ -244,6 +211,7 @@ public abstract class Dat : ToData<Dat> {
 		public override Type type => typeof(T);
 		internal override void write(Writer w) => w.writeDict(this);
 	}
+
 	internal sealed class Dat3<T, V1, V2, V3> : Dat where T : ToData<T> where V1 : ToData<V1> where V2 : ToData<V2> where V3 : ToData<V3> {
 		internal readonly string key1; internal readonly V1 value1;
 		internal readonly string key2; internal readonly V2 value2;
@@ -257,6 +225,7 @@ public abstract class Dat : ToData<Dat> {
 		public override Type type => typeof(T);
 		internal override void write(Writer w) => w.writeDict(this);
 	}
+
 	internal sealed class Dat4<T, V1, V2, V3, V4> : Dat where T : ToData<T> where V1 : ToData<V1> where V2 : ToData<V2> where V3 : ToData<V3> where V4 : ToData<V4> {
 		internal readonly string key1; internal readonly V1 value1;
 		internal readonly string key2; internal readonly V2 value2;
@@ -272,6 +241,7 @@ public abstract class Dat : ToData<Dat> {
 		public override Type type => typeof(T);
 		internal override void write(Writer w) => w.writeDict(this);
 	}
+
 	internal sealed class Dat5<T, V1, V2, V3, V4, V5> : Dat where T : ToData<T> where V1 : ToData<V1> where V2 : ToData<V2> where V3 : ToData<V3> where V4 : ToData<V4> where V5 : ToData<V5> {
 		internal readonly string key1; internal readonly V1 value1;
 		internal readonly string key2; internal readonly V2 value2;
@@ -289,6 +259,7 @@ public abstract class Dat : ToData<Dat> {
 		public override Type type => typeof(T);
 		internal override void write(Writer w) => w.writeDict(this);
 	}
+
 	internal sealed class Dat6<T, V1, V2, V3, V4, V5, V6> : Dat where T : ToData<T> where V1 : ToData<V1> where V2 : ToData<V2> where V3 : ToData<V3> where V4 : ToData<V4> where V5 : ToData<V5> where V6 : ToData<V6> {
 		internal readonly string key1; internal readonly V1 value1;
 		internal readonly string key2; internal readonly V2 value2;
@@ -308,6 +279,7 @@ public abstract class Dat : ToData<Dat> {
 		public override Type type => typeof(T);
 		internal override void write(Writer w) => w.writeDict(this);
 	}
+
 	internal sealed class Dat6<T, V1, V2, V3, V4, V5, V6, V7> : Dat where T : ToData<T> where V1 : ToData<V1> where V2 : ToData<V2> where V3 : ToData<V3> where V4 : ToData<V4> where V5 : ToData<V5> where V6 : ToData<V6> where V7 : ToData<V7> {
 		internal readonly string key1; internal readonly V1 value1;
 		internal readonly string key2; internal readonly V2 value2;

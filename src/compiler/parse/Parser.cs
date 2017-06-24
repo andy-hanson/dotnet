@@ -2,6 +2,8 @@ using static Arr;
 using static ParserExit;
 using static Utils;
 
+#pragma warning disable SA1121 // Use Pos instead of uint
+
 using Pos = System.UInt32;
 
 sealed class Parser : Lexer {
@@ -54,14 +56,23 @@ sealed class Parser : Lexer {
 		var path = new Path(pathParts.finish());
 		var loc = locFrom(startPos);
 		return Op.Some<Ast.Module.Import>(leadingDots == 0
-			? (Ast.Module.Import) new Ast.Module.Import.Global(loc, path)
-			: (Ast.Module.Import) new Ast.Module.Import.Relative(loc, new RelPath(leadingDots, path)));
+			? (Ast.Module.Import)new Ast.Module.Import.Global(loc, path)
+			: (Ast.Module.Import)new Ast.Module.Import.Relative(loc, new RelPath(leadingDots, path)));
 	}
 
 	Ast.Klass parseClass(Pos start, Token kw) {
 		var head = parseHead(start, kw);
-		var members = buildUntilNull(parseMember);
-		return new Ast.Klass(locFrom(start), head, members);
+		Arr<Ast.Super> supers;
+		Arr<Ast.Member> methods;
+		if (atEOF) {
+			supers = Arr.empty<Ast.Super>();
+			methods = Arr.empty<Ast.Member>();
+		} else {
+			var (superz, nextStart, next) = parseSupers();
+			supers = superz;
+			methods = atEOF ? Arr.empty<Ast.Member>() : parseMethods(nextStart, next);
+		}
+		return new Ast.Klass(locFrom(start), head, supers, methods);
 	}
 
 	Ast.Klass.Head parseHead(Pos start, Token kw) {
@@ -73,9 +84,7 @@ sealed class Parser : Lexer {
 				takeNewline();
 				return new Ast.Klass.Head.Static(locFrom(start));
 			case Token.Slots:
-				takeIndent();
-				var vars = build2(parseSlot); // At least one slot must exist.
-				return new Ast.Klass.Head.Slots(locFrom(start), vars);
+				return parseSlots(start);
 			case Token.Enum:
 				throw TODO();
 			default:
@@ -83,7 +92,66 @@ sealed class Parser : Lexer {
 		}
 	}
 
-	Arr.Iter<Ast.Klass.Head.Slots.Slot> parseSlot() {
+	(Arr<Ast.Super>, Pos, Token) parseSupers() {
+		var start = pos;
+		var next = takeKeyword();
+		if (next != Token.Is) {
+			return (Arr.empty<Ast.Super>(), start, next);
+		}
+
+		var super = parseSuper(start);
+		var nextStart = pos;
+		next = takeKeyword();
+		//TODO: support multiple supers
+		return (Arr.of(super), nextStart, next);
+	}
+
+	Ast.Super parseSuper(Pos start) {
+		takeSpace();
+		var name = takeName();
+		Arr<Ast.Impl> impls;
+		switch (takeNewlineOrIndent()) {
+			case NewlineOrIndent.Indent:
+				impls = Arr.build2(parseImpl);
+				break;
+			case NewlineOrIndent.Newline:
+				impls = Arr.empty<Ast.Impl>();
+				break;
+			default:
+				throw unreachable();
+		}
+
+		return new Ast.Super(locFrom(start), name, impls);
+	}
+
+	(Ast.Impl, bool isNext) parseImpl() {
+		// foo(x, y)
+		var start = pos;
+		var name = takeName();
+		takeLparen();
+		Arr<Sym> parameters;
+		if (tryTakeRparen())
+			parameters = Arr.empty<Sym>();
+		else {
+			var first = takeName();
+			parameters = buildUntilNullWithFirst(first, parseImplParameter);
+		}
+
+		takeIndent();
+		var body = parseBlock();
+
+		var impl = new Ast.Impl(locFrom(start), name, parameters, body);
+		var isNext = !this.tryTakeDedentFromDedenting();
+		return (impl, isNext);
+	}
+
+	Ast.Klass.Head.Slots parseSlots(Pos start) {
+		takeIndent();
+		var vars = build2(parseSlot); // At least one slot must exist.
+		return new Ast.Klass.Head.Slots(locFrom(start), vars);
+	}
+
+	(Ast.Klass.Head.Slots.Slot, bool isNext) parseSlot() {
 		var start = pos;
 		var next = takeKeyword();
 		bool mutable;
@@ -104,19 +172,23 @@ sealed class Parser : Lexer {
 		var name = takeName();
 		var slot = new Ast.Klass.Head.Slots.Slot(locFrom(start), mutable, ty, name);
 		var isNext = takeNewlineOrDedent() == NewlineOrDedent.Newline;
-		return new Arr.Iter<Ast.Klass.Head.Slots.Slot>(slot, isNext);
+		return (slot, isNext);
 	}
 
-	Op<Ast.Member> parseMember() {
-		if (atEOF) {
-			return Op<Ast.Member>.None;
+	Arr<Ast.Member> parseMethods(Pos start, Token next) {
+		//TODO: helper fn for this pattern
+		var b = Arr.builder<Ast.Member>();
+		while (true) {
+			b.add(parseMethod(start, next));
+			if (atEOF)
+				return b.finish();
+
+			start = pos;
+			next = takeKeyword();
 		}
-		return Op.Some<Ast.Member>(doParseMember());
 	}
 
-	Ast.Member doParseMember() {
-		var start = pos;
-		var next = takeKeyword();
+	Ast.Member parseMethod(Pos start, Token next) {
 		switch (next) {
 			case Token.Fun:
 				return parseMethodWithBody(start, isStatic: true);
@@ -133,6 +205,14 @@ sealed class Parser : Lexer {
 		var (returnTy, name, parameters) = parseMethodHead();
 		takeNewline();
 		return new Ast.Member.AbstractMethod(locFrom(start), returnTy, name, parameters);
+	}
+
+	Op<Sym> parseImplParameter() {
+		if (tryTakeRparen())
+			return Op<Sym>.None;
+		takeComma();
+		takeSpace();
+		return Op.Some(takeName());
 	}
 
 	(Ast.Ty, Sym, Arr<Ast.Member.Parameter>) parseMethodHead() {
@@ -367,6 +447,9 @@ sealed class Parser : Lexer {
 					expr = finishRegular();
 					next = Next.CtxEnded;
 					return;
+
+				case Token.New:
+					throw TODO();
 
 				default:
 					parts.add(singleTokenExpr(loopNext, locFrom(loopStart)));

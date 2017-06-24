@@ -1,9 +1,9 @@
 using System;
 using System.Text;
 
-using Json;
-
 using static Utils;
+
+#pragma warning disable CC0068 // Lots of unused stuff here.
 
 class SourceMapSpan {
 	internal readonly uint emittedLine;
@@ -29,31 +29,18 @@ interface SourceMapSource {
 	string fileName { get; }
 	string text { get; }
 	LineColumnGetter lineMap { get; }
-	//uint skipTrivia(uint pos);
 }
 
-/*struct SourceMapData { //kill
-	internal readonly string sourceMapFilePath;           // Where the sourcemap file is written
-	internal readonly string jsSourceMappingURL;          // source map URL written in the .js file
-	internal readonly string sourceMapFile;               // Source map's file field - .js file name
-	internal readonly string sourceMapSourceRoot;         // Source map's sourceRoot field - location where the sources will be present if not ""
-	internal readonly Arr<string> sourceMapSources;          // Source map's sources field - list of sources that can be indexed in this source map
-	//internal readonly Op<Arr<string>> sourceMapSourcesContent;  // Source map's sourcesContent field - list of the sources' text to be embedded in the source map
-	internal readonly Arr<string> inputSourceFileNames;      // Input source file (which one can use on program to get the file), 1:1 mapping with the sourceMapSources list
-	//internal readonly Op<Arr<string>> sourceMapNames;           // Source map's names field - list of names that can be indexed in this source map
-	internal readonly string sourceMapMappings;           // Source map's mapping field - encoded source map spans
-}*/
-
 struct SourceMapDataBuilder {
-	internal  string sourceMapFilePath;           // Where the sourcemap file is written
-	internal  string jsSourceMappingURL;          // source map URL written in the .js file
-	internal  string sourceMapFile;               // Source map's file field - .js file name
-	internal  string sourceMapSourceRoot;         // Source map's sourceRoot field - location where the sources will be present if not ""
-	internal  Arr<string> sourceMapSources;          // Source map's sources field - list of sources that can be indexed in this source map
-	//internal Op<Arr<string>> sourceMapSourcesContent;  // Source map's sourcesContent field - list of the sources' text to be embedded in the source map
-	internal  Arr<string> inputSourceFileNames;      // Input source file (which one can use on program to get the file), 1:1 mapping with the sourceMapSources list
-	internal  Arr.Builder<string> sourceMapNames;           // Source map's names field - list of names that can be indexed in this source map
-	internal  StringBuilder sourceMapMappings;           // Source map's mapping field - encoded source map spans
+	internal string sourceMapFilePath; // Where the sourcemap file is written
+	internal string jsSourceMappingURL; // source map URL written in the .js file
+	internal string sourceMapFile; // Source map's file field - .js file name
+	internal string sourceMapSourceRoot; // Source map's sourceRoot field - location where the sources will be present if not ""
+	internal Arr<string> sourceMapSources; // Source map's sources field - list of sources that can be indexed in this source map
+	//internal Op<Arr<string>> sourceMapSourcesContent; // Source map's sourcesContent field - list of the sources' text to be embedded in the source map
+	internal Arr<string> inputSourceFileNames; // Input source file (which one can use on program to get the file), 1:1 mapping with the sourceMapSources list
+	internal Arr.Builder<string> sourceMapNames; // Source map's names field - list of names that can be indexed in this source map
+	internal StringBuilder sourceMapMappings; // Source map's mapping field - encoded source map spans
 }
 
 interface EmitTextWriter {
@@ -68,7 +55,6 @@ struct SourceMap : ToData<SourceMap> {
 	Arr<string> sources;
 	Arr<string> names;
 	string mappings;
-	//Arr<string> sourcesContent;
 
 	internal SourceMap(uint version, string file, string sourceRoot, Arr<string> sources, Arr<string> names, string mappings) {
 		this.version = version;
@@ -91,8 +77,8 @@ struct SourceMap : ToData<SourceMap> {
 
 class SourceMapWriter {
 	readonly EmitTextWriter writer;
-	SourceMapSource currentSource; // TODO: write to!
 	readonly string sourceMapDir;
+	SourceMapSource currentSource; // TODO: write to!
 
 	Op<SourceMapSpan> lastRecordedSourceMapSpan;
 	Op<SourceMapSpan> lastEncodedSourceMapSpan;
@@ -100,23 +86,20 @@ class SourceMapWriter {
 	SourceMapDataBuilder smd;
 
 	internal SourceMapWriter(EmitTextWriter writer, Path filePath, string fileText, string sourceMapFilePath, Estree.Program sourceFile) {
+		unused(sourceFile);
+
 		this.writer = writer;
 
 		currentSource = null;
 		if (Math.Abs(1) == 1) throw TODO();
 
-		//currentSource = null; //!
-		//currentSourceText = null; //!
-
-		//lastRecordedSourceMapSpan = default(SourceMapSpan); //!
-
 		lastEncodedSourceMapSpan = Op.Some(SourceMapSpan.defaultLastEncoded);
 
-		smd = new SourceMapDataBuilder() {
+		smd = new SourceMapDataBuilder {
 			sourceMapFilePath = sourceMapFilePath,
 			jsSourceMappingURL = null, // We will inline source maps.
 			sourceMapFile = filePath.last,
-			sourceMapSourceRoot = "",
+			sourceMapSourceRoot = string.Empty,
 			sourceMapSources = Arr.of(fileText),
 			inputSourceFileNames = Arr.of(filePath.ToString()),
 			sourceMapNames = Arr.builder<string>(),
@@ -171,8 +154,7 @@ class SourceMapWriter {
 			lastRecorded.emittedLine != emittedLine ||
 			lastRecorded.emittedColumn != emittedColumn ||
 			lastRecorded.sourceLine > sourceLinePos.line ||
-				lastRecorded.sourceLine == sourceLinePos.line && lastRecorded.sourceColumn > sourceLinePos.column) {
-
+			lastRecorded.sourceLine == sourceLinePos.line && lastRecorded.sourceColumn > sourceLinePos.column) {
 			// Encode the last recordedSpan before assigning new
 			encodeLastRecordedSourceMapSpan();
 
@@ -195,10 +177,6 @@ class SourceMapWriter {
 		emitPos(node.loc.end);
 	}
 
-	//void emitTokenWithSourceMap(Estree.Node node, string token, uint tokenPos, Func<string, uint, uint> emitCallback) {
-	//	var range = node.
-	//}
-
 	SourceMap finish() {
 		encodeLastRecordedSourceMapSpan();
 
@@ -211,7 +189,7 @@ class SourceMapWriter {
 			mappings: smd.sourceMapMappings.ToString());
 	}
 
-	string getSourceMappingURL() {
+	/*string getSourceMappingURL() {
 		//inline source map
 		var sourceMap = finish();
 		var text = JsonWriter.write(sourceMap);
@@ -219,10 +197,10 @@ class SourceMapWriter {
 		var url = $"data:application/json;base64,{base64SourceMapText}";
 		smd.jsSourceMappingURL = url;
 		return url;
-	}
+	}*/
 
-	const string base64Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 	static char base64FormatEncode(uint inValue) {
+		const string base64Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 		assert(base64Chars.Length == 64);
 		return base64Chars.at(inValue);
 	}
@@ -247,8 +225,10 @@ class SourceMapWriter {
 		} while (inValue != 0);
 	}
 
-    const string base64Digits = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-	static char base64Digit(uint someByte) => base64Digits.at(someByte);
+	static char base64Digit(uint someByte) {
+    	const string base64Digits = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+		return base64Digits.at(someByte);
+	}
 
 	static string convertToBase64(string input) {
 		var result = new StringBuilder();
@@ -288,25 +268,25 @@ class SourceMapWriter {
 
 	//TODO: C# may be encoding strings strangely.
 	static Arr<uint> getExpandedCharCodes(string input) {
-		var res = Arr.builder<uint>();//new uint[input.Length];
+		var res = Arr.builder<uint>();
 
 		foreach (var charCodeChar in input) {
-			var charCode = (uint) charCodeChar;
-			if (charCode < 0x80) {
-				res.add(charCode);
-			} else if (charCode < 0x800) {
-				res.add((charCode >> 6) | 0b11000000);
-				res.add((charCode & 0b00111111) | 0b10000000);
-			} else if (charCode < 0x10000) {
-				res.add((charCode >> 12) | 0b11100000);
-				res.add(((charCode >> 6) & 0b00111111) | 0b10000000);
-				res.add((charCode & 0b00111111) | 0b10000000);
+			var ch = (uint)charCodeChar;
+			if (ch < 0x80) {
+				res.add(ch);
+			} else if (ch < 0x800) {
+				res.add((ch >> 6) | 0b11000000);
+				res.add((ch & 0b00111111) | 0b10000000);
+			} else if (ch < 0x10000) {
+				res.add((ch >> 12) | 0b11100000);
+				res.add(((ch >> 6) & 0b00111111) | 0b10000000);
+				res.add((ch & 0b00111111) | 0b10000000);
 			} else {
-				assert(charCode < 0x20000);
-				res.add((charCode >> 18) | 0b11110000);
-				res.add(((charCode >> 12) & 0b00111111) | 0b10000000);
-				res.add(((charCode >> 6) & 0b00111111) | 0b10000000);
-				res.add((charCode & 0b00111111) | 0b10000000);
+				assert(ch < 0x20000);
+				res.add((ch >> 18) | 0b11110000);
+				res.add(((ch >> 12) & 0b00111111) | 0b10000000);
+				res.add(((ch >> 6) & 0b00111111) | 0b10000000);
+				res.add((ch & 0b00111111) | 0b10000000);
 			}
 		}
 

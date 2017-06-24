@@ -1,5 +1,5 @@
 static class ModuleResolver {
-	internal static bool getDocumentFromLogicalPath(DocumentProvider dp, Op<PathLoc> from, Path logicalPath, out Path fullPath, out bool isIndex, out DocumentInfo di) {
+	internal static bool getDocumentFromLogicalPath(DocumentProvider dp, Path logicalPath, out Path fullPath, out bool isIndex, out DocumentInfo di) {
 		isIndex = false;
 		fullPath = regularPath(logicalPath);
 		if (dp.getDocument(fullPath).get(out di))

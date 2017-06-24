@@ -1,6 +1,7 @@
 using System;
 
 using Json;
+using static Utils;
 
 namespace Lsp {
 	abstract class LspMethod {
@@ -252,7 +253,10 @@ namespace Lsp {
 				signatures.deepEqual(s.signatures) && activeSignature.deepEqual(s.activeSignature) && activeParameter.deepEqual(s.activeParameter);
 			public override Dat toDat() => Dat.of(this, nameof(signatures), Dat.arr(signatures), nameof(activeSignature), activeSignature, nameof(activeParameter), activeParameter);
 			void ToJsonSpecial.toJsonSpecial(JsonWriter j) =>
-				j.writeDictWithTwoOptionalValues("signatures", signatures, "activeSignature", activeSignature, "activeParameter", activeParameter);
+				j.writeDictWithTwoOptionalValues(
+					nameof(signatures), signatures,
+					nameof(activeSignature), activeSignature,
+					nameof(activeParameter), activeParameter);
 		}
 
 		// TODO: need this class? Just use the array directly?
@@ -364,18 +368,18 @@ namespace Lsp {
 
 		public Dat toDat() => Dat.of(this,
 			nameof(range), range,
-			nameof(severity), Dat.op(severity.mapToUint(s => (uint) s)),
+			nameof(severity), Dat.op(severity.mapToUint(s => (uint)s)),
 			nameof(code), Dat.op(code),
 			nameof(source), Dat.op(source),
 			nameof(message), Dat.str(message));
 
 		void ToJsonSpecial.toJsonSpecial(JsonWriter j) {
 			j.writeDictWithMiddleThreeOptionalValues(
-				"range", range,
-				"severity", severity.get(out var v) ? OpUint.Some((uint) v) : OpUint.None,
-				"code", code,
-				"source", source,
-				"message", message);
+				nameof(range), range,
+				nameof(severity), severity.get(out var v) ? OpUint.Some((uint)v) : OpUint.None,
+				nameof(code), code,
+				nameof(source), source,
+				nameof(message), message);
 		}
 
 		internal enum Severity {
@@ -399,7 +403,7 @@ namespace Lsp {
 		}
 
 		public bool deepEqual(DocumentHighlight d) => range.deepEqual(d.range) && kind == d.kind;
-		public Dat toDat() => Dat.of(this, nameof(range), range, nameof(kind), Dat.num((uint) kind));
+		public Dat toDat() => Dat.of(this, nameof(range), range, nameof(kind), Dat.num((uint)kind));
 	}
 
 	struct TextDocumentPositionParams : ToData<TextDocumentPositionParams> {
@@ -437,7 +441,10 @@ namespace Lsp {
 		public Dat toDat() =>
 			Dat.of(this, nameof(label), Dat.str(label), nameof(documentation), Dat.op(documentation), nameof(parameters), Dat.op(parameters.map(Dat.arr)));
 		void ToJsonSpecial.toJsonSpecial(JsonWriter j) =>
-			j.writeDictWithTwoOptionalValues("label", label, "documentation", documentation, "parameters", parameters);
+			j.writeDictWithTwoOptionalValues(
+				nameof(label), label,
+				nameof(documentation), documentation,
+				nameof(parameters), parameters);
 	}
 
 	struct ParameterInformation : ToData<ParameterInformation>, ToJsonSpecial {
@@ -450,7 +457,9 @@ namespace Lsp {
 			Dat.of(this, nameof(label), Dat.str(label), nameof(documentation), Dat.op(documentation));
 
 		void ToJsonSpecial.toJsonSpecial(JsonWriter j) =>
-			j.writeDictWithOneOptionalValue("label", label, "documentation", documentation);
+			j.writeDictWithOneOptionalValue(
+				nameof(label), label,
+				nameof(documentation), documentation);
 	}
 
 	//TODO:document
@@ -477,6 +486,7 @@ namespace Lsp {
 		internal readonly bool referencesProvider;
 
 		internal InitResponse(bool dummy) {
+			unused(dummy);
 			textDocumentSync = 1;
 			hoverProvider = true;
 			completionProvider = new CompletionOptions(true);
@@ -501,6 +511,7 @@ namespace Lsp {
 			internal Arr<char> triggerCharacters;
 
 			internal CompletionOptions(bool dummy) {
+				unused(dummy);
 				resolveProvider = false;
 				triggerCharacters = Arr.of('.');
 			}
@@ -515,6 +526,7 @@ namespace Lsp {
 			internal Arr<char> triggerCharacters;
 
 			internal SignatureHelpOptions(bool dummy) {
+				unused(dummy);
 				triggerCharacters = Arr.of(' ');
 			}
 

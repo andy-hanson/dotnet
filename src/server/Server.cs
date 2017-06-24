@@ -1,7 +1,7 @@
 using System;
-using System.Net.Sockets;
 using System.IO;
 using System.Net;
+using System.Net.Sockets;
 
 using Json;
 using static Utils;
@@ -56,6 +56,7 @@ namespace Lsp.Server {
 			stream.Close();
 			client.Close();
 			server.Stop();
+			GC.SuppressFinalize(this);
 		}
 	}
 
@@ -127,10 +128,12 @@ namespace Lsp.Server {
 		}
 
 		Response getRequestResponse(LspMethod.Request rq) {
+			unused(this, rq);
 			throw TODO();
 		}
 
-		string getResponseText<T>(uint requestId, T result) where T : ToData<T> => JsonWriter.write(new ResponseWrapper<T>(requestId, result));
+		static string getResponseText<T>(uint requestId, T result) where T : ToData<T> =>
+			JsonWriter.write(new ResponseWrapper<T>(requestId, result));
 	}
 
 	struct NotifyWrapper<T> : ToData<NotifyWrapper<T>> where T : ToData<T> {
@@ -197,7 +200,7 @@ static class TcpUtils {
 }
 
 static class StreamUtils {
-	internal static void WriteAll(this Stream stream, Byte[] bytes) {
+	internal static void WriteAll(this Stream stream, byte[] bytes) {
 		stream.Write(bytes, 0, bytes.Length);
 	}
 
@@ -209,12 +212,12 @@ static class StreamUtils {
 	}
 
 	internal static uint readUintThenNewline(Stream stream) {
-		var fst = (char) stream.ReadByte();
+		var fst = (char)stream.ReadByte();
 		if (!Json.JsonScanner.toDigit(fst, out var res))
 			throw new Exception($"Expected a digit, got: {fst}");
 
 		while (true) {
-			var ch = (char) stream.ReadByte();
+			var ch = (char)stream.ReadByte();
 			if (!Json.JsonScanner.toDigit(ch, out var d)) {
 				readNewline(stream, ch);
 				return res;

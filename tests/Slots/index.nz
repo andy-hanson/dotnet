@@ -1,0 +1,8 @@
+slots
+	val Int x
+
+fun Slots of(Int x)
+	new x
+
+def Int getX()
+	x

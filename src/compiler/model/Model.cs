@@ -64,6 +64,8 @@ namespace Model {
 
 	// This is always a ClassLike currently. Eventually we'll add instantiated generic classes too.
 	abstract class Ty : M, ToData<Ty>, Identifiable<ClassLike.Id> {
+		internal abstract bool isAbstract { get; } //kill
+
 		public abstract bool deepEqual(Ty ty);
 		public override abstract int GetHashCode();
 		public abstract Dat toDat();
@@ -95,6 +97,8 @@ namespace Model {
 	sealed class BuiltinClass : ClassLike, ToData<BuiltinClass> {
 		internal readonly Type dotNetType;
 
+		internal override bool isAbstract => dotNetType.IsAbstract;
+
 		Dict<Sym, Member> _membersMap;
 		internal override Dict<Sym, Member> membersMap => _membersMap;
 
@@ -109,8 +113,7 @@ namespace Model {
 			("-", "_sub"),
 			("*", "_mul"),
 			("/", "_div"),
-			("^", "_pow")
-		).mapKeys(Sym.of);
+			("^", "_pow")).mapKeys(Sym.of);
 		static Dict<string, Sym> operatorUnescapes = operatorEscapes.reverse();
 
 		//void is OK for builtins, but we shouldn't attempt to create a class for it.
@@ -162,14 +165,14 @@ namespace Model {
 		public override bool deepEqual(Ty t) => throw new NotImplementedException();
 		public bool deepEqual(BuiltinClass b) => throw new NotImplementedException(); // This should never happen.
 		public override int GetHashCode() => name.GetHashCode();
-		public override Dat toDat() => Dat.of(this, "name", Dat.str(name.str));
+		public override Dat toDat() => Dat.of(this, nameof(name), name);
 
 		internal static string escapeName(Sym name) {
 			if (operatorEscapes.get(name, out var str))
 				return str;
 
 			foreach (var ch in name.str)
-				if ('a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z')
+				if (CharUtils.isLetter(ch))
 					unreachable();
 
 			return name.str;
@@ -188,6 +191,8 @@ namespace Model {
 		[UpPointer] internal readonly Module module;
 		internal readonly Loc loc;
 
+		internal override bool isAbstract => head is Head.Abstract;
+
 		internal Klass(Module module, Loc loc, Sym name) : base(name) {
 			this.module = module;
 			this.loc = loc;
@@ -199,6 +204,12 @@ namespace Model {
 		internal Head head {
 			get => _head.force;
 			set { assert(!_head.has); _head = Op.Some(value); }
+		}
+
+		internal Op<Arr<Super>> _supers;
+		internal Arr<Super> supers {
+			get => _supers.force;
+			set { assert(!_supers.has); _supers = Op.Some(value); }
 		}
 
 		Op<Arr<Method>> _methods;
@@ -234,7 +245,9 @@ namespace Model {
 
 			// Abstract class: Never instantiated.
 			internal class Abstract : Head, ToData<Abstract> {
-				internal Abstract(Loc loc) : base(loc) {}
+				internal readonly Arr<Method.AbstractMethod> abstractMethods;
+
+				internal Abstract(Loc loc, Arr<Method.AbstractMethod> abstractMethods) : base(loc) { this.abstractMethods = abstractMethods; }
 				public override bool deepEqual(Head h) => h is Abstract a && deepEqual(a);
 				public bool deepEqual(Abstract a) => loc.deepEqual(a.loc);
 				public override Dat toDat() => Dat.of(this, nameof(loc), loc);
@@ -278,6 +291,70 @@ namespace Model {
 		}
 	}
 
+	sealed class Super : M, ToData<Super>, Identifiable<Super.Id> {
+		internal readonly Loc loc;
+		[ParentPointer] internal readonly Klass klass;
+		[UpPointer] internal readonly Ty superClass;
+		//internal readonly Arr<Impl> impls;
+		Op<Arr<Impl>> _impls;
+		internal Arr<Impl> impls {
+			get => _impls.force;
+			set { assert(_impls.has); _impls = Op.Some(value); }
+		}
+
+		internal Super(Loc loc, Klass klass, Ty superClass) {
+			this.loc = loc;
+			this.klass = klass;
+			this.superClass = superClass;
+		}
+
+		public bool deepEqual(Super s) =>
+			klass.equalsId<Klass, ClassLike.Id>(s.klass) &&
+			superClass.equalsId<Ty, ClassLike.Id>(s.superClass) &&
+			impls.deepEqual(s.impls);
+		public Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(superClass), superClass.getId(), nameof(impls), Dat.arr(impls));
+		public Id getId() => new Id(klass.getId(), superClass.getId());
+
+		internal struct Id : ToData<Id> {
+			internal readonly ClassLike.Id classId;
+			internal readonly ClassLike.Id superClassId;
+			internal Id(ClassLike.Id classId, ClassLike.Id superClassId) {
+				this.classId = classId;
+				this.superClassId = superClassId;
+			}
+
+			public bool deepEqual(Id i) =>
+				classId.deepEqual(i.classId) &&
+				superClassId.deepEqual(i.superClassId);
+			public Dat toDat() => Dat.of(this, nameof(classId), classId, nameof(superClassId), superClassId);
+		}
+	}
+
+	internal sealed class Impl : M, ToData<Impl> {
+		internal readonly Loc loc;
+		[ParentPointer] internal readonly Super super;
+		[UpPointer] internal readonly Method.AbstractMethod implemented;
+		internal readonly Expr body;
+
+		internal Impl(Super super, Loc loc, Method.AbstractMethod implemented, Expr body) {
+			this.super = super;
+			this.loc = loc;
+			this.implemented = implemented;
+			this.body = body;
+		}
+
+		public bool deepEqual(Impl i) =>
+			loc.deepEqual(i.loc) &&
+			implemented.equalsId<Method.AbstractMethod, Method.Id>(i.implemented) &&
+			body.deepEqual(i.body);
+		public Dat toDat() => Dat.of(this,
+			nameof(loc), loc,
+			nameof(super), super.getId(),
+			nameof(implemented), implemented.getId(),
+			nameof(body), body);
+	}
+
+	// Slot or Method
 	abstract class Member : M, ToData<Member> {
 		internal readonly Loc loc;
 		internal readonly Sym name;
@@ -286,6 +363,7 @@ namespace Model {
 		public abstract Dat toDat();
 	}
 
+	// `fun` or `def` or `impl`, or a builtin method.
 	abstract class Method : Member, ToData<Method>, Identifiable<Method.Id> {
 		internal struct Id : ToData<Id> {
 			internal readonly ClassLike.Id klassId;
@@ -300,7 +378,6 @@ namespace Model {
 		public sealed override int GetHashCode() => name.GetHashCode();
 
 		[ParentPointer] internal readonly ClassLike klass;
-		//internal readonly bool isStatic;//TODO: just store static methods elsewhere?
 		internal abstract bool isStatic { get; }
 		[UpPointer] internal readonly Ty returnTy;
 		internal readonly Arr<Parameter> parameters;
@@ -348,8 +425,12 @@ namespace Model {
 
 			public override bool deepEqual(Method m) => m is BuiltinMethod b && deepEqual(b);
 			public bool deepEqual(BuiltinMethod m) =>
-				name.deepEqual(m.name) && isStatic == m.isStatic && returnTy.equalsId<Ty, ClassLike.Id>(m.returnTy) && parameters.deepEqual(m.parameters);
-			public override Dat toDat() => Dat.of(this, "name", name, nameof(isStatic), Dat.boolean(isStatic), nameof(returnTy), returnTy.getId(), nameof(parameters), Dat.arr(parameters));
+				loc.deepEqual(m.loc) && name.deepEqual(m.name) && isStatic == m.isStatic && returnTy.equalsId<Ty, ClassLike.Id>(m.returnTy) && parameters.deepEqual(m.parameters);
+			public override Dat toDat() => Dat.of(this,
+				nameof(name), name,
+				nameof(isStatic), Dat.boolean(isStatic),
+				nameof(returnTy), returnTy.getId(),
+				nameof(parameters), Dat.arr(parameters));
 
 			static Sym getName(MethodInfo m) {
 				var customName = m.GetCustomAttribute<BuiltinName>(inherit: true);

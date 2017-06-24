@@ -25,11 +25,32 @@ struct Arr<T> {
         }
     }
 
-    internal uint length => (uint) inner.Length;
+    internal List<T> toList() =>
+        new List<T>(inner);
+
+    internal uint length => (uint)inner.Length;
 
     internal Arr(T[] inner) { this.inner = inner; }
 
     internal T this[uint idx] => inner[signed(idx)];
+
+    internal Arr<T> keep(Func<T, bool> keepIf) {
+        var b = Arr.builder<T>();
+        foreach (var em in this) {
+            if (keepIf(em))
+                b.add(em);
+        }
+        return b.finish();
+    }
+
+    internal Arr<U> keepOfType<U>() where U : T {
+        var b = Arr.builder<U>();
+        foreach (var em in this) {
+            if (em is U u)
+                b.add(u);
+        }
+        return b.finish();
+    }
 
     internal Arr<U> map<U>(Func<T, U> mapper) {
         var b = new U[length];
@@ -86,7 +107,7 @@ struct Arr<T> {
     internal Arr<T> slice(uint lo, uint hi) => new Arr<T>(sliceToBuilder(lo, hi));
 
     internal U[] mapToArray<U>(Func<T, U> mapper) {
-        U[] res = new U[length];
+        var res = new U[length];
         for (uint i = 0; i < length; i++) {
             res[i] = mapper(this[i]);
         }
@@ -130,6 +151,7 @@ struct Arr<T> {
                 return true;
             }
         }
+
         found = default(T);
         return false;
     }
@@ -165,13 +187,14 @@ static class Arr {
     }
 
     internal static string join<T>(this Arr<T> xs, string joiner) {
-        if (xs.length == 0) return "";
+        if (xs.length == 0) return string.Empty;
 
         var res = new StringBuilder();
         for (uint i = 0; i < xs.length - 1; i++) {
             res.Append(xs[i]);
             res.Append(joiner);
         }
+
         res.Append(xs[xs.length - 1]);
         return res.ToString();
     }
@@ -203,6 +226,7 @@ static class Arr {
                 return true;
             }
         }
+
         found = default(T);
         return false;
     }
@@ -231,7 +255,7 @@ static class Arr {
 
     internal struct Builder<T> {
         readonly List<T> b;
-        internal Builder(bool dummy) { b = new List<T>(); }
+        internal Builder(bool dummy) { unused(dummy); b = new List<T>(); }
 
         /** Number of elements added so far. */
         internal uint curLength => unsigned(b.Count);
@@ -264,7 +288,7 @@ static class Arr {
         internal bool isEmpty => curLength == 0;
     }
 
-    internal static Arr<T> buildUntilNull<T>(Func<Op<T>> f) where T : class {
+    internal static Arr<T> buildUntilNull<T>(Func<Op<T>> f) {
         var b = builder<T>();
         while (true) {
             var x = f();
@@ -275,7 +299,7 @@ static class Arr {
         }
     }
 
-    internal static Arr<T> buildUntilNullWithFirst<T>(T first, Func<Op<T>> f) where T : class {
+    internal static Arr<T> buildUntilNullWithFirst<T>(T first, Func<Op<T>> f) {
         var b = builder<T>();
         b.add(first);
         while (true) {
@@ -287,7 +311,7 @@ static class Arr {
         }
     }
 
-    internal static Arr<T> buildUntilNull<T>(Func<bool, Op<T>> f) where T : class {
+    internal static Arr<T> buildUntilNull<T>(Func<bool, Op<T>> f) {
         var b = builder<T>();
         while (true) {
             var x = f(false);
@@ -298,19 +322,25 @@ static class Arr {
         }
     }
 
-    internal class Iter<T> {
-        internal readonly T item;
-        internal bool next;
-        internal Iter(T item, bool next) { this.item = item; this.next = next; }
-    }
-
     // Unlike buildUntilNull, this allows you to return a value *and* indicate that `f` shouldn't be called again.
-    internal static Arr<T> build2<T>(Func<Iter<T>> f) {
+    internal static Arr<T> build2<T>(Func<(T item, bool isNext)> f) {
         var b = builder<T>();
-        do {
-            var t = f();
-            b.add(t.item);
-            if (!t.next) return b.finish();
-        } while (true);
+        while (true) {
+            var (item, isNext) = f();
+            b.add(item);
+            if (!isNext) return b.finish();
+        }
     }
+}
+
+//mv
+static class ListUtils {
+    /*internal static Op<T> deleteFirstWhere<T>(this List<T> list, Func<T, bool> f) {
+        for (uint i = 0; i < list.Count; i++) {
+            var res = list[signed(i)];
+            if (f(res)) {
+
+            }
+        }
+    }*/
 }

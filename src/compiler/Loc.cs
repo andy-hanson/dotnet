@@ -90,7 +90,7 @@ struct LineColumnGetter {
 	internal LineAndColumn lineAndColumnAtPos(uint pos) {
 		//binary search
 		uint lowLine = 0;
-		uint highLine = lineToPos.length - 1;
+		var highLine = lineToPos.length - 1;
 
 		//Invariant:
 		//start of lowLineNumber comes before pos
@@ -107,7 +107,7 @@ struct LineColumnGetter {
 				lowLine = middleLine + 1;
 		}
 
-		uint line = lowLine - 1;
+		var line = lowLine - 1;
 		return new LineAndColumn(line, pos - lineToPos[line]);
 	}
 

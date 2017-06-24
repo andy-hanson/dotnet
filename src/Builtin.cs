@@ -14,7 +14,7 @@ sealed class Hid : Attribute {}
 public static class Builtins {
     public sealed class Void : ToData<Void> {
         private Void() {}
-        [Hid] public readonly static Void instance = new Void();
+        [Hid] public static readonly Void instance = new Void();
 
         bool DeepEqual<Void>.deepEqual(Void v) => true;
         Dat ToData<Void>.toDat() => Dat.str("<void>");
@@ -48,10 +48,10 @@ public static class Builtins {
         bool DeepEqual<Int>.deepEqual(Int i) => value == i.value;
         Dat ToData<Int>.toDat() => Dat.inum(value);
 
-        public Int _add(Int other) => of(checked (value + other.value));
-        public Int _sub(Int other) => of(checked (value - other.value));
-        public Int _mul(Int other) => of(checked (value * other.value));
-        public Int _div(Int other) => of(checked (value / other.value));
+        public Int _add(Int other) => of(checked(value + other.value));
+        public Int _sub(Int other) => of(checked(value - other.value));
+        public Int _mul(Int other) => of(checked(value * other.value));
+        public Int _div(Int other) => of(checked(value / other.value));
     }
 
     public struct Float : ToData<Float> {
@@ -69,10 +69,10 @@ public static class Builtins {
         bool DeepEqual<Float>.deepEqual(Float f) => value == f.value;
         Dat ToData<Float>.toDat() => Dat.floatDat(value);
 
-        public Float _add(Float other) => of(checked (value + other.value));
-        public Float _sub(Float other) => of(checked (value - other.value));
-        public Float _mul(Float other) => of(checked (value * other.value));
-        public Float _div(Float other) => of(checked (value / other.value));
+        public Float _add(Float other) => of(checked(value + other.value));
+        public Float _sub(Float other) => of(checked(value - other.value));
+        public Float _mul(Float other) => of(checked(value * other.value));
+        public Float _div(Float other) => of(checked(value / other.value));
     }
 
     public struct Str : ToData<Str> {

@@ -75,6 +75,7 @@ sealed class ILEmitter {
 		typeInfos[klass] = new TypeBuilding(typeBuilder.GetTypeInfo());
 
 		fillHead(typeBuilder, klass);
+		if (klass.supers.length != 0) throw TODO();
 		fillMethods(typeBuilder, klass);
 
 		var type = typeBuilder.CreateTypeInfo();
@@ -82,7 +83,7 @@ sealed class ILEmitter {
 		return type;
 	}
 
-	TypeAttributes typeFlags(Klass.Head head) {
+	static TypeAttributes typeFlags(Klass.Head head) {
 		switch (head ){
 			case Klass.Head.Static s:
 				return TypeAttributes.Sealed;
@@ -129,7 +130,7 @@ sealed class ILEmitter {
 		foreach (var method in klass.methods) {
 			switch (method) {
 				case Method.MethodWithBody mwb:
-					var mb = (MethodBuilder) methodInfos[mwb];
+					var mb = (MethodBuilder)methodInfos[mwb];
 					var methIl = mb.GetILGenerator();
 					var iw = new ILWriter(methIl, isStatic: mwb.isStatic);
 					new ExprEmitter(this, iw).emitAny(mwb.body);
@@ -142,7 +143,6 @@ sealed class ILEmitter {
 			}
 		}
 	}
-
 
 	static MethodAttributes methodAttributes(Method method) {
 		switch (method) {
@@ -168,7 +168,7 @@ sealed class ILWriter {
 		//this.logs = Arr.builder<string>();
 	}
 
-	void log(string s) {
+	static void log(string s) {
 		//Console.WriteLine("  " + s);
 		//logs.add(s);
 	}
@@ -300,11 +300,11 @@ sealed class ExprEmitter {
 		il.getParameter(p.param);
 	}
 
-	void emitAccessLocal(Expr.AccessLocal lo) {
+	static void emitAccessLocal(Expr.AccessLocal lo) {
 		throw TODO();
 	}
 
-	void emitLet(Expr.Let l) {
+	static void emitLet(Expr.Let l) {
 		throw TODO();
 	}
 
@@ -388,7 +388,7 @@ sealed class ExprEmitter {
 		il.markLabel(end);
 	}
 
-	void emitStaticMethodCall(Expr.StaticMethodCall s) {
+	static void emitStaticMethodCall(Expr.StaticMethodCall s) {
 		throw TODO();
 	}
 
@@ -399,7 +399,7 @@ sealed class ExprEmitter {
 		il.callInstanceMethod(m.method is Method.AbstractMethod, emitter.toMethodInfo(m.method));
 	}
 
-	void emitGetSlot(Expr.GetSlot g) {
+	static void emitGetSlot(Expr.GetSlot g) {
 		throw TODO();
 	}
 }

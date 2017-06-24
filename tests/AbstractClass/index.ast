@@ -5,7 +5,8 @@ Module(
     loc: 0-65,
     head: Abstract(
       loc: 0-10),
-    members: [
+    supers: [],
+    methods: [
       AbstractMethod(
         loc: 10-28,
         returnTy: Access(

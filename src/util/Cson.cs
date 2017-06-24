@@ -69,6 +69,7 @@ sealed class CsonWriter : Writer {
 				writeRaw(", ");
 				writeType(args[i]);
 			}
+
 			writeRaw('>');
 		}
 	}
@@ -103,6 +104,7 @@ sealed class CsonWriter : Writer {
 					writeLine();
 					writeObj(xs[i]);
 				}
+
 				indent--;
 				writeLine();
 				writeRaw(']');

@@ -1,6 +1,5 @@
 using System;
 
-
 namespace Json {
 	interface ToJsonSpecial {
 		void toJsonSpecial(Json.JsonWriter j);
@@ -22,16 +21,10 @@ namespace Json {
 				value.toDat().write(this);
 		}
 
-
 		void writeArrayStart() => writeRaw('[');
 		void writeArrayEnd() => writeRaw(']');
 		void writeComma() => writeRaw(',');
 		void writeColon() => writeRaw(':');
-
-		void writeNextArrayEntry<T>(T value) where T : ToData<T> {
-			writeComma();
-			writeObj(value);
-		}
 
 		internal override void writeArray<T>(Arr<T> xs) {
 			writeArrayStart();
@@ -92,7 +85,7 @@ namespace Json {
 			if (value3.get(out var v3))
 				writeNextDictEntry(key3, Dat.str(v3));
 			if (value4.get(out var v4))
-				writeNextDictEntry(key3, Dat.str(v4));
+				writeNextDictEntry(key4, Dat.str(v4));
 			writeNextDictEntry(key5, Dat.str(value5));
 			writeDictEnd();
 		}
@@ -124,7 +117,5 @@ namespace Json {
 				writeNextDictEntry(key3, Dat.num(v3));
 			writeDictEnd();
 		}
-
 	}
 }
-

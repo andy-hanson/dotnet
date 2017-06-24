@@ -1,0 +1,7 @@
+import .AbstractClass
+
+slots
+	val Int x
+is AbstractClass
+	n()
+		x

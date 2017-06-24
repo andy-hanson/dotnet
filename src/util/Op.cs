@@ -107,7 +107,8 @@ struct OpUint : ToData<OpUint> {
 	internal uint or(Func<uint> or) =>
 		has ? value : or();
 
-	public bool Equals(OpUint u) => throw new NotImplementedException();
+	public override bool Equals(object o) => throw new NotImplementedException();
+	public override int GetHashCode() => throw new NotImplementedException();
 	public bool deepEqual(OpUint u) => value == u.value;
 
 	public Dat toDat() =>

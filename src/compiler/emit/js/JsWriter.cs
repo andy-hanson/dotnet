@@ -335,7 +335,6 @@ class JsWriter : EmitTextWriter {
 			default:
 				throw unreachable();
 		}
-
 	}
 
 	void writeId(Estree.Identifier i) {

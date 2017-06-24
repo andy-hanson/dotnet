@@ -4,6 +4,8 @@ using System.Text;
 using static ParserExit;
 using static Utils;
 
+#pragma warning disable SA1121 // Use Pos instead of uint
+
 using Pos = System.UInt32;
 
 //mv
@@ -120,18 +122,18 @@ abstract class Lexer : Reader {
 
 	//This is called *after* having skipped the first char of the number.
 	Token takeNumber(Pos startPos) {
-		skipWhile(isDigit);
+		skipWhile(CharUtils.isDigit);
 		var isFloat = peek == '.';
 		if (isFloat) {
 			skip();
-			if (!isDigit(peek)) throw exit(Loc.singleChar(pos), Err.TooMuchIndent);
+			if (!CharUtils.isDigit(peek)) throw exit(Loc.singleChar(pos), Err.TooMuchIndent);
 		}
 		this.tokenValue = sliceFrom(startPos);
 		return isFloat ? Token.FloatLiteral : Token.IntLiteral;
 	}
 
 	Token takeNameOrKeyword(Pos startPos) {
-		skipWhile(isNameChar);
+		skipWhile(CharUtils.isNameChar);
 		var s = sliceFrom(startPos);
 		var t = TokenU.keywordFromName(s);
 		if (t.get(out var tok)) return tok;
@@ -144,8 +146,6 @@ abstract class Lexer : Reader {
 		this.tokenValue = sliceFrom(startPos);
 		return kind;
 	}
-
-	static bool isDigit(char ch) => '0' <= ch && ch <= '9';
 
 	protected Token nextToken() {
 		if (dedenting != 0) {
@@ -172,15 +172,13 @@ abstract class Lexer : Reader {
 
 			case ' ':
 				if (peek == '\n') throw exit(Loc.singleChar(pos), Err.TrailingSpace);
-				throw new Exception("TODO");
+				throw TODO();
 
 			case '\n':
 				return handleNewline();
 
-			//case '|':
-			//    //comment
-			//    skipWhile(ch => ch != '\n');
-			//    handleNewline(true);
+			case '|':
+				throw TODO();
 
 			case '\\': return Token.Backslash;
 			case ':': return Token.Colon;
@@ -219,11 +217,11 @@ abstract class Lexer : Reader {
 			case 'K': case 'L': case 'M': case 'N': case 'O':
 			case 'P': case 'Q': case 'R': case 'S': case 'T':
 			case 'U': case 'V': case 'W': case 'X': case 'Y': case 'Z':
-				return takeStringLike(Token.TyName, start, isNameChar);
+				return takeStringLike(Token.TyName, start, CharUtils.isNameChar);
 
 			case '-':
 				var next = readChar();
-				if (isDigit(next)) return takeNumber(start);
+				if (CharUtils.isDigit(next)) return takeNumber(start);
 				goto case '+';
 
 			case '+': case '*': case '/': case '^': case '?': case '<': case '>':
@@ -232,12 +230,6 @@ abstract class Lexer : Reader {
 			default:
 				throw exit(Loc.singleChar(start), new Err.UnrecognizedCharacter(ch));
 		}
-	}
-
-	static bool isNameChar(char ch) {
-		return 'a' <= ch && ch <= 'z' ||
-			'A' <= ch && ch <= 'Z' ||
-				isDigit(ch) || ch == '-';
 	}
 
 	static bool isOperatorChar(char ch) {
@@ -304,13 +296,26 @@ abstract class Lexer : Reader {
 	protected NewlineOrDedent takeNewlineOrDedent() {
 		expectCharacter('\n');
 		skipNewlines();
-		doTimes(this.indent - 1, () => expectCharacter('\t'));
+		doTimes(indent - 1, () => expectCharacter('\t'));
 		if (tryTake('\t'))
 			return NewlineOrDedent.Newline;
 		else {
-			this.indent--;
+			indent--;
 			return NewlineOrDedent.Dedent;
 		}
+	}
+
+	protected enum NewlineOrIndent { Newline, Indent }
+	protected NewlineOrIndent takeNewlineOrIndent() {
+		expectCharacter('\n');
+		skipNewlines();
+		doTimes(indent, () => expectCharacter('\t'));
+		if (tryTake('\t')) {
+			indent++;
+			return NewlineOrIndent.Indent;
+		}
+		else
+			return NewlineOrIndent.Newline;
 	}
 
 	protected bool atEOF => peek == '\0';
@@ -374,8 +379,8 @@ abstract class Lexer : Reader {
 
 	protected string takeNameString() {
 		var startPos = pos;
-		expectCharacter("(non-type) name", ch => 'a' <= ch && ch <= 'z');
-		skipWhile(isNameChar);
+		expectCharacter("(non-type) name", CharUtils.isLowerCaseLetter);
+		skipWhile(CharUtils.isNameChar);
 		return sliceFrom(startPos);
 	}
 
@@ -383,18 +388,20 @@ abstract class Lexer : Reader {
 
 	protected Sym takeTyName() {
 		var startPos = pos;
-		expectCharacter("type name", ch => 'A' <= ch && ch <= 'Z');
-		skipWhile(isNameChar);
+		expectCharacter("type name", CharUtils.isUpperCaseLetter);
+		skipWhile(CharUtils.isNameChar);
 		return Sym.of(sliceFrom(startPos));
 	}
 
-	protected ParserExit unexpected(Pos startPos, string expectedDesc, Token token) => unexpected(startPos, expectedDesc,TokenU.TokenName(token));
-	protected ParserExit unexpected(Pos startPos, string expectedDesc, string actualDesc) => exit(locFrom(startPos), new Err.UnexpectedToken(expectedDesc, actualDesc));
+	protected ParserExit unexpected(Pos startPos, string expectedDesc, Token token) =>
+		unexpected(startPos, expectedDesc, TokenU.TokenName(token));
+	protected ParserExit unexpected(Pos startPos, string expectedDesc, string actualDesc) =>
+		exit(locFrom(startPos), new Err.UnexpectedToken(expectedDesc, actualDesc));
 
 	protected Token takeKeyword() {
 		var startPos = pos;
-		expectCharacter("keyword", ch => 'a' <= ch && ch <= 'z');
-		skipWhile(isNameChar);
+		expectCharacter("keyword", CharUtils.isLowerCaseLetter);
+		skipWhile(CharUtils.isNameChar);
 		var name = sliceFrom(startPos);
 		return TokenU.keywordFromName(name).or(() => throw unexpected(startPos, "keyword", name));
 	}

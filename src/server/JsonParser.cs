@@ -174,7 +174,6 @@ namespace Json {
 			return new LspMethod.Request.FindAllReferences(id, pms, includeDeclaration);
 		}
 
-
 		TextDocumentPositionParams parseTextDocumentPositionParams() {
 			var res = parseTextDocumentPositionParamsWithoutEnd();
 			readDictEnd();

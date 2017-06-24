@@ -1,10 +1,11 @@
-using Lsp;
 using Json;
+using Lsp;
 
 using static Assert;
 
+#pragma warning disable CC0068 // Use me!
 public class JsonParseTest {
-	[Test] static void parse() {
+	static void parse() {
 		var source = @"{
 			'jsonrpc': '2.0',
 			'id': 0,
@@ -91,8 +92,7 @@ public class JsonParseTest {
 			processId: 27882,
 			rootPath: Op<string>.None,
 			rootUri: Op<string>.None,
-			trace: "off"
-		);
+			trace: "off");
 		var parsed = JsonParser.parseInitialize(source);
 		mustEqual(expected, parsed);
 	}

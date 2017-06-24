@@ -2,7 +2,6 @@ using System;
 
 using static Utils;
 
-//mv
 class Either<L, R> {
 	internal readonly bool isLeft;
 	readonly L _left;

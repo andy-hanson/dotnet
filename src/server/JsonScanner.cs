@@ -177,7 +177,7 @@ namespace Json {
 				throw new Exception($"Expected a digit, got '{fst}");
 
 			while (true) {
-				char ch = readNoWhitespace();
+				var ch = readNoWhitespace();
 				if (!toDigit(ch, out var d)) {
 					next = ch;
 					return res;
@@ -271,7 +271,7 @@ namespace Json {
 
 		internal static bool toDigit(char ch, out uint digit) {
 			digit = ((uint)ch) - '0';
-			return 0 <= digit && digit <= 9;
+			return digit >= 0 && digit <= 9;
 		}
 	}
 }

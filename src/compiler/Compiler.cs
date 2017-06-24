@@ -78,7 +78,7 @@ sealed class Compiler {
 	}
 
 	(Module, bool isReused) doCompileSingle(Op<PathLoc> from, Path logicalPath) {
-		if (!ModuleResolver.getDocumentFromLogicalPath(documentProvider, from, logicalPath, out var fullPath, out var isIndex, out var documentInfo)) {
+		if (!ModuleResolver.getDocumentFromLogicalPath(documentProvider, logicalPath, out var fullPath, out var isIndex, out var documentInfo)) {
 			throw TODO(); //TODO: return Either<Module, CompileError> ?
 		}
 

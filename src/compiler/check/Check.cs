@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 
-using static Utils;
 using Model;
+using static Utils;
 
 struct BaseScope {
 	internal readonly Klass self;
@@ -49,6 +49,7 @@ struct BaseScope {
 		if (BuiltinClass.tryGet(name, out var builtin))
 			return builtin;
 
+		unused(loc);
 		throw TODO(); //Return dummy Ty and issue diagnostic
 	}
 }
@@ -65,6 +66,17 @@ class Checker {
 		this.baseScope = new BaseScope(klass, imports);
 	}
 
+	//neater
+	//TODO: also handle abstract methods in superclass of superclass
+	static Arr<Method.AbstractMethod> getAbstractMethods(Klass superClass) {
+		//TODO: this looks like a stylecop bug?
+		#pragma warning disable SA1119
+		if (!(superClass.head is Klass.Head.Abstract abs))
+		#pragma warning restore
+			throw TODO();
+		return abs.abstractMethods;
+	}
+
 	Klass checkClass(Klass klass, Ast.Klass ast) {
 		var b = Dict.builder<Sym, Member>();
 		void addMember(Member member) {
@@ -72,24 +84,69 @@ class Checker {
 				throw TODO(); //diagnostic
 		}
 
-		klass.head = checkHead(klass, ast.head, addMember);
+		var supers = ast.supers.map(superAst => {
+			var superClass = (Klass)baseScope.accessTy(superAst.loc, superAst.name); //TODO: handle builtin
+			return new Super(superAst.loc, klass, superClass);
+		});
+		if (supers.length != 0 && klass.head is Klass.Head.Static) throw TODO();
+		klass.supers = supers;
 
-		var emptyMembers = ast.members.map(memberAst => {
-			var e = emptyMember(klass, memberAst);
+		var methods = ast.methods.map(methodAst => {
+			var e = emptyMethod(klass, methodAst);
 			addMember(e);
 			return e;
 		});
+		klass.methods = methods;
+
+		// Adds slot
+		klass.head = checkHead(klass, ast.head, addMember, methods);
+
 		klass.setMembersMap(new Dict<Sym, Member>(b));
 
+		// Not that all members exist, we can fill in bodies.
+		ast.supers.doZip(supers, (superAst, super) => {
+			var abstractMethods = getAbstractMethods((Klass)super.superClass); //TODO: handle other kinds of superClass
+
+			var implAsts = superAst.impls;
+
+			if (implAsts.length != abstractMethods.length)
+				throw TODO(); // Something wasn't implemented.
+
+			for (uint i = 0; i < implAsts.length; i++) {
+				//Can't implement the same method twice (TEST)
+				var name = implAsts[i].name;
+				for (uint j = 0; j < i; j++) {
+					if (implAsts[j].name == name)
+						throw TODO(); // duplicate implementation
+				}
+			}
+
+			super.impls = implAsts.map(implAst => {
+				var name = implAst.name;
+				if (!abstractMethods.find(out var implemented, a => a.name == name))
+					throw TODO(); // Implemented a non-existent method.
+
+				if (implAst.parameters.length != implemented.parameters.length)
+					throw TODO(); // Too many / not enough parameters
+				implAst.parameters.doZip(implemented.parameters, (implParameter, abstractParameter) => {
+					if (implParameter != abstractParameter.name)
+						throw TODO(); // Parameter names don't match
+				});
+
+				var body = MethodChecker.checkMethod(baseScope, false, implemented.returnTy, implemented.parameters, implAst.body);
+				return new Impl(super, implAst.loc, implemented, body);
+			});
+		});
+
 		// Now that all members exist, fill in the body of each member.
-		klass.methods = ast.members.zip<Member, Method>(emptyMembers, (memberAst, member) => {
+		ast.methods.doZip(methods, (memberAst, member) => {
 			switch (memberAst) {
 				case Ast.Member.Method methodAst:
-					var method = (Method.MethodWithBody) member;
-					method.body = MethodChecker.checkMethod(baseScope, method, methodAst.body);
-					return method;
+					var method = (Method.MethodWithBody)member;
+					method.body = MethodChecker.checkMethod(baseScope, method.isStatic, method.returnTy, method.parameters, methodAst.body);
+					break;
 				case Ast.Member.AbstractMethod _:
-					return (Method.AbstractMethod) member;
+					break;
 				default:
 					throw unreachable();
 			}
@@ -98,29 +155,30 @@ class Checker {
 		return klass;
 	}
 
-	Klass.Head checkHead(Klass klass, Ast.Klass.Head ast, Action<Member> addMember) {
+	Klass.Head checkHead(Klass klass, Ast.Klass.Head ast, Action<Member> addMember, Arr<Method> methods) {
 		var loc = ast.loc;
 		switch (ast) {
 			case Ast.Klass.Head.Static _:
 				return new Klass.Head.Static(loc);
 
-			case Ast.Klass.Head.Abstract _:
-				return new Klass.Head.Abstract(loc);
+			case Ast.Klass.Head.Abstract _: {
+				var abstractMethods = methods.keepOfType<Method.AbstractMethod>();
+				return new Klass.Head.Abstract(loc, abstractMethods);
+			}
 
-
-			case Ast.Klass.Head.Slots slotsAst:
+			case Ast.Klass.Head.Slots slotsAst: {
 				var slots = slotsAst.slots.map(var =>
 					new Klass.Head.Slots.Slot(klass, ast.loc, var.mutable, baseScope.getTy(var.ty), var.name));
 				slots.each(addMember);
-				var head = new Klass.Head.Slots(loc, slots);
-				return head;
+				return new Klass.Head.Slots(loc, slots);
+			}
 
 			default:
 				throw unreachable();
 		}
 	}
 
-	Member emptyMember(Klass klass, Ast.Member ast) {
+	Method emptyMethod(Klass klass, Ast.Member ast) {
 		switch (ast) {
 			case Ast.Member.Method m:
 				return new Method.MethodWithBody(
@@ -139,19 +197,19 @@ class Checker {
 }
 
 class MethodChecker {
-	internal static Expr checkMethod(BaseScope baseScope, Method.MethodWithBody method, Ast.Expr body) =>
-		new MethodChecker(baseScope, method).checkSubtype(method.returnTy, body);
+	internal static Expr checkMethod(BaseScope baseScope, bool isStatic, Ty returnTy, Arr<Method.Parameter> parameters, Ast.Expr body) =>
+		new MethodChecker(baseScope, isStatic, parameters).checkSubtype(returnTy, body);
 
 	readonly BaseScope baseScope;
 	Klass currentClass => baseScope.self;
-	readonly Method.MethodWithBody currentMethod;
-	Arr<Method.Parameter> parameters => currentMethod.parameters;
+	readonly bool isStatic;
+	readonly Arr<Method.Parameter> parameters;
 	readonly Stack<Pattern.Single> locals = new Stack<Pattern.Single>();
-	//TODO: Also readonly Push<Err> errors;
 
-	MethodChecker(BaseScope baseScope, Method.MethodWithBody method) {
+	MethodChecker(BaseScope baseScope, bool isStatic, Arr<Method.Parameter> parameters) {
 		this.baseScope = baseScope;
-		this.currentMethod = method;
+		this.isStatic = isStatic;
+		this.parameters = parameters;
 		// Assert that parameters don't shadow members.
 		parameters.each((param, i) => {
 			if (baseScope.hasMember(param.name))
@@ -210,7 +268,7 @@ class MethodChecker {
 		return handle(ref expected, a.loc, access);
 	}
 
-	Expr checkStaticAccess(ref Expected expected, Ast.Expr.StaticAccess s) {
+	static Expr checkStaticAccess(ref Expected expected, Ast.Expr.StaticAccess s) {
 		//Not in a call, so create a callback
 		throw TODO();
 	}
@@ -240,13 +298,12 @@ class MethodChecker {
 
 	Expr checkGetProperty(ref Expected expected, Ast.Expr.GetProperty g) {
 		getProperty(g.loc, g.target, g.propertyName, out var target, out var member);
-		var slot = (Klass.Head.Slots.Slot) member; //TODO
+		var slot = (Klass.Head.Slots.Slot)member; //TODO
 		return handle(ref expected, g.loc, new Expr.GetSlot(g.loc, target, slot));
 	}
 
 	Expr checkLet(ref Expected expected, Ast.Expr.Let l) {
-		Expr value = checkInfer(l.value);
-
+		var value = checkInfer(l.value);
 		var pattern = startCheckPattern(value.ty, l.assigned, out var nAdded);
 		var expr = checkExpr(ref expected, l.then);
 		endCheckPattern(nAdded);
@@ -283,7 +340,7 @@ class MethodChecker {
 
 	Expr callStaticMethod(ref Expected expected, Loc loc, ClassLike klass, Sym methodName, Arr<Ast.Expr> argAsts) {
 		if (!klass.membersMap.get(methodName, out var member)) TODO();
-		var method = (Method) member;
+		var method = (Method)member;
 		if (method.isStatic) throw TODO();
 		var args = checkCall(loc, method, argAsts);
 		var call = new Expr.StaticMethodCall(loc, method, args);
@@ -292,7 +349,7 @@ class MethodChecker {
 
 	Expr callMethod(ref Expected expected, Loc loc, Ast.Expr targetAst, Sym methodName, Arr<Ast.Expr> argAsts) {
 		getProperty(loc, targetAst, methodName, out var target, out var member);
-		var method = (Method) member; //TODO: error handling
+		var method = (Method)member; //TODO: error handling
 		if (method.isStatic) throw TODO();
 		var args = checkCall(loc, method, argAsts);
 		var call = new Expr.InstanceMethodCall(loc, target, method, args);
@@ -304,8 +361,8 @@ class MethodChecker {
 		member = getMember(loc, target.ty, propertyName);
 	}
 
-	Member getMember(Loc loc, Ty ty, Sym name) {
-		var klass = (ClassLike) ty;//TODO: error handling
+	static Member getMember(Loc loc, Ty ty, Sym name) {
+		var klass = (ClassLike)ty; //TODO: error handling
 		if (!klass.membersMap.get(name, out var member)) throw TODO();
 		return member;
 	}
@@ -316,8 +373,6 @@ class MethodChecker {
 		}
 		return method.parameters.zip(argAsts, (parameter, argAst) => checkSubtype(parameter.ty, argAst));
 	}
-
-
 
 	void addToScope(Pattern.Single local) {
 		if (parameters.find(out var param, p => p.name == local.name))
@@ -339,7 +394,7 @@ class MethodChecker {
 
 		switch (member) {
 			case Klass.Head.Slots.Slot slot:
-				if (currentMethod.isStatic) throw TODO();
+				if (isStatic) throw TODO();
 				return new Expr.GetMySlot(loc, currentClass, slot);
 
 			case Method.MethodWithBody m:
@@ -398,6 +453,7 @@ class MethodChecker {
 
 	//mv
 	Expr checkType(Loc loc, Ty expectedTy, Expr e) {
+		unused(this);
 		//TODO: subtyping!
 		if (!expectedTy.fastEquals(e.ty)) {
 			//TODO: have a WrongCast node and issue a diagnostic.

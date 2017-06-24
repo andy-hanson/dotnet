@@ -2,11 +2,15 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningLevel>4</WarningLevel>
+    <CodeAnalysisRuleSet>./dotnet.ruleset</CodeAnalysisRuleSet>
+    <AdditionalFileItemNames>./stylecopz.json</AdditionalFileItemNames>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="CodeCracker.CSharp" Version="1.0.3" />
     <PackageReference Include="Jint" Version="3.0.0-beta" />
-    <PackageReference Include="Jurassic" Version="2.2.1" />
-    <PackageReference Include="NiL.JS.NetCore" Version="2.4.1056" />
+    <PackageReference Include="StyleCop.Analyzers" Version="1.0.2" />
     <PackageReference Include="System.Reflection.Emit" Version="4.3.0" />
     <PackageReference Include="System.Runtime" Version="4.3.0" />
     <PackageReference Include="System.Runtime.Loader" Version="4.3.0" />

@@ -4,10 +4,8 @@ using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
 
-using Module = Model.Module;
-using static Utils;
-
 using static TestUtils;
+using static Utils;
 
 static class TestCompile {
 	static readonly Path testRootDir = Path.from("tests");
@@ -25,7 +23,7 @@ static class TestCompile {
 			var testForAttribute = method.GetCustomAttribute(typeof(TestFor));
 			if (testForAttribute == null)
 				return Op<(MethodInfo, TestFor)>.None;
-			var testFor = (TestFor) testForAttribute;
+			var testFor = (TestFor)testForAttribute;
 			return Op.Some((method, testFor));
 		});
 
@@ -101,13 +99,7 @@ static class TestCompile {
 
 		return;
 	}
-
-	//mv
-	static void TestCompiler(Path path) {
-		// We will include output in the directory.
-	}
 }
-
 
 [AttributeUsage(AttributeTargets.Method)]
 sealed class TestFor : Attribute {
@@ -115,21 +107,20 @@ sealed class TestFor : Attribute {
 	internal TestFor(string testRootDir) { this.testPath = testRootDir; }
 }
 
-
 public sealed class T2Impl {
-	public Builtins.Int n() {
-		return Builtins.Int.of(1);
-	}
+	#pragma warning disable CC0091 // Can't make it static
+	public Builtins.Int n() => Builtins.Int.of(1);
+	#pragma warning restore
 }
 
 static class Tests {
-	[TestFor("Main")]
-	static void T1(TestData t) {
+	[TestFor(nameof(MainPass))]
+	static void MainPass(TestData t) {
 		runCsJsTests(t, new object[] {}, Builtins.Void.instance);
 	}
 
-	[TestFor("AbstractClass")]
-	static void T2(TestData t) {
+	[TestFor(nameof(AbstractClass))]
+	static void AbstractClass(TestData t) {
 		// We need to implement its abstract class.
 		var cls = t.emittedRoot;
 		var impl = implementType(cls, new T2Impl());
@@ -142,7 +133,6 @@ static class Tests {
 		var expected = Builtins.Int.of(1);
 		assertEqual(expected, csres);
 
-
 		//Also in JS
 		var engine = new Jint.Engine();
 		var jscls = JsRunner.evalScript(engine, t.indexJs);
@@ -150,6 +140,19 @@ static class Tests {
 
 		var jsres = jscls.invokeMethod("main", jsImpl);
 		assertEqual2(JsConvert.toJsValue(expected), jsres);
+	}
+
+	[TestFor(nameof(Impl))]
+	static void Impl(TestData t) {
+		var cls = t.emittedRoot;
+		Console.WriteLine("!");
+		throw TODO();
+	}
+
+	[TestFor(nameof(Slots))]
+	static void Slots(TestData t) {
+		var cls = t.emittedRoot;
+		throw TODO(); //instantiate it.
 	}
 
 	/*internal static JsValue toJs(Jint.Engine e, Jint.Native.JsValue abstractClass, object o) {
@@ -191,11 +194,6 @@ static class Tests {
 		instance.Prototype = x.Get("prototype").AsObject();
 
 		return instance;
-
-		//var instance = new Jint.Native.Object.ObjectInstance(engine);
-		//instance.Prototype = x.Get("prototype").AsObject();
-
-
 	}
 
 	static object wrapMethodsInJsValueConversion(string clsToImplementName, object o) {
@@ -270,7 +268,7 @@ static class Tests {
 
 		//dup
 		var ctrBuilder = implementer.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[] { oType });
-		ctrBuilder.DefineParameter(0, ParameterAttributes.None, "field");
+		ctrBuilder.DefineParameter(0, ParameterAttributes.None, nameof(field));
 		var ctrIl = ctrBuilder.GetILGenerator();
 		//Set the field
 		ctrIl.Emit(OpCodes.Ldarg_0);
@@ -334,7 +332,7 @@ static class Tests {
 		}
 
 		var ctrBuilder = implementer.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[] { oType });
-		ctrBuilder.DefineParameter(0, ParameterAttributes.None, "field");
+		ctrBuilder.DefineParameter(0, ParameterAttributes.None, nameof(field));
 		var ctrIl = ctrBuilder.GetILGenerator();
 		//Set the field
 		ctrIl.Emit(OpCodes.Ldarg_0);
@@ -343,16 +341,16 @@ static class Tests {
 		ctrIl.Emit(OpCodes.Ret);
 
 		var type = implementer.CreateType();
-		//Instantiate it
-
 		return Activator.CreateInstance(type, o);
 	}
 }
 
 //NOT public, treat as private to JsConvert
 public static class Converters {
-	public static Jint.Native.JsValue __voidToJs(Builtins.Void v) =>
-		Jint.Native.JsValue.Undefined;
+	public static Jint.Native.JsValue __voidToJs(Builtins.Void v) {
+		unused(v);
+		return Jint.Native.JsValue.Undefined;
+	}
 	public static Jint.Native.JsValue __boolToJs(Builtins.Bool b) =>
 		b.value ? Jint.Native.JsValue.True : Jint.Native.JsValue.False;
 	public static Jint.Native.JsValue __intToJs(Builtins.Int i) =>
@@ -371,7 +369,7 @@ public static class Converters {
 	public static Builtins.Int __intFromJs(Jint.Native.JsValue j) {
 		var n = j.AsNumber();
 		assert(n % 1 == 0);
-		return Builtins.Int.of((int) n);
+		return Builtins.Int.of((int)n);
 	}
 	public static Builtins.Float __floatFromJs(Jint.Native.JsValue j) =>
 		Builtins.Float.of(j.AsNumber());
@@ -401,7 +399,7 @@ static class JsConvert {
 		}
 	}
 
-	static Dictionary<Type, MethodInfo> convertersToJs = new Dictionary<Type, string>() {
+	static Dictionary<Type, MethodInfo> convertersToJs = new Dictionary<Type, string> {
 		{ typeof(Builtins.Void), nameof(Converters.__voidToJs) },
 		{ typeof(Builtins.Bool), nameof(Converters.__boolToJs) },
 		{ typeof(Builtins.Int), nameof(Converters.__intToJs) },
@@ -411,7 +409,7 @@ static class JsConvert {
 
 	internal static bool converterToJs(Type t, out MethodInfo m) => convertersToJs.TryGetValue(t, out m);
 
-	static Dictionary<Type, MethodInfo> convertersFromJs = new Dictionary<Type, string>() {
+	static Dictionary<Type, MethodInfo> convertersFromJs = new Dictionary<Type, string> {
 		{ typeof(Builtins.Void), nameof(Converters.__voidFromJs) },
 		{ typeof(Builtins.Bool), nameof(Converters.__boolFromJs) },
 		{ typeof(Builtins.Int), nameof(Converters.__intFromJs) },
@@ -444,7 +442,7 @@ static class TestUtils {
 
 	//mv
 	internal static void assertEqual<T>(T expected, object actual) where T : ToData<T> {
-		var act = (T) actual;
+		var act = (T)actual;
 		if (!expected.deepEqual(act)) {
 			Console.WriteLine($"Expected: {CsonWriter.write(expected)}");
 			Console.WriteLine($"Actual: {CsonWriter.write(act)}");
@@ -453,16 +451,14 @@ static class TestUtils {
 	}
 }
 
-
-//Code side of a test
 sealed class TestData {
 	internal readonly CompiledProgram compiledProgram;
-	internal readonly Module rootModule;
+	internal readonly Model.Module rootModule;
 	internal readonly Path indexJs;
 	internal readonly ILEmitter emitter; // Will always be emitted before running custom test.
 	internal readonly Type emittedRoot;
 
-	internal TestData(CompiledProgram compiledProgram, Module rootModule, Path indexJs) {
+	internal TestData(CompiledProgram compiledProgram, Model.Module rootModule, Path indexJs) {
 		this.compiledProgram = compiledProgram;
 		this.rootModule = rootModule;
 		this.indexJs = indexJs;

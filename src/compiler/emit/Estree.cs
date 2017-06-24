@@ -96,10 +96,10 @@ namespace Estree {
 			this.declarations = declarations;
 			this.kind = kind;
 		}
-		internal static VariableDeclaration var(Loc loc, Identifier id, Expression init) =>
+		internal static VariableDeclaration simple(Loc loc, Identifier id, Expression init) =>
 			new VariableDeclaration(loc, Arr.of(new VariableDeclarator(loc, id, Op.Some(init))), "var");
-		internal static VariableDeclaration var(Loc loc, Sym id, Expression init) =>
-			var(loc, new Identifier(loc, id), init);
+		internal static VariableDeclaration simple(Loc loc, Sym id, Expression init) =>
+			simple(loc, new Identifier(loc, id), init);
 	}
 
 	sealed class VariableDeclarator : Node {

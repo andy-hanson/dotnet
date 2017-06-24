@@ -71,7 +71,6 @@ sealed class FileLoadingDocumentProvider : DocumentProvider {
 		fileInput.read(path).map(text => DocumentInfo.parse(text, version: 0));
 }
 
-
 /**
 This is designed to allow an editor to send us info about unsafed open documents.
 If a document is not open we will use the one on disk.
@@ -103,5 +102,5 @@ sealed class DocumentsCache : DocumentProvider {
 
 	Sym DocumentProvider.rootName => fallback.rootName;
 
-	DocumentInfo getInfo(Path path, string text, uint version) => DocumentInfo.parse(text, version);
+	static DocumentInfo getInfo(Path path, string text, uint version) => DocumentInfo.parse(text, version);
 }
