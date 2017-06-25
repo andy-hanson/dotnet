@@ -1,3 +1,4 @@
+using System;
 using System.Text;
 
 using static Utils;
@@ -70,17 +71,19 @@ class JsWriter : EmitTextWriter {
 		}
 	}
 
+	void writeCommaSeparatedList<T>(Arr<T> xs, Action<T> write) {
+		if (xs.length == 0) return;
+		write(xs[0]);
+		for (uint i = 1; i < xs.length; i++) {
+			writeRaw(", ");
+			write(xs[i]);
+		}
+	}
+
 	void writeVariableDeclaration(Estree.VariableDeclaration v) {
 		writeRaw(v.kind);
 		writeRaw(' ');
-		var first = true;
-		foreach (var decl in v.declarations) {
-			if (!first)
-				writeRaw(", ");
-			else
-				first = false;
-			writeVariableDeclarator(decl);
-		}
+		writeCommaSeparatedList(v.declarations, writeVariableDeclarator);
 		writeRaw(';');
 	}
 
@@ -221,10 +224,7 @@ class JsWriter : EmitTextWriter {
 	void writeCallOrNew(Estree.CallOrNewExpression c) {
 		writeExpr(c.callee);
 		writeRaw('(');
-		foreach (var arg in c.arguments) {
-			writeExpr(arg);
-			writeRaw(", ");
-		}
+		writeCommaSeparatedList(c.arguments, writeExpr);
 		writeRaw(')');
 	}
 

@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using static Utils;
 
 static class Op {
+	//kill?
 	internal static Op<T> fromNullable<T>(T value) =>
 		value != null ? Op<T>.Some(value) : Op<T>.None;
 
@@ -60,7 +61,7 @@ struct Op<T> {
 	public override int GetHashCode() => throw new NotImplementedException();
 }
 
-static class OpU {
+static class OpUtils {
 	public static bool deepEqual<T>(this Op<T> a, Op<T> b) where T : DeepEqual<T> =>
 		a.get(out var av)
 			? b.get(out var bv) && av.deepEqual(bv)

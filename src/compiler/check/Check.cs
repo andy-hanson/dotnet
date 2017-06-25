@@ -69,10 +69,7 @@ class Checker {
 	//neater
 	//TODO: also handle abstract methods in superclass of superclass
 	static Arr<Method.AbstractMethod> getAbstractMethods(Klass superClass) {
-		//TODO: this looks like a stylecop bug?
-		#pragma warning disable SA1119
 		if (!(superClass.head is Klass.Head.Abstract abs))
-		#pragma warning restore
 			throw TODO();
 		return abs.abstractMethods;
 	}
@@ -167,10 +164,13 @@ class Checker {
 			}
 
 			case Ast.Klass.Head.Slots slotsAst: {
-				var slots = slotsAst.slots.map(var =>
-					new Klass.Head.Slots.Slot(klass, ast.loc, var.mutable, baseScope.getTy(var.ty), var.name));
-				slots.each(addMember);
-				return new Klass.Head.Slots(loc, slots);
+				var slots = new Klass.Head.Slots(loc, klass);
+				slots.slots = slotsAst.slots.map(var => {
+					var slot = new Klass.Head.Slots.Slot(slots, ast.loc, var.mutable, baseScope.getTy(var.ty), var.name);
+					addMember(slot);
+					return slot;
+				});
+				return slots;
 			}
 
 			default:
@@ -210,10 +210,12 @@ class MethodChecker {
 		this.baseScope = baseScope;
 		this.isStatic = isStatic;
 		this.parameters = parameters;
-		// Assert that parameters don't shadow members.
+		// Assert that parameters don't shadow each other.
 		parameters.each((param, i) => {
-			if (baseScope.hasMember(param.name))
-				throw TODO();
+			//Decided to allow parameters to shadow base scope.
+			//Example where this is useful: `fun of(Int x) = new x` where `x` is the name of a slot.
+			//if (baseScope.hasMember(param.name))
+			//	throw TODO();
 			parameters.eachInSlice(0, i, earlierParameter => {
 				if (earlierParameter.name == param.name)
 					throw TODO();
@@ -246,6 +248,8 @@ class MethodChecker {
 				return checkOperatorCall(ref e, o);
 			case Ast.Expr.Call c:
 				return checkCallAst(ref e, c);
+			case Ast.Expr.New n:
+				return checkNew(ref e, n);
 			case Ast.Expr.GetProperty g:
 				return checkGetProperty(ref e, g);
 			case Ast.Expr.Let l:
@@ -294,6 +298,19 @@ class MethodChecker {
 				// Diagnostic -- can't call anything else.
 				throw TODO();
 		}
+	}
+
+	Expr checkNew(ref Expected expected, Ast.Expr.New n) {
+		//This must be a Slots class.
+		var k = currentClass;
+		if (!(currentClass.head is Klass.Head.Slots slots)) {
+			throw TODO(); // Error: Can't `new` an abstract/static class
+		}
+
+		if (n.args.length != slots.slots.length)
+			throw TODO(); // Not enough / too many fields
+		var args = n.args.zip(slots.slots, (arg, slot) => checkSubtype(slot.ty, arg));
+		return new Expr.New(n.loc, slots, args);
 	}
 
 	Expr checkGetProperty(ref Expected expected, Ast.Expr.GetProperty g) {

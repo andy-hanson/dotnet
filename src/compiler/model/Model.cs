@@ -23,14 +23,8 @@ namespace Model {
 		internal readonly DocumentInfo document;
 		// Technically these form a tree and thus aren't up-pointers, but don't want to serialize imports when serializing a module.
 		[UpPointer] internal readonly Arr<Module> imports;
-		Op<Klass> _klass;
-		internal Klass klass {
-			get => _klass.force;
-			set {
-				assert(!_klass.has);
-				_klass = Op.Some(value);
-			}
-		}
+		Late<Klass> _klass;
+		internal Klass klass { get => _klass.get; set => _klass.set(value); }
 		//TODO: does this belong here? Or somewhere else?
 		[NotData] internal readonly LineColumnGetter lineColumnGetter;
 
@@ -200,27 +194,18 @@ namespace Model {
 
 		public override ClassLike.Id getId() => ClassLike.Id.ofPath(module.logicalPath);
 
-		Op<Head> _head;
-		internal Head head {
-			get => _head.force;
-			set { assert(!_head.has); _head = Op.Some(value); }
-		}
+		Late<Head> _head;
+		internal Head head { get => _head.get; set => _head.set(value); }
 
-		internal Op<Arr<Super>> _supers;
-		internal Arr<Super> supers {
-			get => _supers.force;
-			set { assert(!_supers.has); _supers = Op.Some(value); }
-		}
+		internal Late<Arr<Super>> _supers;
+		internal Arr<Super> supers { get => _supers.get; set => _supers.set(value); }
 
-		Op<Arr<Method>> _methods;
-		internal Arr<Method> methods {
-			get => _methods.force;
-			set { assert(!_methods.has); _methods = Op.Some(value); }
-		}
+		Late<Arr<Method>> _methods;
+		internal Arr<Method> methods { get => _methods.get; set => _methods.set(value); }
 
-		Op<Dict<Sym, Member>> _membersMap;
-		internal override Dict<Sym, Member> membersMap => _membersMap.force;
-		internal void setMembersMap(Dict<Sym, Member> membersMap) { assert(!_membersMap.has); _membersMap = Op.Some(membersMap); }
+		Late<Dict<Sym, Member>> _membersMap;
+		internal override Dict<Sym, Member> membersMap => _membersMap.get;
+		internal void setMembersMap(Dict<Sym, Member> value) => _membersMap.set(value);
 
 		public bool Equals(Klass k) => object.ReferenceEquals(this, k);
 		public override int GetHashCode() => name.GetHashCode();
@@ -254,16 +239,19 @@ namespace Model {
 			}
 
 			internal class Slots : Head, ToData<Slots> {
-				internal readonly Arr<Slot> slots;
-				internal Slots(Loc loc, Arr<Slot> slots) : base(loc) {
-					this.slots = slots;
+				[ParentPointer] internal readonly Klass klass;
+				Late<Arr<Slot>> _slots;
+				internal Arr<Slot> slots { get => _slots.get; set => _slots.set(value); }
+
+				internal Slots(Loc loc, Klass klass) : base(loc) {
+					this.klass = klass;
 				}
 
 				public override bool deepEqual(Head h) => h is Slots s && deepEqual(s);
 				public bool deepEqual(Slots s) => slots.deepEqual(s.slots);
 				public override Dat toDat() => Dat.of(this, nameof(slots), Dat.arr(slots));
 
-				internal sealed class Slot : Member, ToData<Slot>, Identifiable<Slot.Id> {
+				internal sealed class Slot : Member, ToData<Slot>, Identifiable<Slot.Id>, IEquatable<Slot> {
 					internal struct Id : ToData<Id> {
 						internal readonly ClassLike.Id klass;
 						internal readonly Sym name;
@@ -272,20 +260,22 @@ namespace Model {
 						public Dat toDat() => Dat.of(this, nameof(klass), klass, nameof(name), name);
 					}
 
-					[ParentPointer] internal readonly ClassLike klass;
+					[ParentPointer] internal readonly Slots slots;
 					internal readonly bool mutable;
 					internal readonly Ty ty;
 
-					internal Slot(ClassLike klass, Loc loc, bool mutable, Ty ty, Sym name) : base(loc, name) {
-						this.klass = klass;
+					internal Slot(Slots slots, Loc loc, bool mutable, Ty ty, Sym name) : base(loc, name) {
+						this.slots = slots;
 						this.mutable = mutable;
 						this.ty = ty;
 					}
 
+					bool IEquatable<Slot>.Equals(Slot s) => deepEqual(s);
+					public override int GetHashCode() => name.GetHashCode();
 					public override bool deepEqual(Member m) => m is Slot s && deepEqual(s);
 					public bool deepEqual(Slot s) => loc.deepEqual(s.loc) && name.deepEqual(s.name) && mutable == s.mutable && ty.equalsId<Ty, ClassLike.Id>(s.ty);
 					public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(name), name, nameof(mutable), Dat.boolean(mutable), nameof(ty), ty);
-					public Id getId() => new Id(klass.getId(), name);
+					public Id getId() => new Id(slots.klass.getId(), name);
 				}
 			}
 		}
@@ -296,11 +286,8 @@ namespace Model {
 		[ParentPointer] internal readonly Klass klass;
 		[UpPointer] internal readonly Ty superClass;
 		//internal readonly Arr<Impl> impls;
-		Op<Arr<Impl>> _impls;
-		internal Arr<Impl> impls {
-			get => _impls.force;
-			set { assert(_impls.has); _impls = Op.Some(value); }
-		}
+		Late<Arr<Impl>> _impls;
+		internal Arr<Impl> impls { get => _impls.get; set => _impls.set(value); }
 
 		internal Super(Loc loc, Klass klass, Ty superClass) {
 			this.loc = loc;
@@ -461,11 +448,8 @@ namespace Model {
 			public bool deepEqual(MethodWithBody m) => throw TODO(); // TODO: should methods with different (reference identity) parent be not equal?
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(isStatic), Dat.boolean(isStatic), nameof(returnTy), returnTy.getId(), nameof(name), name, nameof(parameters), Dat.arr(parameters));
 
-			Op<Expr> _body;
-			internal Expr body {
-				get => _body.force;
-				set { assert(!_body.has); _body = Op.Some(value); }
-			}
+			Late<Expr> _body;
+			internal Expr body { get => _body.get; set => _body.set(value); }
 		}
 
 		internal sealed class AbstractMethod : Method, ToData<AbstractMethod> {
@@ -493,7 +477,7 @@ namespace Model {
 			public bool deepEqual(Ignore i) => loc.deepEqual(i.loc);
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc);
 		}
-		internal sealed class Single : Pattern, ToData<Single>, Identifiable<Sym> {
+		internal sealed class Single : Pattern, ToData<Single>, Identifiable<Sym>, IEquatable<Single> {
 			internal readonly Ty ty;
 			internal readonly Sym name;
 			internal Single(Loc loc, Ty ty, Sym name) : base(loc) {
@@ -501,6 +485,8 @@ namespace Model {
 				this.name = name;
 			}
 
+			bool IEquatable<Single>.Equals(Single s) => object.ReferenceEquals(this, s);
+			public override int GetHashCode() => name.GetHashCode();
 			public override bool deepEqual(Pattern p) => p is Single s && deepEqual(s);
 			public bool deepEqual(Single s) => loc.deepEqual(s.loc) && ty.equalsId<Ty, ClassLike.Id>(s.ty) && name.deepEqual(s.name);
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(ty), ty, nameof(name), name);

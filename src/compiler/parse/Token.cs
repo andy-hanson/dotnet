@@ -38,6 +38,7 @@ internal enum Token {
 	When,
 
 	// Punctuation
+	Space,
 	Backslash,
 	Underscore,
 	Equals,
@@ -145,6 +146,7 @@ static class TokenU {
 			case Token.Var: return "var";
 			case Token.When: return "when";
 
+			case Token.Space: return "<space>";
 			case Token.Backslash: return "\\";
 			case Token.Underscore: return "_";
 			case Token.Equals: return "=";

@@ -1,54 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RuleSet Name="The Rules" ToolsVersion="10.0">
 
-  <Rules AnalyzerId="StyleCop.Analyzers" RuleNamespace="StyleCop.Analyzers">
-	  <Rule Id="SA1101" Action="None" /> <!-- Don't prefix local calls with 'this' -->
-  	<Rule Id="SA1027" Action="None" /> <!-- Use tabs -->
-    <Rule Id="SA1300" Action="None" /> <!-- Don't use uppercase -->
-    <Rule Id="SA1304" Action="None" /> <!-- No really -->
-    <Rule Id="SA1303" Action="None" /> <!-- No really! -->
-    <Rule Id="SA1311" Action="None" /> <!-- No, really! -->
-    <Rule Id="SA1400" Action="None" /> <!-- Don't need explicit 'private' -->
-    <Rule Id="SA1500" Action="None" /> <!-- Use egyptian braces -->
-	  <Rule Id="SA1502" Action="None" /> <!-- Put generic type constraints inline -->
-  	<Rule Id="SA1127" Action="None" /> <!-- Allow single-line methods -->
-    <Rule Id="SA1503" Action="None" /> <!-- Omit braces -->
-    <Rule Id="SA1519" Action="None" /> <!-- No really, omit braces -->
-    <Rule Id="SA1520" Action="None" /> <!-- if (foo) return 1; else { ... } -->
-    <Rule Id="SA1134" Action="None" /> <!-- Allow inline attributes -->
-    <Rule Id="SA1107" Action="None" /> <!-- Two statements, one line -->
-    <Rule Id="SA1407" Action="None" /> <!-- Allow operator precedence -->
-    <Rule Id="SA1408" Action="None" /> <!-- No really, allow operator precedence -->
-    <Rule Id="SA1128" Action="None" /> <!-- Allow base() inline -->
-    <Rule Id="SA1501" Action="None" /> <!-- Allow single-line statement -->
-    <Rule Id="SA1116" Action="None" /> <!-- Two parameters, one line -->
-    <Rule Id="SA1117" Action="None" /> <!-- Two parameters, one line, again? -->
-    <Rule Id="SA1115" Action="None" /> <!-- Allow line comment before argument -->
-    <Rule Id="SA1012" Action="None" /> <!-- Allow '{}' -->
-    <Rule Id="SA1013" Action="None" /> <!-- Allow '{}' -->
-    <Rule Id="SA1633" Action="None" /> <!-- No file header -->
-    <Rule Id="SA1652" Action="None" /> <!-- Don't use XML documentation -->
-    <Rule Id="SA1515" Action="None" /> <!-- Don't require blank line after comment -->
-    <Rule Id="SA1402" Action="None" /> <!-- Allow multi-class files -->
-    <Rule Id="SA1649" Action="None" /> <!-- Allow type name to not match file name -->
-    <Rule Id="SA1307" Action="None" /> <!-- Don't require elements to be separated by blank lines -->
-    <Rule Id="SA1516" Action="None" /> <!-- No really -->
-    <Rule Id="SA1513" Action="None" /> <!-- Allow no whitespace after closing brace -->
-    <Rule Id="SA1201" Action="None" /> <!-- Allow static after non-static -->
-    <Rule Id="SA1204" Action="None" /> <!-- No really -->
-    <Rule Id="SA1401" Action="None" /> <!-- Allow non-private fields -->
-    <Rule Id="SA1202" Action="None" /> <!-- Allow "protected" after "private" -->
-    <Rule Id="SA1309" Action="None" /> <!-- Allow underscore in field name -->
-    <Rule Id="SA1302" Action="None" /> <!-- Interfaces do not begin with 'I' -->
-    <Rule Id="SA1200" Action="None" /> <!-- "using" outside of namespace -->
+	<Rules AnalyzerId="StyleCop.Analyzers" RuleNamespace="StyleCop.Analyzers">
+		<Rule Id="SA1027" Action="None" /> <!-- Use tabs -->
+		<Rule Id="SA1101" Action="None" /> <!-- Don't prefix local calls with 'this' -->
+		<Rule Id="SA1300" Action="None" /> <!-- Don't use uppercase -->
+		<Rule Id="SA1304" Action="None" /> <!-- No really -->
+		<Rule Id="SA1303" Action="None" /> <!-- No really! -->
+		<Rule Id="SA1311" Action="None" /> <!-- No, really! -->
+		<Rule Id="SA1400" Action="None" /> <!-- Don't need explicit 'private' -->
+		<Rule Id="SA1500" Action="None" /> <!-- Use egyptian braces -->
+		<Rule Id="SA1502" Action="None" /> <!-- Put generic type constraints inline -->
+		<Rule Id="SA1127" Action="None" /> <!-- Allow single-line methods -->
+		<Rule Id="SA1503" Action="None" /> <!-- Omit braces -->
+		<Rule Id="SA1519" Action="None" /> <!-- No really, omit braces -->
+		<Rule Id="SA1520" Action="None" /> <!-- if (foo) return 1; else { ... } -->
+		<Rule Id="SA1134" Action="None" /> <!-- Allow inline attributes -->
+		<Rule Id="SA1107" Action="None" /> <!-- Two statements, one line -->
+		<Rule Id="SA1407" Action="None" /> <!-- Allow operator precedence -->
+		<Rule Id="SA1408" Action="None" /> <!-- No really, allow operator precedence -->
+		<Rule Id="SA1128" Action="None" /> <!-- Allow base() inline -->
+		<Rule Id="SA1501" Action="None" /> <!-- Allow single-line statement -->
+		<Rule Id="SA1116" Action="None" /> <!-- Two parameters, one line -->
+		<Rule Id="SA1117" Action="None" /> <!-- Two parameters, one line, again? -->
+		<Rule Id="SA1115" Action="None" /> <!-- Allow line comment before argument -->
+		<Rule Id="SA1012" Action="None" /> <!-- Allow '{}' -->
+		<Rule Id="SA1013" Action="None" /> <!-- Allow '{}' -->
+		<Rule Id="SA1633" Action="None" /> <!-- No file header -->
+		<Rule Id="SA1652" Action="None" /> <!-- Don't use XML documentation -->
+		<Rule Id="SA1515" Action="None" /> <!-- Don't require blank line after comment -->
+		<Rule Id="SA1402" Action="None" /> <!-- Allow multi-class files -->
+		<Rule Id="SA1649" Action="None" /> <!-- Allow type name to not match file name -->
+		<Rule Id="SA1307" Action="None" /> <!-- Don't require elements to be separated by blank lines -->
+		<Rule Id="SA1516" Action="None" /> <!-- No really -->
+		<Rule Id="SA1513" Action="None" /> <!-- Allow no whitespace after closing brace -->
+		<Rule Id="SA1201" Action="None" /> <!-- Allow static after non-static -->
+		<Rule Id="SA1204" Action="None" /> <!-- No really -->
+		<Rule Id="SA1401" Action="None" /> <!-- Allow non-private fields -->
+		<Rule Id="SA1202" Action="None" /> <!-- Allow "protected" after "private" -->
+		<Rule Id="SA1309" Action="None" /> <!-- Allow underscore in field name -->
+		<Rule Id="SA1302" Action="None" /> <!-- Interfaces do not begin with 'I' -->
+		<Rule Id="SA1200" Action="None" /> <!-- "using" outside of namespace -->
 
-    <Rule Id="SA1008" Action="None" /> <!-- TODO: stylecop bug: This doesn't play well with tuples -->
-    <Rule Id="SA1009" Action="None" /> <!-- What is this? -->
-    <Rule Id="SA1005" Action="None" /> <!-- TODO: comment must begin with space -->
-  </Rules>
+		<Rule Id="SA1119" Action="None" /> <!-- TODO: this rule has bugs for now with `if (!(x is Foo f))` -->
+		<Rule Id="SA1008" Action="None" /> <!-- TODO: stylecop bug: This doesn't play well with tuples -->
+		<Rule Id="SA1009" Action="None" /> <!-- What is this? -->
+		<Rule Id="SA1005" Action="None" /> <!-- TODO: comment must begin with space -->
+	</Rules>
 
-  <Rules AnalyzerId="CodeCracker.CSharp" RuleNamespace="CodeCracker.CSharp">
-    <Rule Id="CC0031" Action="None" /> <!-- I don't use nulls -->
-    <Rule Id="CC0068" Action="Warning" /> <!-- Warn on unused private method -->
-  </Rules>
+	<Rules AnalyzerId="CodeCracker.CSharp" RuleNamespace="CodeCracker.CSharp">
+		<Rule Id="CC0031" Action="None" /> <!-- I don't use nulls -->
+		<Rule Id="CC0068" Action="Warning" /> <!-- Warn on unused private method -->
+	</Rules>
 </RuleSet>

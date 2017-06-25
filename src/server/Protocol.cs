@@ -437,9 +437,14 @@ namespace Lsp {
 			this.parameters = parameters;
 		}
 
-		public bool deepEqual(SignatureInformation s) => label == s.label && documentation.deepEqual(s.documentation) && parameters.deepEqual(s.parameters, Arr.deepEqual);
-		public Dat toDat() =>
-			Dat.of(this, nameof(label), Dat.str(label), nameof(documentation), Dat.op(documentation), nameof(parameters), Dat.op(parameters.map(Dat.arr)));
+		public bool deepEqual(SignatureInformation s) =>
+			label == s.label &&
+			documentation.deepEqual(s.documentation) &&
+			parameters.deepEqual(s.parameters, Arr.deepEqual);
+		public Dat toDat() => Dat.of(this,
+			nameof(label), Dat.str(label),
+			nameof(documentation), Dat.op(documentation),
+			nameof(parameters), Dat.op(parameters.map(Dat.arr)));
 		void ToJsonSpecial.toJsonSpecial(JsonWriter j) =>
 			j.writeDictWithTwoOptionalValues(
 				nameof(label), label,

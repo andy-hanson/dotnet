@@ -323,6 +323,17 @@ namespace Ast {
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(target), target, nameof(args), Dat.arr(args));
 		}
 
+		internal sealed class New : Expr, ToData<New> {
+			internal readonly Arr<Expr> args;
+			internal New(Loc loc, Arr<Expr> args) : base(loc) {
+				this.args = args;
+			}
+
+			public override bool deepEqual(Node n) => n is New ne && deepEqual(ne);
+			public bool deepEqual(New n) => locEq(n) && args.deepEqual(n.args);
+			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(args), Dat.arr(args));
+		}
+
 		internal sealed class GetProperty : Expr, ToData<GetProperty> {
 			internal readonly Expr target;
 			internal readonly Sym propertyName;
@@ -339,11 +350,12 @@ namespace Ast {
 		internal sealed class Let : Expr, ToData<Let> {
 			internal readonly Pattern assigned;
 			internal readonly Expr value;
-			internal readonly Expr then;
-			internal Let(Loc loc, Pattern assigned, Expr value, Expr then) : base(loc) {
+			Late<Expr> _then;
+			internal Expr then { get => _then.get; set => _then.set(value); }
+
+			internal Let(Loc loc, Pattern assigned, Expr value) : base(loc) {
 				this.assigned = assigned;
 				this.value = value;
-				this.then = then;
 			}
 
 			public override bool deepEqual(Node n) => n is Let l && deepEqual(l);

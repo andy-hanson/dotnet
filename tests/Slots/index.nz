@@ -1,8 +1,9 @@
 slots
 	val Int x
 
-fun Slots of(Int x)
-	new x
+fun Int main(Int x)
+	obj = new x
+	obj.getX()
 
 def Int getX()
 	x

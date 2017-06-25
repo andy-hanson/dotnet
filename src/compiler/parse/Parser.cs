@@ -2,10 +2,6 @@ using static Arr;
 using static ParserExit;
 using static Utils;
 
-#pragma warning disable SA1121 // Use Pos instead of uint
-
-using Pos = System.UInt32;
-
 sealed class Parser : Lexer {
 	internal static Either<Ast.Module, CompileError> parse(string source) {
 		try {
@@ -88,7 +84,7 @@ sealed class Parser : Lexer {
 			case Token.Enum:
 				throw TODO();
 			default:
-				throw unexpected(start, "'slots' or 'enum'", kw);
+				throw unexpected(start, "'abstract', 'static', 'slots' or 'enum'", kw);
 		}
 	}
 
@@ -272,7 +268,7 @@ sealed class Parser : Lexer {
 		//??
 		Line,
 		/** Line Line, but forbid `=` because we're already on the rhs of one. */
-		ExprOnly,
+		EqualsRHS,
 		/** Parse an expression and expect ')' at the end. */
 		Paren,
 		/** Looking for a QuoteEnd */
@@ -282,44 +278,28 @@ sealed class Parser : Lexer {
 		List,
 	}
 
-	struct Next {
-		internal enum Kind {
-			NewlineAfterEquals, //comes with a Pattern
-			NewlineAfterStatement,
-			EndNestedBlock,
-			CtxEnded
-		}
-
-		internal readonly Kind kind;
-		readonly Op<Ast.Pattern> _pattern; // Use only if we are not a special kind.
-
-		internal Ast.Pattern pattern => _pattern.force;
-
-		Next(Kind kind, Ast.Pattern pattern) { this.kind = kind; this._pattern = Op.fromNullable(pattern); }
-
-		internal static Next NewlineAfterEquals(Ast.Pattern p) => new Next(Kind.NewlineAfterEquals, p);
-		internal static Next NewlineAfterStatement => new Next(Kind.NewlineAfterStatement, null);
-		internal static Next EndNestedBlock => new Next(Kind.EndNestedBlock, null);
-		internal static Next CtxEnded => new Next(Kind.CtxEnded, null);
-
-		internal bool isCtxEnded => kind == Kind.CtxEnded;
+	enum Next {
+		NewlineAfterEquals, // This means that we got an incomplete Let expression. Must fill in the body.
+		NewlineAfterStatement,
+		EndNestedBlock,
+		CtxEnded,
 	}
 
 	Ast.Expr parseBlockWithStart(Pos start, Token first) {
-		Ast.Expr expr;
-		Next next;
-		parseExprWithNext(start, first, Ctx.Line, out expr, out next);
+		var (expr, next) = parseExprWithNext(Ctx.Line, start, first);
 
-		switch (next.kind) {
-			case Next.Kind.NewlineAfterEquals: {
-				var rest = parseBlock();
-				return new Ast.Expr.Let(locFrom(start), next.pattern, expr, rest);
+		switch (next) {
+			case Next.NewlineAfterEquals: {
+				if (!(expr is Ast.Expr.Let l))
+					throw unreachable();
+				l.then = parseBlock();
+				return l;
 			}
-			case Next.Kind.NewlineAfterStatement: {
+			case Next.NewlineAfterStatement: {
 				var rest = parseBlock();
 				return new Ast.Expr.Seq(locFrom(start), expr, rest);
 			}
-			case Next.Kind.EndNestedBlock: {
+			case Next.EndNestedBlock: {
 				var start2 = pos;
 				var first2 = nextToken();
 				if (first2 == Token.Dedent)
@@ -327,7 +307,7 @@ sealed class Parser : Lexer {
 				var rest = parseBlockWithStart(start2, first2);
 				return new Ast.Expr.Seq(locFrom(start2), expr, rest);
 			}
-			case Next.Kind.CtxEnded:
+			case Next.CtxEnded:
 				return expr;
 			default:
 				throw unreachable();
@@ -337,132 +317,158 @@ sealed class Parser : Lexer {
 	Ast.Expr parseExprAndEndContext(Ctx ctx) {
 		var start = pos;
 		var startToken = nextToken();
-		parseExprWithNext(start, startToken, ctx, out var expr, out var next);
-		assert(next.isCtxEnded);
+		var (expr, next) = parseExprWithNext(ctx, start, startToken);
+		assert(next == Next.CtxEnded);
 		return expr;
 	}
 
-	void parseExpr(Ctx ctx, out Ast.Expr expr, out Next next) {
+	(Ast.Expr, Next) parseExpr(Ctx ctx) {
 		var start = pos;
 		var startToken = nextToken();
-		parseExprWithNext(start, startToken, ctx, out expr, out next);
+		return parseExprWithNext(ctx, start, startToken);
 	}
 
-	void parseExprWithNext(Pos exprStart, Token startToken, Ctx ctx, out Ast.Expr expr, out Next next) {
-		var parts = Arr.builder<Ast.Expr>();
-		Ast.Expr finishRegular() {
-			var loc = locFrom(exprStart);
-			switch (parts.curLength) {
-				case 0:
-					throw exit(loc, Err.EmptyExpression);
-				case 1:
-					return parts[0];
-				default:
-					var head = parts[0];
-					return new Ast.Expr.Call(loc, head, parts.finishTail());
-			}
-		}
-
-		var loopStart = exprStart;
-		var loopNext = startToken;
-		void readAndLoop() {
+	(Ast.Expr, Next) parseExprWithNext(Ctx ctx, Pos loopStart, Token loopNext) {
+		var exprStart = loopStart;
+		var isNew = loopNext == Token.New;
+		if (isNew) {
+			takeSpace();
 			loopStart = pos;
 			loopNext = nextToken();
 		}
 
+		var parts = Arr.builder<Ast.Expr>();
+
 		while (true) {
 			switch (loopNext) {
-				case Token.Dot:
-					var name = takeName();
-					parts.setLast(new Ast.Expr.GetProperty(locFrom(loopStart), parts.last, name));
-					readAndLoop();
-					break;
-
 				case Token.Equals: {
 					var patternLoc = locFrom(loopStart);
 					if (ctx != Ctx.Line) throw TODO(); //diagnostic
 					var pattern = partsToPattern(patternLoc, parts);
-					Next nnext;
-					parseExpr(Ctx.ExprOnly, out expr, out nnext);
-					if (nnext.kind == Next.Kind.CtxEnded) throw exit(locFrom(loopStart), Err.BlockCantEndInLet);
-					assert(nnext.kind == Next.Kind.NewlineAfterStatement);
-					next = Next.NewlineAfterEquals(pattern);
-					return;
+					takeSpace();
+					var (value, next) = parseExpr(Ctx.EqualsRHS);
+					if (next == Next.CtxEnded) throw exit(locFrom(loopStart), Err.BlockCantEndInLet);
+					assert(next == Next.NewlineAfterStatement);
+					return (new Ast.Expr.Let(locFrom(loopStart), pattern, value), Next.NewlineAfterEquals);
 				}
 
 				case Token.Operator: {
 					if (parts.isEmpty)
 						throw TODO();
-					var left = finishRegular();
-					parseExpr(ctx, out var right, out next);
-					expr = new Ast.Expr.OperatorCall(locFrom(exprStart), left, tokenSym, right);
-					return;
+					var left = finishRegular(exprStart, isNew, parts);
+					var (right, next) = parseExpr(ctx);
+					var expr = new Ast.Expr.OperatorCall(locFrom(left.loc.start), left, tokenSym, right);
+					return (expr, next);
 				}
 
-				case Token.Newline:
-				case Token.Dedent: {
-					if (ctx != Ctx.Line && ctx != Ctx.ExprOnly) throw unreachable();
-					switch (loopNext) {
-						case Token.Newline:
-							next = Next.NewlineAfterStatement;
-							break;
-						case Token.Dedent:
-							next = Next.CtxEnded;
-							break;
-						default:
-							throw unreachable();
-					}
-					expr = finishRegular();
-					return;
-				}
-
-				case Token.Lparen:
-					if (parts.isEmpty)
-						throw TODO();
-					takeRparen();
-					parts.setLast(new Ast.Expr.Call(locFrom(loopStart), parts.last, Arr.empty<Ast.Expr>()));
-					readAndLoop();
-					break;
-
-				case Token.TyName: {
-					var className = tokenSym;
-					takeDot();
-					var staticMethodName = takeName();
-					parts.add(new Ast.Expr.StaticAccess(locFrom(loopStart), className, staticMethodName));
-					readAndLoop();
-					break;
-				}
-
-				case Token.When:
+				case Token.When: {
+					if (ctx != Ctx.Line && ctx != Ctx.EqualsRHS) throw TODO();
 					//It will give us newlineafterequals or dedent
 					parts.add(parseWhen(loopStart));
-					expr = finishRegular();
-					next = tryTakeDedentFromDedenting() ? Next.CtxEnded : Next.NewlineAfterStatement;
-					return;
+					var expr = finishRegular(exprStart, isNew, parts);
+					var next = tryTakeDedentFromDedenting() ? Next.CtxEnded : Next.NewlineAfterStatement;
+					return (expr, next);
+				}
 
-				case Token.Indent:
-					if (ctx != Ctx.SingleLineThenIndent) {
-						throw TODO();
+				default: {
+					var (single, nextPos, tokenAfter) = parseSimpleExpr(loopStart, loopNext);
+					parts.add(single);
+					switch (tokenAfter) {
+						case Token.Space:
+							loopStart = pos;
+							loopNext = nextToken();
+							// Continue adding parts
+							break;
+
+						case Token.Newline:
+						case Token.Dedent: {
+							if (ctx != Ctx.Line && ctx != Ctx.EqualsRHS) throw TODO();
+							var expr = finishRegular(exprStart, isNew, parts);
+							Next next;
+							switch (tokenAfter) {
+								case Token.Newline:
+									next = Next.NewlineAfterStatement;
+									break;
+								case Token.Dedent:
+									next = Next.CtxEnded;
+									break;
+								default:
+									throw unreachable();
+							}
+							return (expr, next);
+						}
+
+						case Token.Indent: {
+							if (ctx != Ctx.SingleLineThenIndent)
+								throw TODO();
+							var expr = finishRegular(exprStart, isNew, parts);
+							return (expr, Next.CtxEnded);
+						}
+
+						default:
+							throw unexpected(nextPos, "Space or newline", tokenAfter);
 					}
-					expr = finishRegular();
-					next = Next.CtxEnded;
-					return;
 
-				case Token.New:
-					throw TODO();
-
-				default:
-					parts.add(singleTokenExpr(loopNext, locFrom(loopStart)));
-					readAndLoop();
 					break;
+				}
 			}
 		}
 	}
 
-	Ast.Expr singleTokenExpr(Token token, Loc loc) {
+	Ast.Expr finishRegular(Pos exprStart, bool isNew, Arr.Builder<Ast.Expr> parts) {
+		if (parts.curLength == 0)
+			throw exit(singleCharLoc, Err.EmptyExpression);
+
+		if (isNew) {
+			return new Ast.Expr.New(locFrom(exprStart), parts.finish());
+		} else {
+			var res = parts[0];
+			if (parts.curLength > 1)
+				res = new Ast.Expr.Call(locFrom(res.loc.start), res, parts.finishTail());
+			return res;
+		}
+	}
+
+	(Ast.Expr, Pos, Token) parseSimpleExpr(Pos pos, Token token) {
 		switch (token) {
 			case Token.Name:
-				return new Ast.Expr.Access(loc, tokenSym);
+				return takeSuffixes(new Ast.Expr.Access(locFrom(pos), tokenSym));
+			case Token.TyName:
+				var className = tokenSym;
+				takeDot();
+				var staticMethodName = takeName();
+				return takeSuffixes(new Ast.Expr.StaticAccess(locFrom(pos), className, staticMethodName));
+			default:
+				var single = singleTokenExpr(locFrom(pos), token);
+				var start = pos;
+				var next = nextToken();
+				return (single, pos, next);
+		}
+	}
+
+	(Ast.Expr, Pos, Token) takeSuffixes(Ast.Expr expr) {
+		while (true) {
+			var start = pos;
+			var next = nextToken();
+			switch (next) {
+				case Token.Dot:
+					var name = takeName();
+					expr = new Ast.Expr.GetProperty(locFrom(start), expr, name);
+					break;
+
+				case Token.Lparen:
+					takeRparen();
+					expr = new Ast.Expr.Call(locFrom(start), expr, Arr.empty<Ast.Expr>());
+					break;
+
+				default:
+					return (expr, pos, next);
+			}
+		}
+	}
+
+	Ast.Expr singleTokenExpr(Loc loc, Token token) {
+		switch (token) {
 			case Token.IntLiteral:
 				return new Ast.Expr.Literal(loc, new Model.Expr.Literal.LiteralValue.Int(int.Parse(tokenValue)));
 			case Token.FloatLiteral:

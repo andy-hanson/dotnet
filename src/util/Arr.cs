@@ -273,6 +273,10 @@ static class Arr {
             return finish();
         }
 
+        internal void clear() {
+            this.clear();
+        }
+
         internal Arr<U> map<U>(Func<T, U> mapper) {
             var b = new U[curLength];
             for (uint i = 0; i < curLength; i++)

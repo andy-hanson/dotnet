@@ -4,9 +4,10 @@ using System.Text;
 using static Utils;
 
 namespace Json {
+	//TODO: share with other Reader
 	abstract class Reader {
 		readonly string str;
-		uint idx = 0;
+		Pos idx = Pos.start;
 		protected Reader(string str) { this.str = str; }
 
 		internal char readAndSkipWhitespace() {
@@ -23,14 +24,18 @@ namespace Json {
 		}
 
 		internal void over() {
-			while (idx != str.Length) {
+			while (idx.index != str.Length) {
 				var ch = readCh();
 				if (!isWhitespace(ch))
 					throw new Exception($"Did not expect {ch}");
 			}
 		}
 
-		char readCh() => str.at(idx++);
+		char readCh() {
+			var res = str.at(idx.index);
+			idx = new Pos(idx.index + 1);
+			return res;
+		}
 
 		static bool isWhitespace(char ch) {
 			switch (ch) {

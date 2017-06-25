@@ -24,8 +24,13 @@ sealed class ILEmitter {
 	readonly Dictionary<Klass, TypeBuilding> typeInfos = new Dictionary<Klass, TypeBuilding>();
 	// This will not be filled for a BuiltinMethod
 	readonly Dictionary<Method, MethodInfo> methodInfos = new Dictionary<Method, MethodInfo>();
+	readonly Dictionary<Klass, ConstructorInfo> classToConstructor = new Dictionary<Klass, ConstructorInfo>();
+	readonly Dictionary<Klass.Head.Slots.Slot, FieldInfo> slotToField = new Dictionary<Klass.Head.Slots.Slot, FieldInfo>();
 	readonly AssemblyBuilder assemblyBuilder;
 	readonly ModuleBuilder moduleBuilder;
+
+	internal ConstructorInfo getClassConstructor(Klass klass) => classToConstructor[klass];
+	internal FieldInfo getSlotField(Klass.Head.Slots.Slot slot) => slotToField[slot];
 
 	internal Type toType(Ty ty) {
 		switch (ty) {
@@ -107,13 +112,32 @@ sealed class ILEmitter {
 				return;
 
 			case Klass.Head.Slots slots:
-				foreach (var slot in slots.slots)
-					tb.DefineField(slot.name.str, toType(slot.ty), FieldAttributes.Public);
+				var fields = slots.slots.map<FieldInfo>(slot => {
+					var field = tb.DefineField(slot.name.str, toType(slot.ty), FieldAttributes.Public);
+					slotToField.Add(slot, field);
+					return field;
+				});
+				generateConstructor(tb, klass, fields);
 				return;
 
 			default:
 				throw unreachable();
 		}
+	}
+
+	void generateConstructor(TypeBuilder tb, Klass klass, Arr<FieldInfo> fields) {
+		//Constructor can't call any other methods, so we generate it eagerly.
+		var parameterTypes = fields.mapToArray(f => f.FieldType);
+		var ctr = tb.DefineConstructor(MethodAttributes.Private, CallingConventions.Standard, parameterTypes);
+		var ctrIl = ctr.GetILGenerator();
+		fields.each((field, index) => {
+			ctrIl.Emit(OpCodes.Ldarg_0);
+			ctrIl.Emit(ILWriter.ldargOperation(index, isStatic: false));
+			ctrIl.Emit(OpCodes.Stfld, field);
+		});
+		ctrIl.Emit(OpCodes.Ret);
+
+		this.classToConstructor[klass] = ctr;
 	}
 
 	void fillMethods(TypeBuilder tb, Klass klass) {
@@ -173,6 +197,10 @@ sealed class ILWriter {
 		//logs.add(s);
 	}
 
+	internal void pop() {
+		il.Emit(OpCodes.Pop);
+	}
+
 	internal void ret() {
 		log("return");
 		il.Emit(OpCodes.Ret);
@@ -205,6 +233,10 @@ sealed class ILWriter {
 		il.EmitCall(OpCodes.Call, m, null);
 	}
 
+	internal void callConstructor(ConstructorInfo ctr) {
+		il.Emit(OpCodes.Newobj, ctr);
+	}
+
 	/** Remember to call markLabel! */
 	internal Label label() {
 		return il.DefineLabel();
@@ -213,6 +245,10 @@ sealed class ILWriter {
 	internal void markLabel(Label l) {
 		log($"{l}");
 		il.MarkLabel(l);
+	}
+
+	internal void getThis() {
+		il.Emit(OpCodes.Ldarg_0);
 	}
 
 	internal void getField(FieldInfo field) {
@@ -255,11 +291,29 @@ sealed class ILWriter {
 		var opcode = isVirtual ? OpCodes.Callvirt : OpCodes.Call;
 		il.Emit(opcode, mi);
 	}
+
+	/** Should be called after pushing the locals' initial value on the stack. */
+	internal Local initLocal(Type type) {
+		var lb = il.DeclareLocal(type);
+		il.Emit(OpCodes.Stloc, lb);
+		return new Local(lb);
+	}
+
+	internal void getLocal(Local local) {
+		il.Emit(OpCodes.Ldloc, local.__builder);
+	}
+
+	/** Treat this as private! Do not inspec contents if you are not ILWriter! */
+	internal struct Local {
+		internal readonly LocalBuilder __builder;
+		internal Local(LocalBuilder builder) { __builder = builder; }
+	}
 }
 
 sealed class ExprEmitter {
 	readonly ILEmitter emitter;
 	readonly ILWriter il;
+	readonly Dictionary<Pattern.Single, ILWriter.Local> localToIl = new Dictionary<Pattern.Single, ILWriter.Local>();
 	internal ExprEmitter(ILEmitter emitter, ILWriter il) { this.emitter = emitter; this.il = il; }
 
 	internal void emitAny(Expr expr) {
@@ -285,8 +339,14 @@ sealed class ExprEmitter {
 			case Expr.InstanceMethodCall m:
 				emitInstanceMethodCall(m);
 				return;
+			case Expr.New n:
+				emitNew(n);
+				return;
 			case Expr.GetSlot g:
 				emitGetSlot(g);
+				return;
+			case Expr.GetMySlot g:
+				emitGetMySlot(g);
 				return;
 			case Expr.WhenTest w:
 				emitWhenTest(w);
@@ -300,18 +360,24 @@ sealed class ExprEmitter {
 		il.getParameter(p.param);
 	}
 
-	static void emitAccessLocal(Expr.AccessLocal lo) {
-		throw TODO();
-	}
+	void emitAccessLocal(Expr.AccessLocal lo) =>
+		il.getLocal(localToIl[lo.local]);
 
-	static void emitLet(Expr.Let l) {
-		throw TODO();
+	void emitLet(Expr.Let l) {
+		emitAny(l.value);
+		var assigned = (Pattern.Single)l.assigned; //TODO:patterns
+		var loc = il.initLocal(emitter.toType(assigned.ty));
+		localToIl.Add(assigned, loc);
+		emitAny(l.then);
+		// Don't bother taking it out of the dictionary,
+		// we've already checked that there are no illegal accesses.
 	}
 
 	void emitSeq(Expr.Seq s) {
 		emitAny(s.action);
+		// Will have pushed a Void onto the stack. Take it off.
+		il.pop();
 		emitAny(s.then);
-		throw TODO();
 	}
 
 	static readonly FieldInfo fieldBoolTrue = typeof(Builtins.Bool).GetField(nameof(Builtins.Bool.boolTrue));
@@ -388,18 +454,35 @@ sealed class ExprEmitter {
 		il.markLabel(end);
 	}
 
-	static void emitStaticMethodCall(Expr.StaticMethodCall s) {
+	void emitStaticMethodCall(Expr.StaticMethodCall s) {
+		unused(this);
 		throw TODO();
 	}
 
 	void emitInstanceMethodCall(Expr.InstanceMethodCall m) {
 		emitAny(m.target);
-		foreach (var arg in m.args)
-			emitAny(arg);
+		emitArgs(m.args);
 		il.callInstanceMethod(m.method is Method.AbstractMethod, emitter.toMethodInfo(m.method));
 	}
 
-	static void emitGetSlot(Expr.GetSlot g) {
-		throw TODO();
+	void emitNew(Expr.New n) {
+		var ctr = this.emitter.getClassConstructor(n.klass);
+		emitArgs(n.args);
+		il.callConstructor(ctr);
+	}
+
+	void emitArgs(Arr<Expr> args) {
+		foreach (var arg in args)
+			emitAny(arg);
+	}
+
+	void emitGetSlot(Expr.GetSlot g) {
+		emitAny(g.target);
+		il.getField(this.emitter.getSlotField(g.slot));
+	}
+
+	void emitGetMySlot(Expr.GetMySlot g) {
+		il.getThis();
+		il.getField(this.emitter.getSlotField(g.slot));
 	}
 }

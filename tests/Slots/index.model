@@ -1,0 +1,32 @@
+Klass(
+  loc: 0-82,
+  head: Slots(
+    slots: [Slot(
+      loc: 0-18,
+      name: "x",
+      mutable: false,
+      ty: BuiltinClass(
+        name: "Int"))]),
+  membersMap: Dict<Sym, Member>(
+    main: MethodWithBody(
+      loc: 18-64,
+      isStatic: true,
+      returnTy: "Int",
+      name: "main",
+      parameters: [Parameter(
+        loc: 31-36,
+        ty: "Int",
+        name: "x",
+        index: 0)]),
+    getX: MethodWithBody(
+      loc: 64-82,
+      isStatic: false,
+      returnTy: "Int",
+      name: "getX",
+      parameters: []),
+    x: Slot(
+      loc: 0-18,
+      name: "x",
+      mutable: false,
+      ty: BuiltinClass(
+        name: "Int"))))

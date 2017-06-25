@@ -4,30 +4,26 @@ using System.Text;
 using static ParserExit;
 using static Utils;
 
-#pragma warning disable SA1121 // Use Pos instead of uint
-
-using Pos = System.UInt32;
-
 //mv
 static class ReaderU {
-	internal static string debug(string source, uint pos) {
+	internal static string debug(string source, Pos pos) {
 		//Current line with a '|' in the middle.
 		var ch = pos;
-		var nlBefore = pos;
+		var nlBefore = pos.index;
 		while (nlBefore > 0 && source.at(nlBefore - 1) != '\n')
 			nlBefore--;
-		var nlAfter = pos;
+		var nlAfter = pos.index;
 		while (nlAfter < source.Length && source.at(nlAfter) != '\n')
 			nlAfter++;
 
-		return $"{source.slice(nlBefore, pos)}|{source.slice(pos, nlAfter)}";
+		return $"{source.slice(nlBefore, pos.index)}|{source.slice(pos.index, nlAfter)}";
 	}
 }
 
 abstract class Reader {
 	readonly string source;
 	// Index of the character we are *about* to take.
-	protected Pos pos = 0;
+	protected Pos pos = Pos.start;
 
 	protected Reader(string source) {
 		//Ensure "source" ends in a newline.
@@ -38,14 +34,21 @@ abstract class Reader {
 		this.source = source + '\0';
 	}
 
-	protected char peek => source.at(pos);
+	protected char peek => source.at(pos.index);
 
-	protected char readChar() => source.at(pos++);
+	protected void backup() { pos = pos.decr; }
+	protected void skip() { pos = pos.incr; }
+
+	protected char readChar() {
+		var res = peek;
+		skip();
+		return res;
+	}
 
 	protected string debug() => ReaderU.debug(source, pos);
 
 	protected string sliceFrom(Pos startPos) {
-		return source.slice(startPos, pos);
+		return source.slice(startPos.index, pos.index);
 	}
 }
 
@@ -53,6 +56,8 @@ abstract class Lexer : Reader {
 	uint indent = 0;
 	// Number of Token.Dedent we have to output before continuing to read.
 	uint dedenting = 0;
+
+	protected Loc singleCharLoc => Loc.singleChar(pos);
 
 	// This is set after taking one of several kinds of token, such as Name or NumberLiteral
 	protected string tokenValue;
@@ -64,10 +69,8 @@ abstract class Lexer : Reader {
 
 	protected Loc locFrom(Pos start) => new Loc(start, pos);
 
-	void skip() { pos++; }
-
 	void skipWhile(Func<char, bool> pred) {
-		while (pred(peek)) pos++;
+		while (pred(peek)) skip();
 	}
 
 	void skipNewlines() {
@@ -126,7 +129,7 @@ abstract class Lexer : Reader {
 		var isFloat = peek == '.';
 		if (isFloat) {
 			skip();
-			if (!CharUtils.isDigit(peek)) throw exit(Loc.singleChar(pos), Err.TooMuchIndent);
+			if (!CharUtils.isDigit(peek)) throw exit(singleCharLoc, Err.TooMuchIndent);
 		}
 		this.tokenValue = sliceFrom(startPos);
 		return isFloat ? Token.FloatLiteral : Token.IntLiteral;
@@ -164,15 +167,15 @@ abstract class Lexer : Reader {
 				if (indent != 0) {
 					indent--;
 					dedenting = indent;
-					pos--;
+					backup();
 					return Token.Dedent;
 				} else {
 					return Token.EOF;
 				}
 
 			case ' ':
-				if (peek == '\n') throw exit(Loc.singleChar(pos), Err.TrailingSpace);
-				throw TODO();
+				if (peek == '\n') throw exit(singleCharLoc, Err.TrailingSpace);
+				return Token.Space;
 
 			case '\n':
 				return handleNewline();
@@ -182,6 +185,7 @@ abstract class Lexer : Reader {
 
 			case '\\': return Token.Backslash;
 			case ':': return Token.Colon;
+			case '=': return Token.Equals;
 			case '(': return Token.Lparen;
 			case ')': return Token.Rparen;
 			case '[': return Token.Lbracket;
@@ -228,7 +232,7 @@ abstract class Lexer : Reader {
 				return takeStringLike(Token.Operator, start, isOperatorChar);
 
 			default:
-				throw exit(Loc.singleChar(start), new Err.UnrecognizedCharacter(ch));
+				throw exit(singleCharLoc, new Err.UnrecognizedCharacter(ch));
 		}
 	}
 
@@ -259,13 +263,13 @@ abstract class Lexer : Reader {
 	void expectCharacter(char expected) {
 		var actual = readChar();
 		if (actual != expected)
-			throw exit(Loc.singleChar(pos), new Err.UnexpectedCharacter(actual, $"'{expected}'"));
+			throw exit(singleCharLoc, new Err.UnexpectedCharacter(actual, $"'{expected}'"));
 	}
 
 	void expectCharacter(string expected, Func<char, bool> pred) {
 		var ch = readChar();
 		if (!pred(ch)) {
-			throw exit(Loc.singleChar(pos), new Err.UnexpectedCharacter(ch, expected));
+			throw exit(singleCharLoc, new Err.UnexpectedCharacter(ch, expected));
 		}
 	}
 
@@ -282,7 +286,7 @@ abstract class Lexer : Reader {
 		var oldIndent = indent;
 		indent = lexIndent();
 		if (indent > oldIndent) {
-			if (indent != oldIndent + 1) throw exit(Loc.singleChar(pos), Err.TooMuchIndent);
+			if (indent != oldIndent + 1) throw exit(singleCharLoc, Err.TooMuchIndent);
 			return Token.Indent;
 		} else if (indent == oldIndent) {
 			return Token.Newline;
@@ -395,6 +399,7 @@ abstract class Lexer : Reader {
 
 	protected ParserExit unexpected(Pos startPos, string expectedDesc, Token token) =>
 		unexpected(startPos, expectedDesc, TokenU.TokenName(token));
+
 	protected ParserExit unexpected(Pos startPos, string expectedDesc, string actualDesc) =>
 		exit(locFrom(startPos), new Err.UnexpectedToken(expectedDesc, actualDesc));
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.ExceptionServices;
 
 using static TestUtils;
 using static Utils;
@@ -99,6 +100,17 @@ static class TestCompile {
 
 		return;
 	}
+
+	static TestCompile() {
+		AppDomain.CurrentDomain.FirstChanceException += handleFirstChanceException;
+	}
+
+	static void handleFirstChanceException(object sender, System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs e) {
+		//https://stackoverflow.com/questions/15833498/how-to-not-breaking-on-an-exception
+		if (!(e.Exception is System.Reflection.TargetInvocationException)) {
+			System.Diagnostics.Debugger.Break();
+		}
+	}
 }
 
 [AttributeUsage(AttributeTargets.Method)]
@@ -114,13 +126,15 @@ public sealed class T2Impl {
 }
 
 static class Tests {
+	static readonly Builtins.Int one = Builtins.Int.of(1);
+
 	[TestFor(nameof(MainPass))]
 	static void MainPass(TestData t) {
 		runCsJsTests(t, new object[] {}, Builtins.Void.instance);
 	}
 
 	[TestFor(nameof(AbstractClass))]
-	static void AbstractClass(TestData t) {
+	static void AbstractClass(TestData t) { //TODO:NEATER
 		// We need to implement its abstract class.
 		var cls = t.emittedRoot;
 		var impl = implementType(cls, new T2Impl());
@@ -130,7 +144,7 @@ static class Tests {
 		} catch (TargetInvocationException e) {
 			throw e.InnerException;
 		}
-		var expected = Builtins.Int.of(1);
+		var expected = one;
 		assertEqual(expected, csres);
 
 		//Also in JS
@@ -151,10 +165,10 @@ static class Tests {
 
 	[TestFor(nameof(Slots))]
 	static void Slots(TestData t) {
-		var cls = t.emittedRoot;
-		throw TODO(); //instantiate it.
+		runCsJsTests(t, new object[] { one }, one);
 	}
 
+	//TODO:KILL
 	/*internal static JsValue toJs(Jint.Engine e, Jint.Native.JsValue abstractClass, object o) {
 		/* //Jint.Object
 
@@ -283,7 +297,7 @@ static class Tests {
 	//mv
 	//Stores a reference to 'o' and redirects all calls to it.
 	//'o' must match the signatures of the abstract methods on the type we're implementing.
-	internal static object implementType(Type typeToImplement, object o) {
+	static object implementType(Type typeToImplement, object o) {
 		assert(typeToImplement.IsAbstract);
 
 		var implementerName = $"implement_{typeToImplement.Name}";
@@ -423,7 +437,12 @@ static class JsConvert {
 static class TestUtils {
 	internal static void runCsJsTests<T>(TestData t, object[] arguments, T expected) where T : ToData<T> {
 		var csmethod = t.emittedRoot.GetMethod("main");
-		var csres = csmethod.Invoke(null, arguments);
+		object csres;
+		try {
+			csres = csmethod.Invoke(null, arguments);
+		} catch (TargetInvocationException e) {
+			ExceptionDispatchInfo.Capture(e.InnerException).Throw();
+		}
 		assertEqual(expected, csres);
 
 		var engine = new Jint.Engine();

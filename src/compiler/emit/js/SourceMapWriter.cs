@@ -142,7 +142,7 @@ class SourceMapWriter {
 		lastEncodedSourceMapSpan = lastRecordedSourceMapSpan;
 	}
 
-	void emitPos(uint pos) {
+	void emitPos(Pos pos) {
 		var sourceLinePos = currentSource.lineMap.lineAndColumnAtPos(pos);
 		// Convert to one-based.
 		sourceLinePos = new LineAndColumn(sourceLinePos.line + 1, sourceLinePos.column + 1);

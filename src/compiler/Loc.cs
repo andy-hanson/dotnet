@@ -11,15 +11,36 @@ struct PathLoc : ToData<PathLoc> {
 	public Dat toDat() => Dat.of(this, nameof(path), path, nameof(loc), loc);
 }
 
+// Newtype over uint
+struct Pos : ToData<Pos> {
+	internal static readonly Pos start = new Pos(0);
+	internal readonly uint index;
+	internal Pos(uint index) { this.index = index; }
+
+	internal Pos decr => new Pos(index - 1);
+	internal Pos incr => new Pos(index + 1);
+
+	public override bool Equals(object o) => throw new NotSupportedException();
+	public override int GetHashCode() => throw new NotSupportedException();
+	public static bool operator ==(Pos a, Pos b) =>
+		a.index == b.index;
+	public static bool operator !=(Pos a, Pos b) =>
+		a.index != b.index;
+	public static uint operator -(Pos a, Pos b) =>
+		checked(a.index - b.index);
+	public bool deepEqual(Pos pos) => index == pos.index;
+	public Dat toDat() => Dat.num(index);
+}
+
 struct Loc : ToData<Loc>, ToCsonSpecial {
-	internal readonly uint start;
-	internal readonly uint end;
+	internal readonly Pos start;
+	internal readonly Pos end;
 
-	internal static Loc singleChar(uint start) => new Loc(start, start + 1);
+	internal static Loc singleChar(Pos start) => new Loc(start, start.incr);
 	//TODO: eventually get rid of this
-	internal static readonly Loc zero = new Loc(0, 0);
+	internal static readonly Loc zero = new Loc(Pos.start, Pos.start);
 
-	internal Loc(uint start, uint end) {
+	internal Loc(Pos start, Pos end) {
 		this.start = start;
 		this.end = end;
 	}
@@ -27,12 +48,12 @@ struct Loc : ToData<Loc>, ToCsonSpecial {
 	public override bool Equals(object o) => throw new NotImplementedException();
 	public override int GetHashCode() => throw new NotImplementedException();
 	public bool deepEqual(Loc l) => start == l.start && end == l.end;
-	public Dat toDat() => Dat.of(this, nameof(start), Dat.num(start), nameof(end), Dat.num(end));
+	public Dat toDat() => Dat.of(this, nameof(start), start, nameof(end), end);
 
 	void ToCsonSpecial.toCsonSpecial(CsonWriter c) {
-		c.writeUint(start);
+		c.writeUint(start.index);
 		c.writeRaw('-');
-		c.writeUint(end);
+		c.writeUint(end.index);
 	}
 }
 
@@ -84,10 +105,11 @@ struct LineColumnGetter {
 	internal LineAndColumnLoc lineAndColumnAtLoc(Loc loc) =>
 		new LineAndColumnLoc(lineAndColumnAtPos(loc.start), lineAndColumnAtPos(loc.end));
 
-	internal uint lineAtPos(uint pos) =>
+	internal uint lineAtPos(Pos pos) =>
 		lineAndColumnAtPos(pos).line;
 
-	internal LineAndColumn lineAndColumnAtPos(uint pos) {
+	internal LineAndColumn lineAndColumnAtPos(Pos pos) {
+		var posIndex = pos.index;
 		//binary search
 		uint lowLine = 0;
 		var highLine = lineToPos.length - 1;
@@ -99,16 +121,16 @@ struct LineColumnGetter {
 			var middleLine = mid(lowLine, highLine);
 			var middlePos = lineToPos[middleLine];
 
-			if (middlePos == pos)
+			if (middlePos == posIndex)
 				return new LineAndColumn(middleLine, 0);
-			else if (pos < middlePos)
+			else if (middlePos > posIndex)
 				highLine = middleLine - 1;
-			else // pos > middlePos
+			else // middlePos < posIndex
 				lowLine = middleLine + 1;
 		}
 
 		var line = lowLine - 1;
-		return new LineAndColumn(line, pos - lineToPos[line]);
+		return new LineAndColumn(line, posIndex - lineToPos[line]);
 	}
 
 	static uint mid(uint a, uint b) => (a + b) / 2;

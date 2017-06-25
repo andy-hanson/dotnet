@@ -16,12 +16,12 @@ class JsEmitter {
 
 		emitClass(body, m.klass);
 
-		body.add(moduleExportsEquals(new Estree.Identifier(m.klass.loc, m.klass.name)));
+		body.add(moduleExportsEquals(id(m.klass.loc, m.klass.name)));
 
 		return new Estree.Program(Loc.zero, body.finish());
 	}
 
-	static Estree.Identifier baseId(string name) => new Estree.Identifier(Loc.zero, Sym.of(name));
+	static Estree.Identifier baseId(string name) => id(Loc.zero, Sym.of(name));
 
 	static readonly Estree.Identifier requireId = baseId("require");
 	static Estree.Statement emitImport(Module importer, Module imported) {
@@ -51,18 +51,34 @@ class JsEmitter {
 				body.add(Estree.VariableDeclaration.simple(loc, name, new Estree.ObjectExpression(loc, Arr.empty<Estree.Property>())));
 				break;
 			case Klass.Head.Abstract _:
-				body.add(new Estree.FunctionDeclaration(loc, new Estree.Identifier(loc, name), Arr.empty<Estree.Pattern>(), Estree.BlockStatement.empty(loc)));
+				body.add(new Estree.FunctionDeclaration(loc, id(loc, name), Arr.empty<Estree.Pattern>(), Estree.BlockStatement.empty(loc)));
 				break;
 			case Klass.Head.Slots s:
-				//s.isClass;
-				//s.slots;
-				throw TODO();
+				body.add(emitSlots(klass, s));
+				break;
 			default:
 				throw TODO();
 		}
 
 		foreach (var method in klass.methods)
 			emitMethod(body, name, method);
+	}
+
+	/*
+	function Kls(x) {
+		this.x = x;
+	}
+	*/
+	static Estree.FunctionDeclaration emitSlots(Klass klass, Klass.Head.Slots s) {
+		var patterns = s.slots.map<Estree.Pattern>(slot => id(slot.loc, slot.name));
+		var statements = s.slots.map<Estree.Statement>((slot, i) => {
+			var slotLoc = slot.loc;
+			var id = (Estree.Identifier)patterns[i];
+			var member = new Estree.MemberExpression(slotLoc, new Estree.ThisExpression(slotLoc), id);
+			return new Estree.ExpressionStatement(slotLoc, new Estree.AssignmentExpression(slotLoc, member, id));
+		});
+		var loc = klass.loc;
+		return new Estree.FunctionDeclaration(loc, id(loc, klass.name), patterns, new Estree.BlockStatement(loc, statements));
 	}
 
 	static readonly Sym symSuperClass = Sym.of("superClass");
@@ -94,7 +110,7 @@ class JsEmitter {
 		return new Estree.FunctionExpression(method.loc, method.parameters.map(emitParameter), body);
 	}
 
-	static Estree.Pattern emitParameter(Method.Parameter p) => new Estree.Identifier(p.loc, p.name);
+	static Estree.Pattern emitParameter(Method.Parameter p) => id(p.loc, p.name);
 
 	static Estree.BlockStatement exprToBlockStatement(Expr expr) {
 		var parts = Arr.builder<Estree.Statement>();
@@ -104,7 +120,7 @@ class JsEmitter {
 			switch (expr) {
 				case Expr.Let l:
 					var x = (Pattern.Single)l.assigned; // TODO: handle other patterns
-					parts.add(Estree.VariableDeclaration.simple(loc, new Estree.Identifier(x.loc, x.name), exprToExpr(l.value)));
+					parts.add(Estree.VariableDeclaration.simple(loc, id(x.loc, x.name), exprToExpr(l.value)));
 					expr = l.then;
 					break;
 				case Expr.Seq s:
@@ -132,9 +148,9 @@ class JsEmitter {
 		var loc = expr.loc;
 		switch (expr) {
 			case Expr.AccessParameter p:
-				return new Estree.Identifier(loc, p.param.name);
+				return id(loc, p.param.name);
 			case Expr.AccessLocal lo:
-				return new Estree.Identifier(loc, lo.local.name);
+				return id(loc, lo.local.name);
 			case Expr.Let l:
 			case Expr.Seq s:
 				return iife(expr);
@@ -142,19 +158,25 @@ class JsEmitter {
 				return new Estree.Literal(loc, li.value);
 			case Expr.StaticMethodCall sm:
 				var method = sm.method;
-				var access = new Estree.MemberExpression(loc, new Estree.Identifier(loc, method.klass.name), new Estree.Identifier(loc, method.name));
+				var access = new Estree.MemberExpression(loc, id(loc, method.klass.name), id(loc, method.name));
 				return new Estree.CallExpression(loc, access, sm.args.map(exprToExpr));
+			case Expr.InstanceMethodCall m:
+				var member = new Estree.MemberExpression(loc, exprToExpr(m.target), id(m.loc, m.method.name));
+				return new Estree.CallExpression(loc, member, m.args.map(exprToExpr));
+			case Expr.New n:
+				return new Estree.NewExpression(loc, id(loc, n.klass.name), n.args.map(exprToExpr));
 			case Expr.GetSlot g:
-				return new Estree.MemberExpression(loc, exprToExpr(g.target), new Estree.Identifier(g.loc, g.slot.name));
+				return new Estree.MemberExpression(loc, exprToExpr(g.target), id(loc, g.slot.name));
+			case Expr.GetMySlot g:
+				return new Estree.MemberExpression(loc, new Estree.ThisExpression(loc), id(loc, g.slot.name));
 			case Expr.WhenTest w:
 				return whenToExpr(w);
-			case Expr.InstanceMethodCall m:
-				var member = new Estree.MemberExpression(loc, exprToExpr(m.target), new Estree.Identifier(m.loc, m.method.name));
-				return new Estree.CallExpression(loc, member, m.args.map(exprToExpr));
 			default:
 				throw TODO();
 		}
 	}
+
+	static Estree.Identifier id(Loc loc, Sym name) => new Estree.Identifier(loc, name);
 
 	static Estree.Expression whenToExpr(Expr.WhenTest w) {
 		var cases = w.cases;

@@ -178,8 +178,12 @@ namespace Model {
 			internal override Ty ty => method.returnTy;
 
 			public override bool deepEqual(Expr e) => e is StaticMethodCall s && deepEqual(s);
-			public bool deepEqual(StaticMethodCall s) => method.equalsId<Method, Method.Id>(s.method) && args.deepEqual(s.args);
-			public override Dat toDat() => Dat.of(this, nameof(method), method.getId(), nameof(args), Dat.arr(args));
+			public bool deepEqual(StaticMethodCall s) =>
+				method.equalsId<Method, Method.Id>(s.method) &&
+				args.deepEqual(s.args);
+			public override Dat toDat() => Dat.of(this,
+				nameof(method), method.getId(),
+				nameof(args), Dat.arr(args));
 		}
 
 		internal sealed class InstanceMethodCall : Expr, ToData<InstanceMethodCall> {
@@ -198,6 +202,29 @@ namespace Model {
 			public override bool deepEqual(Expr e) => e is InstanceMethodCall m && deepEqual(m);
 			public bool deepEqual(InstanceMethodCall m) => target.deepEqual(m.target) && method.equalsId<Method, Method.Id>(m.method) && args.deepEqual(m.args);
 			public override Dat toDat() => Dat.of(this, nameof(target), target, nameof(method), method.getId(), nameof(args), Dat.arr(args));
+		}
+
+		internal sealed class New : Expr, ToData<New> {
+			/**
+			This must be the slots of the class the 'new' is defined in.
+			Can't directly construct any other class.
+			Also, length must match with args.
+			*/
+			[ParentPointer] internal readonly Klass.Head.Slots slots;
+			internal readonly Arr<Expr> args;
+
+			internal New(Loc loc, Klass.Head.Slots slots, Arr<Expr> args) : base(loc) {
+				this.slots = slots;
+				this.args = args;
+			}
+
+			internal Klass klass => slots.klass;
+			internal override Ty ty => klass;
+
+			public override bool deepEqual(Expr e) => e is New n && deepEqual(n);
+			// Don't need to compare `klass` since that has only one legal value.
+			public bool deepEqual(New n) => args.deepEqual(n.args);
+			public override Dat toDat() => Dat.of(this, nameof(args), Dat.arr(args));
 		}
 
 		//Note: this contains a pointer to the current class for convenience.
