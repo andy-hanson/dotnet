@@ -96,9 +96,6 @@ static class DictionaryUtils {
 		return b;
 	}
 
-	internal static Op<V> getOp<K, V>(this IDictionary<K, V> dict, K key) =>
-		dict.TryGetValue(key, out var value) ? Op.Some(value) : Op<V>.None;
-
 	internal static V getOrUpdate<K, V>(this IDictionary<K, V> dict, K key, Func<V> getValue) {
 		if (dict.TryGetValue(key, out var value))
 			return value;

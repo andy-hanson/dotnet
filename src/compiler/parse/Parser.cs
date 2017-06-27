@@ -46,7 +46,8 @@ sealed class Parser : Lexer {
 		while (tryTakeDot()) leadingDots++;
 
 		var pathParts = Arr.builder<string>();
-		pathParts.add(takeNameString());
+		pathParts.add(takeTyNameString());
+		//TODO: really want to allow delving into grandchildren?
 		while (tryTakeDot()) pathParts.add(takeNameString());
 
 		var path = new Path(pathParts.finish());
@@ -66,7 +67,7 @@ sealed class Parser : Lexer {
 		} else {
 			var (superz, nextStart, next) = parseSupers();
 			supers = superz;
-			methods = atEOF ? Arr.empty<Ast.Member>() : parseMethods(nextStart, next);
+			methods = next == Token.EOF ? Arr.empty<Ast.Member>() : parseMethods(nextStart, next);
 		}
 		return new Ast.Klass(locFrom(start), head, supers, methods);
 	}
@@ -97,14 +98,14 @@ sealed class Parser : Lexer {
 
 		var super = parseSuper(start);
 		var nextStart = pos;
-		next = takeKeyword();
+		next = takeKeywordOrEof();
 		//TODO: support multiple supers
 		return (Arr.of(super), nextStart, next);
 	}
 
 	Ast.Super parseSuper(Pos start) {
 		takeSpace();
-		var name = takeName();
+		var name = takeTyName();
 		Arr<Ast.Impl> impls;
 		switch (takeNewlineOrIndent()) {
 			case NewlineOrIndent.Indent:

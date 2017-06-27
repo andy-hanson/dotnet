@@ -6,22 +6,8 @@ using Lsp;
 sealed class TestAttribute : Attribute {}
 
 class Program {
-	#pragma warning disable CC0057 // unused argument
-	static void Main(string[] args) {
-	#pragma warning restore
-		//dynamic impl = Tests.implementType(typeof(ImplementMe), new Implementation());
-		//impl.m();
-		TestCompile.runSingle("Slots");
-
-		//testNil();
-		//testJint2();
-
-		//TestCompile.runCompilerTest(Path.from("1"));
-		//TestCompile.runAllCompilerTests();
-
-		//var (stdout, stderr) = execJs("test.js");
-		//Console.WriteLine($"stdout: {stdout}");
-		//Console.WriteLine($"stderr: {stderr}");
+	static void Main() {
+		TestCompile.runSingle("Impl");
 	}
 }
 

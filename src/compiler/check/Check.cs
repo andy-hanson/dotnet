@@ -16,14 +16,14 @@ struct BaseScope {
 
 	internal BaseScope(Klass self, Arr<Module> imports) {
 		this.self = self; this.imports = imports;
-		imports.each((import, i) => {
+		for (uint i = 0; i < imports.length; i++) {
+			var import = imports[i];
 			if (import.name == self.name)
 				throw TODO(); // diagnostic -- can't shadow self
-			imports.eachInSlice(0, i, priorImport => {
-				if (priorImport.name == import.name)
+			for (uint j = 0; j < i; j++)
+				if (imports[j].name == import.name)
 					throw TODO(); // diagnostic -- can't shadow another import
-			});
-		});
+		}
 	}
 
 	internal Ty getTy(Ast.Ty ast) {
@@ -81,13 +81,6 @@ class Checker {
 				throw TODO(); //diagnostic
 		}
 
-		var supers = ast.supers.map(superAst => {
-			var superClass = (Klass)baseScope.accessTy(superAst.loc, superAst.name); //TODO: handle builtin
-			return new Super(superAst.loc, klass, superClass);
-		});
-		if (supers.length != 0 && klass.head is Klass.Head.Static) throw TODO();
-		klass.supers = supers;
-
 		var methods = ast.methods.map(methodAst => {
 			var e = emptyMethod(klass, methodAst);
 			addMember(e);
@@ -101,7 +94,10 @@ class Checker {
 		klass.setMembersMap(new Dict<Sym, Member>(b));
 
 		// Not that all members exist, we can fill in bodies.
-		ast.supers.doZip(supers, (superAst, super) => {
+		klass.setSupers(ast.supers.map(superAst => {
+			var superClass = (Klass)baseScope.accessTy(superAst.loc, superAst.name); //TODO: handle builtin
+			var super = new Super(superAst.loc, klass, superClass);
+
 			var abstractMethods = getAbstractMethods((Klass)super.superClass); //TODO: handle other kinds of superClass
 
 			var implAsts = superAst.impls;
@@ -133,7 +129,9 @@ class Checker {
 				var body = MethodChecker.checkMethod(baseScope, false, implemented.returnTy, implemented.parameters, implAst.body);
 				return new Impl(super, implAst.loc, implemented, body);
 			});
-		});
+
+			return super;
+		}));
 
 		// Now that all members exist, fill in the body of each member.
 		ast.methods.doZip(methods, (memberAst, member) => {
@@ -211,16 +209,15 @@ class MethodChecker {
 		this.isStatic = isStatic;
 		this.parameters = parameters;
 		// Assert that parameters don't shadow each other.
-		parameters.each((param, i) => {
+		for (uint i = 0; i < parameters.length; i++) {
+			var param = parameters[i];
 			//Decided to allow parameters to shadow base scope.
 			//Example where this is useful: `fun of(Int x) = new x` where `x` is the name of a slot.
-			//if (baseScope.hasMember(param.name))
-			//	throw TODO();
-			parameters.eachInSlice(0, i, earlierParameter => {
-				if (earlierParameter.name == param.name)
+			//if (baseScope.hasMember(param.name)) throw TODO();
+			for (uint j = 0; j < i; j++)
+				if (parameters[j].name == param.name)
 					throw TODO();
-			});
-		});
+		}
 	}
 
 	Expr checkVoid(Ast.Expr a) {
@@ -358,7 +355,7 @@ class MethodChecker {
 	Expr callStaticMethod(ref Expected expected, Loc loc, ClassLike klass, Sym methodName, Arr<Ast.Expr> argAsts) {
 		if (!klass.membersMap.get(methodName, out var member)) TODO();
 		var method = (Method)member;
-		if (method.isStatic) throw TODO();
+		if (!method.isStatic) throw TODO();
 		var args = checkCall(loc, method, argAsts);
 		var call = new Expr.StaticMethodCall(loc, method, args);
 		return handle(ref expected, loc, call);
@@ -472,11 +469,21 @@ class MethodChecker {
 	Expr checkType(Loc loc, Ty expectedTy, Expr e) {
 		unused(this);
 		//TODO: subtyping!
-		if (!expectedTy.fastEquals(e.ty)) {
+		if (!isSubtype(expectedTy, e.ty)) {
 			//TODO: have a WrongCast node and issue a diagnostic.
 			throw TODO();
 		}
 		return e;
+	}
+
+	bool isSubtype(Ty expectedTy, Ty actualTy) {
+		if (expectedTy.fastEquals(actualTy))
+			return true;
+		foreach (var s in actualTy.supers) {
+			if (isSubtype(expectedTy, s.superClass))
+				return true;
+		}
+		return false;
 	}
 
 	/**

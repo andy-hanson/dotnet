@@ -7,14 +7,14 @@ interface ToCsonSpecial {
 }
 
 sealed class CsonWriter : Writer {
-	internal static string write<T>(T obj) where T : ToData<T> {
-		var c = new CsonWriter();
+	internal static string write<T>(T obj, uint initialIndent = 0) where T : ToData<T> {
+		var c = new CsonWriter(initialIndent);
 		c.writeObj(obj);
 		return c.finish();
 	}
 
 	uint indent;
-	CsonWriter() {}
+	CsonWriter(uint initialIndent) { indent = initialIndent; }
 
 	protected override void writeObj<T>(T value) {
 		if (value is ToCsonSpecial c)
@@ -91,14 +91,14 @@ sealed class CsonWriter : Writer {
 				return;
 			case 1:
 				writeRaw('[');
-				writeObj(xs[0]);
+				writeObj(xs.only);
 				writeRaw(']');
 				return;
 			default:
 				writeRaw('[');
 				indent++;
 				writeLine();
-				writeObj(xs[0]);
+				writeObj(xs.head);
 				for (uint i = 1; i < xs.length; i++) {
 					writeRaw(',');
 					writeLine();

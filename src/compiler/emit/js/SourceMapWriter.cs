@@ -78,7 +78,7 @@ struct SourceMap : ToData<SourceMap> {
 class SourceMapWriter {
 	readonly EmitTextWriter writer;
 	readonly string sourceMapDir;
-	SourceMapSource currentSource; // TODO: write to!
+	readonly SourceMapSource currentSource; // TODO: write to!
 
 	Op<SourceMapSpan> lastRecordedSourceMapSpan;
 	Op<SourceMapSpan> lastEncodedSourceMapSpan;
@@ -226,7 +226,7 @@ class SourceMapWriter {
 	}
 
 	static char base64Digit(uint someByte) {
-    	const string base64Digits = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+		const string base64Digits = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 		return base64Digits.at(someByte);
 	}
 
@@ -238,29 +238,29 @@ class SourceMapWriter {
 		uint byte1, byte2, byte3, byte4;
 
 		while (i < length) {
-            // Convert every 6-bits in the input 3 character points
-            // into a base64 digit
+			// Convert every 6-bits in the input 3 character points
+			// into a base64 digit
 			byte1 = charCodes[i] >> 2;
-            byte2 = (charCodes[i] & 0b00000011) << 4 | charCodes[i + 1] >> 4;
-            byte3 = (charCodes[i + 1] & 0b00001111) << 2 | charCodes[i + 2] >> 6;
-            byte4 = charCodes[i + 2] & 0b00111111;
+			byte2 = (charCodes[i] & 0b00000011) << 4 | charCodes[i + 1] >> 4;
+			byte3 = (charCodes[i + 1] & 0b00001111) << 2 | charCodes[i + 2] >> 6;
+			byte4 = charCodes[i + 2] & 0b00111111;
 
-            // We are out of characters in the input, set the extra
-            // digits to 64 (padding character).
-            if (i + 1 >= length) {
-                byte3 = byte4 = 64;
-            }
-            else if (i + 2 >= length) {
-                byte4 = 64;
-            }
+			// We are out of characters in the input, set the extra
+			// digits to 64 (padding character).
+			if (i + 1 >= length) {
+				byte3 = byte4 = 64;
+			}
+			else if (i + 2 >= length) {
+				byte4 = 64;
+			}
 
-            // Write to the output
-            result.Append(base64Digit(byte1));
+			// Write to the output
+			result.Append(base64Digit(byte1));
 			result.Append(base64Digit(byte2));
 			result.Append(base64Digit(byte3));
 			result.Append(base64Digit(byte4));
 
-            i += 3;
+			i += 3;
 		}
 
 		return result.ToString();

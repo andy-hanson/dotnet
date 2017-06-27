@@ -59,6 +59,8 @@ namespace Model {
 	// This is always a ClassLike currently. Eventually we'll add instantiated generic classes too.
 	abstract class Ty : M, ToData<Ty>, Identifiable<ClassLike.Id> {
 		internal abstract bool isAbstract { get; } //kill
+		internal abstract Sym name { get; }
+		internal abstract Arr<Super> supers { get; }
 
 		public abstract bool deepEqual(Ty ty);
 		public override abstract int GetHashCode();
@@ -82,21 +84,31 @@ namespace Model {
 			public Dat toDat() => Dat.str(id);
 		}
 
-		internal readonly Sym name;
+		readonly Sym _name;
+		internal override Sym name => _name;
 		internal abstract Dict<Sym, Member> membersMap { get; }
 
-		protected ClassLike(Sym name) { this.name = name; }
+		protected ClassLike(Sym name) { _name = name; }
 	}
 
 	sealed class BuiltinClass : ClassLike, ToData<BuiltinClass> {
 		internal readonly Type dotNetType;
 
+		internal override Arr<Super> supers {
+			get {
+				// TODO: handle builtins with supertypes
+				// (TODO: Super has location information, may have to abstract over that)
+				if (dotNetType.BaseType != null) throw TODO();
+				if (dotNetType.GetInterfaces().Length != 0) throw TODO();
+				return Arr.empty<Super>();
+			}
+		}
 		internal override bool isAbstract => dotNetType.IsAbstract;
 
 		Dict<Sym, Member> _membersMap;
 		internal override Dict<Sym, Member> membersMap => _membersMap;
 
-		static Dictionary<Sym, BuiltinClass> byName = new Dictionary<Sym, BuiltinClass>();
+		static readonly Dictionary<Sym, BuiltinClass> byName = new Dictionary<Sym, BuiltinClass>();
 
 		static BuiltinClass() {
 			Builtins.register();
@@ -111,7 +123,7 @@ namespace Model {
 		static Dict<string, Sym> operatorUnescapes = operatorEscapes.reverse();
 
 		//void is OK for builtins, but we shouldn't attempt to create a class for it.
-		static ISet<Type> badTypes = new HashSet<Type> { typeof(void), typeof(object), typeof(string), typeof(char), typeof(uint), typeof(int), typeof(bool) };
+		static readonly ISet<Type> badTypes = new HashSet<Type> { typeof(void), typeof(object), typeof(string), typeof(char), typeof(uint), typeof(int), typeof(bool) };
 
 		internal static readonly BuiltinClass Void = fromDotNetType(typeof(Builtins.Void));
 		internal static readonly BuiltinClass Bool = fromDotNetType(typeof(Builtins.Bool));
@@ -198,7 +210,8 @@ namespace Model {
 		internal Head head { get => _head.get; set => _head.set(value); }
 
 		internal Late<Arr<Super>> _supers;
-		internal Arr<Super> supers { get => _supers.get; set => _supers.set(value); }
+		internal override Arr<Super> supers => _supers.get;
+		internal void setSupers(Arr<Super> value) => _supers.set(value);
 
 		Late<Arr<Method>> _methods;
 		internal Arr<Method> methods { get => _methods.get; set => _methods.set(value); }

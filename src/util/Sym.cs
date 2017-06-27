@@ -9,9 +9,9 @@ struct Sym : ToData<Sym>, IEquatable<Sym> {
 	Sym(int id) { this.id = id; }
 
 	static int nextId = 0;
-	static object lockMe = new object();
-	static ConcurrentDictionary<string, Sym> stringToSym = new ConcurrentDictionary<string, Sym>();
-	static ConcurrentDictionary<Sym, string> symToString = new ConcurrentDictionary<Sym, string>();
+	static readonly object lockMe = new object();
+	static readonly ConcurrentDictionary<string, Sym> stringToSym = new ConcurrentDictionary<string, Sym>();
+	static readonly ConcurrentDictionary<Sym, string> symToString = new ConcurrentDictionary<Sym, string>();
 	internal static Sym of(string s) {
 		if (stringToSym.TryGetValue(s, out var sym))
 			return sym;
@@ -33,7 +33,7 @@ struct Sym : ToData<Sym>, IEquatable<Sym> {
 		}
 	}
 
-	internal string str => symToString.getOp(this).force;
+	internal string str => symToString[this];
 
 	public override string ToString() => str;
 	public override bool Equals(object o) => throw new NotImplementedException();

@@ -1,7 +1,7 @@
 using System;
 
 using Model;
-using static StringU;
+using static StringUtils;
 
 struct CompileError : ToData<CompileError> {
 	internal readonly Loc loc;

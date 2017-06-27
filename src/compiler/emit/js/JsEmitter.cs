@@ -16,7 +16,7 @@ class JsEmitter {
 
 		emitClass(body, m.klass);
 
-		body.add(moduleExportsEquals(id(m.klass.loc, m.klass.name)));
+		body.add(assign(m.klass.loc, moduleExports, id(m.klass.loc, m.klass.name)));
 
 		return new Estree.Program(Loc.zero, body.finish());
 	}
@@ -30,21 +30,16 @@ class JsEmitter {
 		// Must find relative path.
 		var relPath = importer.fullPath().relTo(imported.fullPath());
 		Estree.Expression required = new Estree.Literal(loc, new Expr.Literal.LiteralValue.Str(relPath.ToString()));
-		var require = new Estree.CallExpression(loc, requireId, Arr.of(required));
+		var require = Estree.CallExpression.of(loc, requireId, required);
 		return Estree.VariableDeclaration.simple(loc, imported.name, require);
 	}
 
-	static readonly Estree.MemberExpression moduleExports = new Estree.MemberExpression(Loc.zero, baseId("module"), baseId("exports"));
-	static Estree.Statement moduleExportsEquals(Estree.Expression e) =>
-		new Estree.ExpressionStatement(
-			Loc.zero,
-			new Estree.AssignmentExpression(Loc.zero, moduleExports, e));
+	static readonly Estree.MemberExpression moduleExports = Estree.MemberExpression.simple(Loc.zero, Sym.of("module"), Sym.of("exports"));
 
+	static readonly Estree.MemberExpression objectCreate = Estree.MemberExpression.simple(Loc.zero, Sym.of("Object"), Sym.of("create"));
 	static void emitClass(Arr.Builder<Estree.Statement> body, Klass klass) {
 		var loc = klass.loc;
 		var name = klass.name;
-
-		if (klass.supers.length != 0) throw TODO();
 
 		switch (klass.head) {
 			case Klass.Head.Static _:
@@ -60,9 +55,24 @@ class JsEmitter {
 				throw TODO();
 		}
 
+		if (klass.supers.length != 0) {
+			if (klass.supers.length > 1) throw TODO(); //We will need a mixer in this case.
+
+			var super = klass.supers.only;
+			// `Foo.prototype = Object.create(Super.prototype);`
+			var ourProto = Estree.MemberExpression.simple(loc, name, symPrototype);
+			var superProto = Estree.MemberExpression.simple(super.loc, super.superClass.name, symPrototype);
+			var create = Estree.CallExpression.of(loc, objectCreate, superProto);
+			body.add(assign(super.loc, ourProto, create));
+		}
+
 		foreach (var method in klass.methods)
 			emitMethod(body, name, method);
 	}
+
+	//mv
+	static Estree.Statement assign(Loc loc, Estree.Pattern lhs, Estree.Expression rhs) =>
+		new Estree.ExpressionStatement(loc, new Estree.AssignmentExpression(loc, lhs, rhs));
 
 	/*
 	function Kls(x) {
@@ -75,7 +85,7 @@ class JsEmitter {
 			var slotLoc = slot.loc;
 			var id = (Estree.Identifier)patterns[i];
 			var member = new Estree.MemberExpression(slotLoc, new Estree.ThisExpression(slotLoc), id);
-			return new Estree.ExpressionStatement(slotLoc, new Estree.AssignmentExpression(slotLoc, member, id));
+			return assign(slotLoc, member, id);
 		});
 		var loc = klass.loc;
 		return new Estree.FunctionDeclaration(loc, id(loc, klass.name), patterns, new Estree.BlockStatement(loc, statements));
@@ -102,7 +112,7 @@ class JsEmitter {
 		var lhs = method.isStatic
 			? Estree.MemberExpression.simple(loc, klassName, method.name)
 			: Estree.MemberExpression.simple(loc, klassName, symPrototype, method.name);
-		return new Estree.ExpressionStatement(loc, new Estree.AssignmentExpression(loc, lhs, methodExpression(method)));
+		return assign(loc, lhs, methodExpression(method));
 	}
 
 	static Estree.FunctionExpression methodExpression(Method.MethodWithBody method) {
@@ -158,17 +168,17 @@ class JsEmitter {
 				return new Estree.Literal(loc, li.value);
 			case Expr.StaticMethodCall sm:
 				var method = sm.method;
-				var access = new Estree.MemberExpression(loc, id(loc, method.klass.name), id(loc, method.name));
+				var access = Estree.MemberExpression.simple(loc, method.klass.name, method.name);
 				return new Estree.CallExpression(loc, access, sm.args.map(exprToExpr));
 			case Expr.InstanceMethodCall m:
-				var member = new Estree.MemberExpression(loc, exprToExpr(m.target), id(m.loc, m.method.name));
+				var member = Estree.MemberExpression.simple(loc, exprToExpr(m.target), m.method.name);
 				return new Estree.CallExpression(loc, member, m.args.map(exprToExpr));
 			case Expr.New n:
 				return new Estree.NewExpression(loc, id(loc, n.klass.name), n.args.map(exprToExpr));
 			case Expr.GetSlot g:
-				return new Estree.MemberExpression(loc, exprToExpr(g.target), id(loc, g.slot.name));
+				return Estree.MemberExpression.simple(loc, exprToExpr(g.target), g.slot.name);
 			case Expr.GetMySlot g:
-				return new Estree.MemberExpression(loc, new Estree.ThisExpression(loc), id(loc, g.slot.name));
+				return Estree.MemberExpression.simple(loc, new Estree.ThisExpression(loc), g.slot.name);
 			case Expr.WhenTest w:
 				return whenToExpr(w);
 			default:
@@ -176,7 +186,8 @@ class JsEmitter {
 		}
 	}
 
-	static Estree.Identifier id(Loc loc, Sym name) => new Estree.Identifier(loc, name);
+	static Estree.Identifier id(Loc loc, Sym name) =>
+		new Estree.Identifier(loc, name);
 
 	static Estree.Expression whenToExpr(Expr.WhenTest w) {
 		var cases = w.cases;

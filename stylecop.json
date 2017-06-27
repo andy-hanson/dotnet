@@ -8,7 +8,7 @@
 		  "indentationSize": 4,
 		  "tabSize": 4,
 		  "useTabs": true
-	  },parsese
+	  },
 	  "orderingRules": {
 		  "usingDirectivesPlacement": "outsideNamespace"
 	  }

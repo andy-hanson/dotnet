@@ -5,3 +5,7 @@ slots
 is AbstractClass
 	n()
 		x
+
+fun Int main(Int x)
+	instance = new x
+	AbstractClass.getN instance

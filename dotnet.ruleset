@@ -2,7 +2,7 @@
 <RuleSet Name="The Rules" ToolsVersion="10.0">
 
 	<Rules AnalyzerId="StyleCop.Analyzers" RuleNamespace="StyleCop.Analyzers">
-		<Rule Id="SA1027" Action="None" /> <!-- Use tabs -->
+		<Rule Id="SA0001" Action="None" /> <!-- Don't use XML documentation -->
 		<Rule Id="SA1101" Action="None" /> <!-- Don't prefix local calls with 'this' -->
 		<Rule Id="SA1300" Action="None" /> <!-- Don't use uppercase -->
 		<Rule Id="SA1304" Action="None" /> <!-- No really -->
@@ -27,11 +27,11 @@
 		<Rule Id="SA1012" Action="None" /> <!-- Allow '{}' -->
 		<Rule Id="SA1013" Action="None" /> <!-- Allow '{}' -->
 		<Rule Id="SA1633" Action="None" /> <!-- No file header -->
-		<Rule Id="SA1652" Action="None" /> <!-- Don't use XML documentation -->
 		<Rule Id="SA1515" Action="None" /> <!-- Don't require blank line after comment -->
 		<Rule Id="SA1402" Action="None" /> <!-- Allow multi-class files -->
 		<Rule Id="SA1649" Action="None" /> <!-- Allow type name to not match file name -->
 		<Rule Id="SA1307" Action="None" /> <!-- Don't require elements to be separated by blank lines -->
+		<Rule Id="SA1512" Action="None" /> <!-- Allow blank line after comment -->
 		<Rule Id="SA1516" Action="None" /> <!-- No really -->
 		<Rule Id="SA1513" Action="None" /> <!-- Allow no whitespace after closing brace -->
 		<Rule Id="SA1201" Action="None" /> <!-- Allow static after non-static -->
@@ -41,15 +41,32 @@
 		<Rule Id="SA1309" Action="None" /> <!-- Allow underscore in field name -->
 		<Rule Id="SA1302" Action="None" /> <!-- Interfaces do not begin with 'I' -->
 		<Rule Id="SA1200" Action="None" /> <!-- "using" outside of namespace -->
+		<Rule Id="SA1214" Action="None" /> <!-- Don't require readonly fields to appear first -->
+		<Rule Id="SA1314" Action="None" /> <!-- Don't name every type parameter 'T' -->
+		<Rule Id="SA1136" Action="None" /> <!-- Allow single-line enum -->
 
-		<Rule Id="SA1119" Action="None" /> <!-- TODO: this rule has bugs for now with `if (!(x is Foo f))` -->
+		<Rule Id="SA1413" Action="None" /> <!-- TODO: this rule is buggy with single-line enums -->
 		<Rule Id="SA1008" Action="None" /> <!-- TODO: stylecop bug: This doesn't play well with tuples -->
-		<Rule Id="SA1009" Action="None" /> <!-- What is this? -->
 		<Rule Id="SA1005" Action="None" /> <!-- TODO: comment must begin with space -->
 	</Rules>
 
 	<Rules AnalyzerId="CodeCracker.CSharp" RuleNamespace="CodeCracker.CSharp">
 		<Rule Id="CC0031" Action="None" /> <!-- I don't use nulls -->
+		<Rule Id="CC0030" Action="Warning" /> <!-- Prefer 'const' locals -->
+		<Rule Id="CC0006" Action="Warning" /> <!-- Prefor 'foreach' to 'for' loop -->
+		<Rule Id="CC0018" Action="Warning" /> <!-- Prefer existence operator -->
+		<Rule Id="CC0019" Action="Warning" /> <!-- Prefer 'switch' to 'if' -->
+		<Rule Id="CC0020" Action="Warning" /> <!-- Prefer method group to lambda -->
+		<!-- <Rule Id="CC0037" Action="Warning" /> TODO: Do not comment out code. -->
+		<Rule Id="CC0038" Action="Warning" /> <!-- Prefer expression-bodied method -->
+		<Rule Id="CC0048" Action="Warning" /> <!-- Prefer string interpolation -->
+		<Rule Id="CC0026" Action="Warning" /> <!-- Prefer to use extension method as extension -->
+		<Rule Id="CC0032" Action="Warning" /> <!-- Remember to dispose disposable fields -->
+		<Rule Id="CC0049" Action="Warning" /> <!-- Avoid redundant boolean comparisons -->
+		<Rule Id="CC0052" Action="Warning" /> <!-- Prefer readonly fields -->
 		<Rule Id="CC0068" Action="Warning" /> <!-- Warn on unused private method -->
+		<Rule Id="CC0089" Action="Warning" /> <!-- No empty 'else' block -->
+		<!-- <Rule Id="CC0045" Action="Warning" /> Prefer verbatim strings (TODO: this rule is seriously broken!) -->
+		<!-- <Rule Id="CC0073" Action="Warning" /> Use braces in switch -->
 	</Rules>
 </RuleSet>

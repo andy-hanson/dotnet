@@ -370,7 +370,7 @@ namespace Ast {
 		internal sealed class Seq : Expr, ToData<Seq> {
 			internal readonly Expr first;
 			internal readonly Expr then;
-			internal Seq(Loc loc, Expr first, Expr then) : base(loc){
+			internal Seq(Loc loc, Expr first, Expr then) : base(loc) {
 				this.first = first;
 				this.then = then;
 			}

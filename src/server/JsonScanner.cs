@@ -124,9 +124,9 @@ namespace Json {
 		}
 
 		/**
-        Optionally reads 'key' with an int value.
-        Next key should have a string value.
-        */
+		Optionally reads 'key' with an int value.
+		Next key should have a string value.
+		*/
 		//TODO:RENAME
 		internal void mayReadDictUintThenString(string key, string nextKey, bool last, out OpUint intValue, out string strValue) {
 			var actualKey = readKey();

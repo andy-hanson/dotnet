@@ -29,7 +29,7 @@ namespace Json {
 		internal override void writeArray<T>(Arr<T> xs) {
 			writeArrayStart();
 			if (xs.length != 0) {
-				writeObj(xs[0]);
+				writeObj(xs.head);
 				for (uint i = 1; i < xs.length; i++) {
 					writeComma();
 					writeObj(xs[i]);
@@ -42,7 +42,7 @@ namespace Json {
 		internal void writeArray<T>(Arr<T> xs, Action<T, Writer> writeValue) {
 			writeArrayStart();
 			if (xs.length != 0) {
-				writeValue(xs[0], this);
+				writeValue(xs.head, this);
 				for (uint i = 0; i < xs.length; i++) {
 					writeComma();
 					writeValue(xs[i], this);

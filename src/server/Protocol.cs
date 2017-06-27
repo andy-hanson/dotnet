@@ -267,8 +267,6 @@ namespace Lsp {
 			public override bool deepEqual(Response r) => r is CompletionResponse c && deepEqual(c);
 			public bool deepEqual(CompletionResponse c) => completions.deepEqual(c.completions);
 			public override Dat toDat() => Dat.arr(completions);
-			//void ToJsonSpecial.toJsonSpecial(JsonWriter j) =>
-			//	j.writeArray(completions);
 		}
 
 		internal sealed class HoverResponse : Response, ToData<HoverResponse> {

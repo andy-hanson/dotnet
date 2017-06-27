@@ -1,3 +1,6 @@
 abstract
 
 abstract Int n()
+
+fun Int getN(AbstractClass a)
+	a.n()

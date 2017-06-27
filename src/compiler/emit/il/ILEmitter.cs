@@ -13,7 +13,7 @@ struct TypeBuilding {
 
 	internal TypeBuilding(TypeInfo info) { this.info = info; this._type = Op<Type>.None; }
 	internal TypeBuilding(TypeInfo info, Type type) { this.info = info; this._type = Op.Some(type); }
-	internal TypeBuilding withType(Type type) { return new TypeBuilding(this.info, type); }
+	internal TypeBuilding withType(Type type) => new TypeBuilding(this.info, type);
 }
 
 /**
@@ -54,7 +54,7 @@ sealed class ILEmitter {
 		/*var daType = typeof(DebuggableAttribute);
 		var ctorInfo = daType.GetConstructor(new Type[] { typeof(DebuggableAttribute.DebuggingModes) });
 		var caBuilder = new CustomAttributeBuilder(ctorInfo, new object[] {
-  			DebuggableAttribute.DebuggingModes.DisableOptimizations |
+			DebuggableAttribute.DebuggingModes.DisableOptimizations |
 			DebuggableAttribute.DebuggingModes.Default
 		});
 		assemblyBuilder.SetCustomAttribute(caBuilder);*/
@@ -75,12 +75,20 @@ sealed class ILEmitter {
 		var klass = m.klass;
 		//TypeAttributes.Abstract;
 		//TypeAttributes.Interface;
+
+		Type superClass;
+		if (klass.supers.length != 0) {
+			if (klass.supers.length > 1) throw TODO();
+			var super = (Klass)klass.supers.only.superClass; //TODO: handle builtins
+			superClass = typeInfos[super].info;
+		} else
+			superClass = null; // No super class
+
 		var typeBuilder = moduleBuilder.DefineType(klass.name.str, TypeAttributes.Public | typeFlags(klass.head));
 
 		typeInfos[klass] = new TypeBuilding(typeBuilder.GetTypeInfo());
 
 		fillHead(typeBuilder, klass);
-		if (klass.supers.length != 0) throw TODO();
 		fillMethods(typeBuilder, klass);
 
 		var type = typeBuilder.CreateTypeInfo();
@@ -89,7 +97,7 @@ sealed class ILEmitter {
 	}
 
 	static TypeAttributes typeFlags(Klass.Head head) {
-		switch (head ){
+		switch (head) {
 			case Klass.Head.Static s:
 				return TypeAttributes.Sealed;
 			case Klass.Head.Abstract a:
@@ -129,13 +137,14 @@ sealed class ILEmitter {
 		//Constructor can't call any other methods, so we generate it eagerly.
 		var parameterTypes = fields.mapToArray(f => f.FieldType);
 		var ctr = tb.DefineConstructor(MethodAttributes.Private, CallingConventions.Standard, parameterTypes);
-		var ctrIl = ctr.GetILGenerator();
-		fields.each((field, index) => {
-			ctrIl.Emit(OpCodes.Ldarg_0);
-			ctrIl.Emit(ILWriter.ldargOperation(index, isStatic: false));
-			ctrIl.Emit(OpCodes.Stfld, field);
-		});
-		ctrIl.Emit(OpCodes.Ret);
+		var il = new ILWriter(ctr);
+		for (uint index = 0; index < fields.length; index++) {
+			var field = fields[index];
+			il.getThis();
+			il.getParameter(index);
+			il.setField(field);
+		}
+		il.ret();
 
 		this.classToConstructor[klass] = ctr;
 	}
@@ -155,8 +164,7 @@ sealed class ILEmitter {
 			switch (method) {
 				case Method.MethodWithBody mwb:
 					var mb = (MethodBuilder)methodInfos[mwb];
-					var methIl = mb.GetILGenerator();
-					var iw = new ILWriter(methIl, isStatic: mwb.isStatic);
+					var iw = new ILWriter(mb);
 					new ExprEmitter(this, iw).emitAny(mwb.body);
 					iw.ret();
 					break;
@@ -179,134 +187,6 @@ sealed class ILEmitter {
 			default:
 				throw unreachable();
 		}
-	}
-}
-
-sealed class ILWriter {
-	//readonly Arr.Builder<string> logs;
-	readonly ILGenerator il;
-	readonly bool isStatic;
-	internal ILWriter(ILGenerator il, bool isStatic) {
-		this.il = il;
-		this.isStatic = isStatic;
-		//this.logs = Arr.builder<string>();
-	}
-
-	static void log(string s) {
-		//Console.WriteLine("  " + s);
-		//logs.add(s);
-	}
-
-	internal void pop() {
-		il.Emit(OpCodes.Pop);
-	}
-
-	internal void ret() {
-		log("return");
-		il.Emit(OpCodes.Ret);
-	}
-
-	internal void constInt(int i) {
-		log($"const {i}");
-		il.Emit(OpCodes.Ldc_I4, i);
-	}
-
-	internal void constDouble(double d) {
-		log($"const {d}");
-		il.Emit(OpCodes.Ldc_R8, d);
-	}
-
-	internal void constStr(string s) {
-		log($"const '{s}'");
-		il.Emit(OpCodes.Ldstr, s);
-	}
-
-	internal void loadStaticField(FieldInfo field) {
-		log($"load static field {field.DeclaringType.Name}: {field.Name}");
-		il.Emit(OpCodes.Ldsfld, field);
-	}
-
-	internal void callStaticMethod(MethodInfo m) {
-		log($"call static {m.DeclaringType.Name}: {m}");
-		assert(m.IsStatic);
-		// Last arg only matters if this is varargs.
-		il.EmitCall(OpCodes.Call, m, null);
-	}
-
-	internal void callConstructor(ConstructorInfo ctr) {
-		il.Emit(OpCodes.Newobj, ctr);
-	}
-
-	/** Remember to call markLabel! */
-	internal Label label() {
-		return il.DefineLabel();
-	}
-
-	internal void markLabel(Label l) {
-		log($"{l}");
-		il.MarkLabel(l);
-	}
-
-	internal void getThis() {
-		il.Emit(OpCodes.Ldarg_0);
-	}
-
-	internal void getField(FieldInfo field) {
-		log($"get instance field {field.Name}");
-		il.Emit(OpCodes.Ldfld, field);
-	}
-
-	internal void goToIfFalse(Label l) {
-		log($"goto if false: {l}");
-		il.Emit(OpCodes.Brfalse, l);
-	}
-
-	internal void goTo(Label l) {
-		log($"goto {l}");
-		il.Emit(OpCodes.Br, l);
-	}
-
-	internal void getParameter(Method.Parameter p) {
-		log($"get parameter {p.name}");
-		il.Emit(ldargOperation(p.index, isStatic));
-	}
-
-	internal static OpCode ldargOperation(uint index, bool isStatic) {
-		if (!isStatic) index++;
-		switch (index) {
-			case 0:
-				return OpCodes.Ldarg_0;
-			case 1:
-				return OpCodes.Ldarg_1;
-			case 2:
-				return OpCodes.Ldarg_2;
-			case 3:
-				return OpCodes.Ldarg_3;
-			default:
-				throw TODO();
-		}
-	}
-
-	internal void callInstanceMethod(bool isVirtual, MethodInfo mi) {
-		var opcode = isVirtual ? OpCodes.Callvirt : OpCodes.Call;
-		il.Emit(opcode, mi);
-	}
-
-	/** Should be called after pushing the locals' initial value on the stack. */
-	internal Local initLocal(Type type) {
-		var lb = il.DeclareLocal(type);
-		il.Emit(OpCodes.Stloc, lb);
-		return new Local(lb);
-	}
-
-	internal void getLocal(Local local) {
-		il.Emit(OpCodes.Ldloc, local.__builder);
-	}
-
-	/** Treat this as private! Do not inspec contents if you are not ILWriter! */
-	internal struct Local {
-		internal readonly LocalBuilder __builder;
-		internal Local(LocalBuilder builder) { __builder = builder; }
 	}
 }
 
@@ -356,9 +236,8 @@ sealed class ExprEmitter {
 		}
 	}
 
-	void emitAccessParameter(Expr.AccessParameter p) {
-		il.getParameter(p.param);
-	}
+	void emitAccessParameter(Expr.AccessParameter p) =>
+		il.getParameter(p.param.index);
 
 	void emitAccessLocal(Expr.AccessLocal lo) =>
 		il.getLocal(localToIl[lo.local]);
@@ -436,7 +315,7 @@ sealed class ExprEmitter {
 		*/
 
 		if (w.cases.length != 1) throw TODO(); //TODO
-		var kase = w.cases[0];
+		var kase = w.cases.only;
 
 		var elzeResultLabel = il.label();
 		var end = il.label();
@@ -455,14 +334,14 @@ sealed class ExprEmitter {
 	}
 
 	void emitStaticMethodCall(Expr.StaticMethodCall s) {
-		unused(this);
-		throw TODO();
+		emitArgs(s.args);
+		il.callStaticMethod(emitter.toMethodInfo(s.method));
 	}
 
 	void emitInstanceMethodCall(Expr.InstanceMethodCall m) {
 		emitAny(m.target);
 		emitArgs(m.args);
-		il.callInstanceMethod(m.method is Method.AbstractMethod, emitter.toMethodInfo(m.method));
+		il.callInstanceMethod(emitter.toMethodInfo(m.method), m.method is Method.AbstractMethod);
 	}
 
 	void emitNew(Expr.New n) {

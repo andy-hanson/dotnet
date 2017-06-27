@@ -12,8 +12,8 @@ static class Op {
 }
 
 struct Op<T> {
-    readonly T value;
-    Op(T value) { this.value = value; }
+	readonly T value;
+	Op(T value) { this.value = value; }
 
 	internal T unsafeValue => value;
 
@@ -41,8 +41,8 @@ struct Op<T> {
 		return o;
 	}
 
-    internal Op<U> map<U>(Func<T, U> mapper) =>
-        has ? Op.Some(mapper(value)) : Op<U>.None;
+	internal Op<U> map<U>(Func<T, U> mapper) =>
+		has ? Op.Some(mapper(value)) : Op<U>.None;
 	internal OpUint mapToUint(Func<T, uint> mapper) =>
 		has ? OpUint.Some(mapper(value)) : OpUint.None;
 
@@ -102,8 +102,8 @@ struct OpUint : ToData<OpUint> {
 		return o;
 	}
 
-    internal Op<U> map<U>(Func<uint, U> mapper) =>
-        has ? Op.Some(mapper(value)) : Op<U>.None;
+	internal Op<U> map<U>(Func<uint, U> mapper) =>
+		has ? Op.Some(mapper(value)) : Op<U>.None;
 
 	internal uint or(Func<uint> or) =>
 		has ? value : or();

@@ -23,7 +23,6 @@ internal enum Token {
 	Fun,
 	Generic,
 	If,
-	Impl, //kill
 	Import,
 	In,
 	Is,
@@ -81,8 +80,6 @@ static class TokenU {
 				return Op.Some(Token.Generic);
 			case "if":
 				return Op.Some(Token.If);
-			case "impl":
-				return Op.Some(Token.Impl);
 			case "import":
 				return Op.Some(Token.Import);
 			case "in":
@@ -132,7 +129,6 @@ static class TokenU {
 			case Token.Fun: return "fun";
 			case Token.Generic: return "generic";
 			case Token.If: return "if";
-			case Token.Impl: return "impl";
 			case Token.Import: return "import";
 			case Token.In: return "in";
 			case Token.Is: return "is";

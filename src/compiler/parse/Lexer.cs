@@ -47,9 +47,8 @@ abstract class Reader {
 
 	protected string debug() => ReaderU.debug(source, pos);
 
-	protected string sliceFrom(Pos startPos) {
-		return source.slice(startPos.index, pos.index);
-	}
+	protected string sliceFrom(Pos startPos) =>
+		source.slice(startPos.index, pos.index);
 }
 
 abstract class Lexer : Reader {
@@ -269,6 +268,7 @@ abstract class Lexer : Reader {
 	void expectCharacter(string expected, Func<char, bool> pred) {
 		var ch = readChar();
 		if (!pred(ch)) {
+			System.Diagnostics.Debugger.Break(); //VSCode shows an empty call stack on the below exception...
 			throw exit(singleCharLoc, new Err.UnexpectedCharacter(ch, expected));
 		}
 	}
@@ -381,6 +381,13 @@ abstract class Lexer : Reader {
 		if (actual != kw) throw unexpected(startPos, TokenU.TokenName(kw), TokenU.TokenName(actual));
 	}
 
+	protected string takeTyNameString() {
+		var startPos = pos;
+		expectCharacter("type name", CharUtils.isUpperCaseLetter);
+		skipWhile(CharUtils.isNameChar);
+		return sliceFrom(startPos);
+	}
+
 	protected string takeNameString() {
 		var startPos = pos;
 		expectCharacter("(non-type) name", CharUtils.isLowerCaseLetter);
@@ -389,19 +396,15 @@ abstract class Lexer : Reader {
 	}
 
 	protected Sym takeName() => Sym.of(takeNameString());
-
-	protected Sym takeTyName() {
-		var startPos = pos;
-		expectCharacter("type name", CharUtils.isUpperCaseLetter);
-		skipWhile(CharUtils.isNameChar);
-		return Sym.of(sliceFrom(startPos));
-	}
+	protected Sym takeTyName() => Sym.of(takeTyNameString());
 
 	protected ParserExit unexpected(Pos startPos, string expectedDesc, Token token) =>
 		unexpected(startPos, expectedDesc, TokenU.TokenName(token));
 
 	protected ParserExit unexpected(Pos startPos, string expectedDesc, string actualDesc) =>
 		exit(locFrom(startPos), new Err.UnexpectedToken(expectedDesc, actualDesc));
+
+	protected Token takeKeywordOrEof() => atEOF ? Token.EOF : takeKeyword();
 
 	protected Token takeKeyword() {
 		var startPos = pos;

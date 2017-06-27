@@ -31,12 +31,6 @@ interface Identifiable<IdType> where IdType : ToData<IdType> {
 
 static class IdentifiableU {
 	/**
-	True if two values are actually the same object.
-	*/
-	//public static bool fastEquals<T, IdType>(T a, T b) where T : class, Identifiable<IdType> where IdType : ToData<IdType> =>
-	//	a == b;
-
-	/**
 	Slow! Use only in test assertions.
 	Unlike `fastEquals`, this will be true for corresponding objects in identical trees.
 	*/

@@ -4,10 +4,10 @@ using System.Text;
 using static Utils;
 
 class JsWriter : EmitTextWriter {
+	readonly StringBuilder sb = new StringBuilder();
 	uint line = 0;
 	uint column = 0;
 	uint indent = 0;
-	StringBuilder sb = new StringBuilder();
 
 	internal static string writeToString(Estree.Program p) {
 		var j = new JsWriter();
@@ -73,7 +73,7 @@ class JsWriter : EmitTextWriter {
 
 	void writeCommaSeparatedList<T>(Arr<T> xs, Action<T> write) {
 		if (xs.length == 0) return;
-		write(xs[0]);
+		write(xs.head);
 		for (uint i = 1; i < xs.length; i++) {
 			writeRaw(", ");
 			write(xs[i]);

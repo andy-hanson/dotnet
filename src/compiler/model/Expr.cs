@@ -66,11 +66,7 @@ namespace Model {
 				this.then = then;
 			}
 
-			internal override Ty ty => GetTy();
-
-			Ty GetTy() {
-				return then.ty;
-			}
+			internal override Ty ty => then.ty;
 
 			public override bool deepEqual(Expr e) => e is Seq s && deepEqual(s);
 			public bool deepEqual(Seq s) => locEq(s) && action.deepEqual(s.action) && then.deepEqual(s.then);

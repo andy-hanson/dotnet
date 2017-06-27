@@ -42,7 +42,7 @@ abstract class Writer {
 		writeEmptyDict<T>();
 	}
 
-		internal void writeDict<T, V1>(Dat.Dat1<T, V1> d) where T : ToData<T> where V1 : ToData<V1> {
+	internal void writeDict<T, V1>(Dat.Dat1<T, V1> d) where T : ToData<T> where V1 : ToData<V1> {
 		writeDictStart<T>();
 		writeFirstDictEntry(d.key1, d.value1);
 		writeDictEnd();

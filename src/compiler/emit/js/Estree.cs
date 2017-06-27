@@ -124,10 +124,12 @@ namespace Estree {
 			this.property = property;
 			this.computed = false;
 		}
-		internal static MemberExpression simple(Loc loc, Sym left, Sym right) =>
-			new MemberExpression(loc, new Identifier(loc, left), new Identifier(loc, right));
+		internal static Estree.MemberExpression simple(Loc loc, Estree.Expression lhs, Sym name) =>
+			new Estree.MemberExpression(loc, lhs, new Identifier(loc, name));
+		internal static MemberExpression simple(Loc loc, Sym left, Sym name) =>
+			simple(loc, new Identifier(loc, left), name);
 		internal static MemberExpression simple(Loc loc, Sym a, Sym b, Sym c) =>
-			new MemberExpression(loc, new MemberExpression(loc, new Identifier(loc, a), new Identifier(loc, b)), new Identifier(loc, c));
+			simple(loc, simple(loc, a, b), c);
 	}
 
 	sealed class ConditionalExpression : Node, Expression {
@@ -152,6 +154,8 @@ namespace Estree {
 
 	sealed class CallExpression : CallOrNewExpression {
 		internal CallExpression(Loc loc, Expression callee, Arr<Expression> arguments) : base(loc, callee, arguments) {}
+		internal static CallExpression of(Loc loc, Expression callee, params Expression[] arguments) =>
+			new CallExpression(loc, callee, new Arr<Expression>(arguments));
 	}
 
 	sealed class NewExpression : CallOrNewExpression {
