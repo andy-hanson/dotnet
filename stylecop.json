@@ -1,16 +1,22 @@
 {
-  "$schema": "https://raw.githubusercontent.com/DotNetAnalyzers/StyleCopAnalyzers/master/StyleCop.Analyzers/StyleCop.Analyzers/Settings/stylecop.schema.json",
-  "settings": {
-	  "documentationRules": {
-		  "xmlHeader": false
-	  },
-	  "indentation": {
-		  "indentationSize": 4,
-		  "tabSize": 4,
-		  "useTabs": true
-	  },
-	  "orderingRules": {
-		  "usingDirectivesPlacement": "outsideNamespace"
-	  }
-  }
+	"$schema": "https://raw.githubusercontent.com/DotNetAnalyzers/StyleCopAnalyzers/master/StyleCop.Analyzers/StyleCop.Analyzers/Settings/stylecop.schema.json",
+	"settings": {
+		"documentationRules": {
+			"xmlHeader": false
+		},
+		"indentation": {
+			"useTabs": true
+		},
+		"orderingRules": {
+			"usingDirectivesPlacement": "outsideNamespace",
+			"blankLinesBetweenUsingGroups": "require",
+			"elementOrder": ["readonly"]
+		},
+		"namingRules": {
+			"allowCommonHungarianPrefixes": false
+		},
+		"layoutRules": {
+			"newlineAtEndOfFile": "require"
+		}
+	}
 }

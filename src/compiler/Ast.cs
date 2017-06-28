@@ -3,9 +3,9 @@ using System;
 namespace Ast {
 	abstract class Node : ToData<Node> {
 		internal readonly Loc loc;
-		internal Node(Loc loc) { this.loc = loc; }
-		public override bool Equals(object o) => throw new NotImplementedException();
-		public override int GetHashCode() => throw new NotImplementedException();
+		protected Node(Loc loc) { this.loc = loc; }
+		public override bool Equals(object o) => throw new NotSupportedException();
+		public override int GetHashCode() => throw new NotSupportedException();
 		public abstract bool deepEqual(Node n);
 		protected bool locEq(Node n) => loc.deepEqual(n.loc);
 		public abstract Dat toDat();

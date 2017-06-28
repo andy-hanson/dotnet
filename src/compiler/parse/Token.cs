@@ -1,4 +1,4 @@
-using System;
+using static Utils;
 
 internal enum Token {
 	Nil, // Reserved so that default(Token) is available for use by Op
@@ -161,7 +161,7 @@ static class TokenU {
 			case Token.Comma: return ",";
 			case Token.Dot: return ".";
 			case Token.DotDot: return "..";
-			default: throw new Exception(tk.ToString());
+			default: throw fail(tk.ToString());
 		}
 	}
 }

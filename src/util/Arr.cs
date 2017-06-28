@@ -61,6 +61,8 @@ struct Arr<T> {
 		return b.finish();
 	}
 
+	internal U[] mapBuilder<U>() => new U[length];
+
 	internal Arr<U> map<U>(Func<T, U> mapper) {
 		var b = new U[length];
 		for (uint i = 0; i < length; i++)
@@ -106,9 +108,9 @@ struct Arr<T> {
 	internal Arr<T> tail() => slice(1);
 
 	internal T[] sliceToBuilder(uint lo, uint hi) {
-		var length = hi - lo;
-		var res = new T[length];
-		Array.Copy(inner, lo, res, 0, length);
+		var slicedLength = hi - lo;
+		var res = new T[slicedLength];
+		Array.Copy(inner, lo, res, 0, slicedLength);
 		return res;
 	}
 
@@ -181,16 +183,24 @@ static class Arr {
 	}
 
 	internal static string join<T>(this Arr<T> xs, string joiner) {
-		if (xs.length == 0) return string.Empty;
+		if (xs.length == 0)
+			return string.Empty;
 
 		var res = new StringBuilder();
+		join(xs, joiner, res);
+		return res.ToString();
+	}
+
+	internal static void join<T>(this Arr<T> xs, string joiner, StringBuilder sb) {
+		if (xs.length == 0)
+			return;
+
 		for (uint i = 0; i < xs.length - 1; i++) {
-			res.Append(xs[i]);
-			res.Append(joiner);
+			sb.Append(xs[i]);
+			sb.Append(joiner);
 		}
 
-		res.Append(xs[xs.length - 1]);
-		return res.ToString();
+		sb.Append(xs[xs.length - 1]);
 	}
 
 	//Have to define this here to get the type constraint.
@@ -267,15 +277,13 @@ static class Arr {
 			return finish();
 		}
 
-		internal void clear() {
-			this.clear();
-		}
+		internal void clear() => b.Clear();
 
 		internal Arr<U> map<U>(Func<T, U> mapper) {
-			var b = new U[curLength];
+			var b2 = new U[curLength];
 			for (uint i = 0; i < curLength; i++)
-				b[i] = mapper(this[i]);
-			return new Arr<U>(b);
+				b2[i] = mapper(this[i]);
+			return new Arr<U>(b2);
 		}
 
 		internal T last => b[b.Count - 1];

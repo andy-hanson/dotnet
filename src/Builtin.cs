@@ -3,13 +3,13 @@ using System;
 using Model;
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Field)]
-sealed class BuiltinName : Attribute {
+sealed class BuiltinNameAttribute : Attribute {
 	internal readonly Sym name;
-	internal BuiltinName(string name) { this.name = Sym.of(name); }
+	internal BuiltinNameAttribute(string name) { this.name = Sym.of(name); }
 }
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Field)]
-sealed class Hid : Attribute {}
+sealed class HidAttribute : Attribute {}
 
 public static class Builtins {
 	public sealed class Void : ToData<Void> {
@@ -86,18 +86,6 @@ public static class Builtins {
 		Dat ToData<Str>.toDat() => Dat.str(value);
 
 		public Str _add(Str other) => of(value + other.value);
-	}
-
-	//TODO: public interface World {}
-
-	//TODO: helpers like this should really be written in Noze itself.
-	public static class Util {
-		public static Void assert(Bool condition) {
-			if (!condition.value)
-				//TODO: use a builtin exception class.
-				throw new Exception("Assertion failed.");
-			return Void.instance;
-		}
 	}
 
 	internal static void register() {

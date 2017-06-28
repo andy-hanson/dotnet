@@ -12,7 +12,7 @@ sealed class AssertEqualException<T> : Exception where T : ToData<T> {
 	static string message(T a, T b) {
 		var showA = CsonWriter.write(a, initialIndent: 1);
 		var showB = CsonWriter.write(b, initialIndent: 1);
-		throw new Exception($"Expected:\n{showA}\nActual:\n{showB}");
+		return $"Expected:\n{showA}\nActual:\n{showB}";
 	}
 }
 

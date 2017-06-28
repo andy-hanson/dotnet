@@ -18,7 +18,7 @@ class SourceMapSpan {
 		this.sourceColumn = sourceColumn;
 	}
 
-	internal static SourceMapSpan defaultLastEncoded = new SourceMapSpan(
+	internal static readonly SourceMapSpan defaultLastEncoded = new SourceMapSpan(
 		emittedLine: 1,
 		emittedColumn: 1,
 		sourceLine: 1,
@@ -49,12 +49,12 @@ interface EmitTextWriter {
 }
 
 struct SourceMap : ToData<SourceMap> {
-	uint version;
-	string file;
-	string sourceRoot;
-	Arr<string> sources;
-	Arr<string> names;
-	string mappings;
+	readonly uint version;
+	readonly string file;
+	readonly string sourceRoot;
+	readonly Arr<string> sources;
+	readonly Arr<string> names;
+	readonly string mappings;
 
 	internal SourceMap(uint version, string file, string sourceRoot, Arr<string> sources, Arr<string> names, string mappings) {
 		this.version = version;
@@ -65,7 +65,7 @@ struct SourceMap : ToData<SourceMap> {
 		this.mappings = mappings;
 	}
 
-	public bool deepEqual(SourceMap sm) => throw new NotImplementedException();
+	public bool deepEqual(SourceMap sm) => throw new NotSupportedException();
 	public Dat toDat() => Dat.of(this,
 		nameof(version), Dat.num(version),
 		nameof(file), Dat.str(file),
@@ -83,7 +83,7 @@ class SourceMapWriter {
 	Op<SourceMapSpan> lastRecordedSourceMapSpan;
 	Op<SourceMapSpan> lastEncodedSourceMapSpan;
 
-	SourceMapDataBuilder smd;
+	readonly SourceMapDataBuilder smd;
 
 	internal SourceMapWriter(EmitTextWriter writer, Path filePath, string fileText, string sourceMapFilePath, Estree.Program sourceFile) {
 		unused(sourceFile);
@@ -101,12 +101,12 @@ class SourceMapWriter {
 			sourceMapFile = filePath.last,
 			sourceMapSourceRoot = string.Empty,
 			sourceMapSources = Arr.of(fileText),
-			inputSourceFileNames = Arr.of(filePath.ToString()),
+			inputSourceFileNames = Arr.of(filePath.toPathString()),
 			sourceMapNames = Arr.builder<string>(),
 			sourceMapMappings = new StringBuilder()
 		};
 
-		sourceMapDir = filePath.directory().ToString();
+		sourceMapDir = filePath.directory().toPathString();
 
 		//TODO: setSourceFile
 	}

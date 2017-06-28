@@ -13,7 +13,7 @@ namespace Lsp.Server {
 		readonly TcpClient client;
 		readonly NetworkStream stream; //TODO: BufferedStream
 
-		internal AbstractTcpServer(uint port) {
+		protected AbstractTcpServer(uint port) {
 			this.port = port;
 
 			var localAddr = IPAddress.Parse("127.0.0.1");
@@ -213,8 +213,8 @@ static class StreamUtils {
 
 	internal static uint readUintThenNewline(Stream stream) {
 		var fst = (char)stream.ReadByte();
-		if (!Json.JsonScanner.toDigit(fst, out var res))
-			throw new Exception($"Expected a digit, got: {fst}");
+		var isDigit = Json.JsonScanner.toDigit(fst, out var res);
+		assert(isDigit, () => $"Expected a digit, got: {fst}");
 
 		while (true) {
 			var ch = (char)stream.ReadByte();

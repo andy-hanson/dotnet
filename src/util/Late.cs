@@ -1,5 +1,6 @@
-using System;
 using System.Runtime.CompilerServices;
+
+using static Utils;
 
 /**
 Single-assignment value. Used when a value can't be present at initialization time and has to be added later.
@@ -17,13 +18,13 @@ struct Late<T> {
 
 	internal T get {
 		get {
-			if (!has) throw new NullReferenceException();
+			assert(has, "Lazy value not yet set.");
 			return value;
 		}
 	}
 
 	internal void set(T setTo) {
-		if (has) throw new Exception("Lazy value set twice.");
+		assert(!has, "Lazy value set twice.");
 		value = setTo;
 	}
 }

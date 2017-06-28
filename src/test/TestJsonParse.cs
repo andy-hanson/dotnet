@@ -4,7 +4,7 @@ using Lsp;
 using static Assert;
 
 #pragma warning disable CC0068 // Use me!
-public class JsonParseTest {
+static class JsonParseTest {
 	static void parse() {
 		var source = @"{
 			'jsonrpc': '2.0',

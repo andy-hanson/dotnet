@@ -16,7 +16,7 @@ sealed class NativeFileInput : FileInput {
 	Sym FileInput.rootName => Sym.of(rootDir.last);
 
 	Op<string> FileInput.read(Path path) {
-		var fullPath = Path.resolveWithRoot(rootDir, path).ToString();
+		var fullPath = Path.resolveWithRoot(rootDir, path).toPathString();
 		if (File.Exists(fullPath)) {
 			return Op.Some(File.ReadAllText(fullPath));
 		}
@@ -38,8 +38,8 @@ struct DocumentInfo : ToData<DocumentInfo> {
 		this.parseResult = parseResult;
 	}
 
-	public override bool Equals(object o) => throw new NotImplementedException();
-	public override int GetHashCode() => throw new NotImplementedException();
+	public override bool Equals(object o) => throw new NotSupportedException();
+	public override int GetHashCode() => throw new NotSupportedException();
 	public bool deepEqual(DocumentInfo d) =>
 		text == d.text &&
 		parseResult.deepEq(d.parseResult) &&

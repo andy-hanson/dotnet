@@ -1,12 +1,12 @@
 using static Arr;
-using static ParserExit;
+using static ParserExitException;
 using static Utils;
 
 sealed class Parser : Lexer {
 	internal static Either<Ast.Module, CompileError> parse(string source) {
 		try {
 			return Either<Ast.Module, CompileError>.Left(parseOrFail(source));
-		} catch (ParserExit e) {
+		} catch (ParserExitException e) {
 			return Either<Ast.Module, CompileError>.Right(e.err);
 		}
 	}
@@ -443,7 +443,7 @@ sealed class Parser : Lexer {
 				var single = singleTokenExpr(locFrom(pos), token);
 				var start = pos;
 				var next = nextToken();
-				return (single, pos, next);
+				return (single, start, next);
 		}
 	}
 

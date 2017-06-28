@@ -1,14 +1,13 @@
 using System;
 using System.Text;
 
-using static ParserExit;
+using static ParserExitException;
 using static Utils;
 
 //mv
 static class ReaderU {
 	internal static string debug(string source, Pos pos) {
 		//Current line with a '|' in the middle.
-		var ch = pos;
 		var nlBefore = pos.index;
 		while (nlBefore > 0 && source.at(nlBefore - 1) != '\n')
 			nlBefore--;
@@ -94,7 +93,7 @@ abstract class Lexer : Reader {
 					isEnd = false;
 					goto done;
 				case '\n':
-					throw new Exception("TODO: Compile error: unterminated quote");
+					throw TODO(); // unterminated quote
 				case '\\':
 					s.Append(escape(readChar()));
 					break;
@@ -118,7 +117,7 @@ abstract class Lexer : Reader {
 			case 't':
 				return '\t';
 			default:
-				throw new Exception("TODO: Compile error: bad escape");
+				throw TODO(); //bad escape
 		}
 	}
 
@@ -398,10 +397,10 @@ abstract class Lexer : Reader {
 	protected Sym takeName() => Sym.of(takeNameString());
 	protected Sym takeTyName() => Sym.of(takeTyNameString());
 
-	protected ParserExit unexpected(Pos startPos, string expectedDesc, Token token) =>
+	protected ParserExitException unexpected(Pos startPos, string expectedDesc, Token token) =>
 		unexpected(startPos, expectedDesc, TokenU.TokenName(token));
 
-	protected ParserExit unexpected(Pos startPos, string expectedDesc, string actualDesc) =>
+	protected ParserExitException unexpected(Pos startPos, string expectedDesc, string actualDesc) =>
 		exit(locFrom(startPos), new Err.UnexpectedToken(expectedDesc, actualDesc));
 
 	protected Token takeKeywordOrEof() => atEOF ? Token.EOF : takeKeyword();

@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 
 using static Utils;
@@ -21,7 +22,7 @@ static class JsRunner {
 		} catch (Jint.Runtime.JavaScriptException e) {
 			var line = e.LineNumber;
 			var col = e.Column;
-			throw new Exception($"Error at {line}:{col}: {e.Message}\n{e.StackTrace}");
+			throw fail($"Error at {line}:{col}: {e.Message}\n{e.StackTrace}");
 		}
 	}
 
@@ -29,22 +30,28 @@ static class JsRunner {
 	// It assumes that the last line of each file is `module.exports = foo;`.
 	// And it assumes that there are no circular dependencies.
 	static Jint.Native.JsValue evalScriptAtFile(Jint.Engine engine, Path path) {
-		var text = File.ReadAllText(path.ToString());
+		var text = File.ReadAllText(path.toPathString());
 		// Since this is the last line, we'll just get the completion value.
 		text = text.Replace("module.exports = ", string.Empty);
 
-		Func<string, Jint.Native.JsValue> requireDelegate = required => evalScriptAtFile(engine, resolveRequirePath(path, required));
-		var require = new Jint.Runtime.Interop.DelegateWrapper(engine, new Func<string, Jint.Native.JsValue>(requireDelegate));
+		Func<string, Jint.Native.JsValue> requireDelegate = required =>
+			evalScriptAtFile(engine, resolveRequirePath(path, required));
+		var require = new Jint.Runtime.Interop.DelegateWrapper(engine, requireDelegate);
 
-		//Jint.Runtime.Environments.EnvironmentRecord
-		var r = new Jint.Runtime.Environments.DeclarativeEnvironmentRecord(engine);
-		r.CreateImmutableBinding(nameof(require)); //needed?
-		r.InitializeImmutableBinding(nameof(require), require);
-
-		var env = new Jint.Runtime.Environments.LexicalEnvironment(r, /*outer*/ null);
+		var envRecord = new Jint.Runtime.Environments.DeclarativeEnvironmentRecord(engine);
+		envRecord.CreateImmutableBinding(nameof(require));
+		envRecord.InitializeImmutableBinding(nameof(require), require);
+		var env = new Jint.Runtime.Environments.LexicalEnvironment(record: envRecord, outer: engine.GlobalEnvironment);
 
 		engine.EnterExecutionContext(/*lexicalEnvironment*/ env, /*variableEnvironment*/ env, /*this*/ Jint.Native.JsValue.Null);
-		engine.Execute(text);
+		try {
+			engine.Execute(text);
+		} catch (Jint.Runtime.JavaScriptException e) {
+			unused(e);
+			Debugger.Break();
+			throw;
+		}
+
 		var result = engine.GetCompletionValue();
 		engine.LeaveExecutionContext();
 
@@ -54,11 +61,11 @@ static class JsRunner {
 	static Path resolveRequirePath(Path requiredFrom, string required) {
 		var requiredFromDir = requiredFrom.directory();
 		var plain = requiredFromDir.add($"{required}.js");
-		if (File.Exists(plain.ToString()))
+		if (File.Exists(plain.toPathString()))
 			return plain;
 		var index = requiredFromDir.add(required, "index.js");
-		if (File.Exists(index.ToString()))
+		if (File.Exists(index.toPathString()))
 			return index;
-		throw new Exception($"Could not find it at {plain} or at {index}");
+		throw fail($"Could not find JS module at {plain.toPathString()} or at {index.toPathString()}");
 	}
 }

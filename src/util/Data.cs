@@ -11,11 +11,11 @@ interface ToData<T> : DeepEqual<T> where T : ToData<T> {
 }
 
 [AttributeUsage(AttributeTargets.Field)]
-sealed class ParentPointer : Attribute {} // Like an UpPointer, but should be completely ignored for serialization.
+sealed class ParentPointerAttribute : Attribute {} // Like an UpPointer, but should be completely ignored for serialization.
 [AttributeUsage(AttributeTargets.Field)]
-sealed class UpPointer : Attribute {}
+sealed class UpPointerAttribute : Attribute {}
 [AttributeUsage(AttributeTargets.Field)]
-sealed class NotData : Attribute {}
+sealed class NotDataAttribute : Attribute {}
 
 interface Identifiable<IdType> where IdType : ToData<IdType> {
 	/**
@@ -47,7 +47,7 @@ public abstract class Dat : ToData<Dat> {
 
 	public abstract Type type { get; }
 
-	public bool deepEqual(Dat other) => throw new NotImplementedException();
+	public bool deepEqual(Dat other) => throw new NotSupportedException();
 
 	internal static Dat either<L, R>(Either<L, R> e) where L : ToData<L> where R : ToData<R> =>
 		e.isLeft ? e.left.toDat() : e.right.toDat();

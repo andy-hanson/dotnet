@@ -34,7 +34,6 @@ static class Tests {
 
 	[TestFor(nameof(Impl))]
 	static void Impl(TestData t) {
-		var cls = t.emittedRoot;
 		runCsJsTests(t, new object[] { one }, one);
 	}
 

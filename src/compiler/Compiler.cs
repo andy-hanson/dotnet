@@ -21,7 +21,7 @@ struct CompiledProgram : ToData<CompiledProgram> {
 		object.ReferenceEquals(documentProvider, c.documentProvider) &&
 		modules.deepEqual(c.modules);
 	public Dat toDat() =>
-		Dat.of(this, nameof(modules), Dat.dict(modules.mapKeys(p => p.ToString())));
+		Dat.of(this, nameof(modules), Dat.dict(modules.mapKeys(p => p.toPathString())));
 }
 
 /*
@@ -57,7 +57,7 @@ sealed class Compiler {
 				case ModuleState.Kind.Compiling:
 					//TODO: attach an error to the Module.
 					//raiseWithPath(logicalPath, fromLoc ?? Loc.zero, Err.CircularDependency(logicalPath));
-					throw new Exception($"Circular dependency around {logicalPath}");
+					throw TODO($"Circular dependency around {logicalPath}");
 
 				case ModuleState.Kind.CompiledFresh:
 				case ModuleState.Kind.CompiledReused:
@@ -79,6 +79,7 @@ sealed class Compiler {
 
 	(Module, bool isReused) doCompileSingle(Op<PathLoc> from, Path logicalPath) {
 		if (!ModuleResolver.getDocumentFromLogicalPath(documentProvider, logicalPath, out var fullPath, out var isIndex, out var documentInfo)) {
+			unused(from); //Use this to report errors
 			throw TODO(); //TODO: return Either<Module, CompileError> ?
 		}
 
@@ -133,7 +134,7 @@ sealed class Compiler {
 			//Failed
 		}
 
-		internal static ModuleState compiling = new ModuleState(Op<Module>.None, Kind.Compiling);
+		internal static readonly ModuleState compiling = new ModuleState(Op<Module>.None, Kind.Compiling);
 		internal static ModuleState compiled(Module module, bool isReused) => new ModuleState(Op.Some(module), isReused ? Kind.CompiledReused : Kind.CompiledFresh);
 	}
 }

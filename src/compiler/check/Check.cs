@@ -33,6 +33,7 @@ struct BaseScope {
 			case Ast.Ty.Inst inst:
 				var a = accessTy(inst.instantiated.loc, inst.instantiated.name);
 				var b = inst.tyArgs.map(getTy);
+				unused(a, b);
 				throw TODO(); //TODO: type instantiation
 			default:
 				throw unreachable();
@@ -264,13 +265,12 @@ class MethodChecker {
 		}
 	}
 
-	Expr checkAccess(ref Expected expected, Ast.Expr.Access a) {
-		var access = get(a.loc, a.name);
-		return handle(ref expected, a.loc, access);
-	}
+	Expr checkAccess(ref Expected expected, Ast.Expr.Access a) =>
+		handle(ref expected, get(a.loc, a.name));
 
 	static Expr checkStaticAccess(ref Expected expected, Ast.Expr.StaticAccess s) {
 		//Not in a call, so create a callback
+		unused(expected, s);
 		throw TODO();
 	}
 
@@ -298,8 +298,6 @@ class MethodChecker {
 	}
 
 	Expr checkNew(ref Expected expected, Ast.Expr.New n) {
-		//This must be a Slots class.
-		var k = currentClass;
 		if (!(currentClass.head is Klass.Head.Slots slots)) {
 			throw TODO(); // Error: Can't `new` an abstract/static class
 		}
@@ -307,13 +305,13 @@ class MethodChecker {
 		if (n.args.length != slots.slots.length)
 			throw TODO(); // Not enough / too many fields
 		var args = n.args.zip(slots.slots, (arg, slot) => checkSubtype(slot.ty, arg));
-		return new Expr.New(n.loc, slots, args);
+		return handle(ref expected, new Expr.New(n.loc, slots, args));
 	}
 
 	Expr checkGetProperty(ref Expected expected, Ast.Expr.GetProperty g) {
 		getProperty(g.loc, g.target, g.propertyName, out var target, out var member);
 		var slot = (Klass.Head.Slots.Slot)member; //TODO
-		return handle(ref expected, g.loc, new Expr.GetSlot(g.loc, target, slot));
+		return handle(ref expected, new Expr.GetSlot(g.loc, target, slot));
 	}
 
 	Expr checkLet(ref Expected expected, Ast.Expr.Let l) {
@@ -331,25 +329,28 @@ class MethodChecker {
 	}
 
 	Expr checkLiteral(ref Expected expected, Ast.Expr.Literal l) =>
-		handle(ref expected, l.loc, new Expr.Literal(l.loc, l.value));
+		handle(ref expected, new Expr.Literal(l.loc, l.value));
 
 	Expr checkSelf(ref Expected expected, Ast.Expr.Self s) => new Expr.Self(s.loc, currentClass);
 
 	Expr checkWhenTest(ref Expected expected, Ast.Expr.WhenTest w) {
-		var inferrer = Expected.Infer();
+		if (expected.isVoid)
+			//Need to test this here of expected.inferredType will fail
+			throw TODO();
 
-		var cases = w.cases.map(kase => {
-			//kase.loc
-			//kase.result
-			//kase.test
+		//Can't use '.map' because of the ref parameter
+		var casesBuilder = w.cases.mapBuilder<Expr.WhenTest.Case>();
+		for (uint i = 0; i < casesBuilder.Length; i++) {
+			var kase = w.cases[i];
 			var test = checkSubtype(BuiltinClass.Bool, kase.test);
-			var result = checkExpr(ref inferrer, kase.result);
-			return new Expr.WhenTest.Case(kase.loc, test, result);
-		});
+			var result = checkExpr(ref expected, kase.result);
+			casesBuilder[i] = new Expr.WhenTest.Case(kase.loc, test, result);
+		}
+		var cases = new Arr<Expr.WhenTest.Case>(casesBuilder);
 
-		var elseResult = checkExpr(ref inferrer, w.elseResult);
+		var elseResult = checkExpr(ref expected, w.elseResult);
 
-		return new Expr.WhenTest(w.loc, cases, elseResult, inferrer.inferredType);
+		return new Expr.WhenTest(w.loc, cases, elseResult, expected.inferredType);
 	}
 
 	Expr callStaticMethod(ref Expected expected, Loc loc, ClassLike klass, Sym methodName, Arr<Ast.Expr> argAsts) {
@@ -357,8 +358,7 @@ class MethodChecker {
 		var method = (Method)member;
 		if (!method.isStatic) throw TODO();
 		var args = checkCall(loc, method, argAsts);
-		var call = new Expr.StaticMethodCall(loc, method, args);
-		return handle(ref expected, loc, call);
+		return handle(ref expected, new Expr.StaticMethodCall(loc, method, args));
 	}
 
 	Expr callMethod(ref Expected expected, Loc loc, Ast.Expr targetAst, Sym methodName, Arr<Ast.Expr> argAsts) {
@@ -366,8 +366,7 @@ class MethodChecker {
 		var method = (Method)member; //TODO: error handling
 		if (method.isStatic) throw TODO();
 		var args = checkCall(loc, method, argAsts);
-		var call = new Expr.InstanceMethodCall(loc, target, method, args);
-		return handle(ref expected, loc, call);
+		return handle(ref expected, new Expr.InstanceMethodCall(loc, target, method, args));
 	}
 
 	void getProperty(Loc loc, Ast.Expr targetAst, Sym propertyName, out Expr target, out Member member) {
@@ -377,12 +376,16 @@ class MethodChecker {
 
 	static Member getMember(Loc loc, Ty ty, Sym name) {
 		var klass = (ClassLike)ty; //TODO: error handling
-		if (!klass.membersMap.get(name, out var member)) throw TODO();
+		if (!klass.membersMap.get(name, out var member)) {
+			unused(loc);
+			throw TODO();
+		}
 		return member;
 	}
 
 	Arr<Expr> checkCall(Loc callLoc, Method method, Arr<Ast.Expr> argAsts) {
 		if (method.arity != argAsts.length) {
+			unused(callLoc);
 			throw TODO();
 		}
 		return method.parameters.zip(argAsts, (parameter, argAst) => checkSubtype(parameter.ty, argAst));
@@ -420,8 +423,8 @@ class MethodChecker {
 		}
 	}
 
-	Expr handle(ref Expected expected, Loc loc, Expr e) =>
-		expected.handle(loc, e, this);
+	Expr handle(ref Expected expected, Expr e) =>
+		expected.handle(e, this);
 
 	/** PASS BY REF! */
 	struct Expected {
@@ -433,19 +436,22 @@ class MethodChecker {
 		Op<Ty> expectedTy;
 		Expected(Kind kind, Ty ty) { this.kind = kind; this.expectedTy = Op.fromNullable(ty); }
 
+		internal bool isVoid => kind == Kind.Void;
+
 		internal static Expected Void => new Expected(Kind.Void, null);
 		internal static Expected SubTypeOf(Ty ty) => new Expected(Kind.SubTypeOf, ty);
 		internal static Expected Infer() => new Expected(Kind.Infer, null);
 
+		/** Note: This may be called on SubTypeOf. */
 		internal Ty inferredType => expectedTy.force;
 
-		internal Expr handle(Loc loc, Expr e, MethodChecker c) {
+		internal Expr handle(Expr e, MethodChecker c) {
 			switch (kind) {
 				case Kind.Void:
 					throw TODO(); //Diagnostic: expected void, got something else
 				case Kind.SubTypeOf:
 					//Ty must be a subtype of this.
-					return c.checkType(loc, expectedTy.force, e);
+					return c.checkType(expectedTy.force, e);
 				case Kind.Infer:
 					if (expectedTy.get(out var ety)) {
 						// Types must exactly equal.
@@ -466,14 +472,14 @@ class MethodChecker {
 	}
 
 	//mv
-	Expr checkType(Loc loc, Ty expectedTy, Expr e) {
-		unused(this);
+	Expr checkType(Ty expectedTy, Expr e) {
 		//TODO: subtyping!
-		if (!isSubtype(expectedTy, e.ty)) {
-			//TODO: have a WrongCast node and issue a diagnostic.
-			throw TODO();
-		}
-		return e;
+		if (isSubtype(expectedTy, e.ty))
+			return e;
+
+		//TODO: have a WrongCast node and issue a diagnostic.
+		unused(this);
+		throw TODO();
 	}
 
 	bool isSubtype(Ty expectedTy, Ty actualTy) {

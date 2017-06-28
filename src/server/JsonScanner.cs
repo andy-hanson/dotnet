@@ -26,8 +26,7 @@ namespace Json {
 		internal void over() {
 			while (idx.index != str.Length) {
 				var ch = readCh();
-				if (!isWhitespace(ch))
-					throw new Exception($"Did not expect {ch}");
+				assert(!isWhitespace(ch), () => $"Did not expect {ch}");
 			}
 		}
 
@@ -178,8 +177,8 @@ namespace Json {
 		}
 
 		private uint readUint(char fst, out char next) {
-			if (!toDigit(fst, out var res))
-				throw new Exception($"Expected a digit, got '{fst}");
+			var isDigit = toDigit(fst, out var res);
+			assert(isDigit, () => $"Expected a digit, got '{fst}");
 
 			while (true) {
 				var ch = readNoWhitespace();
@@ -272,7 +271,7 @@ namespace Json {
 		}
 
 		private Exception showError(string expected, char actual) =>
-			new Exception($"At {debug()}: Expected {expected}, got '{actual}'");
+			new DebugFailureException($"At {debug()}: Expected {expected}, got '{actual}'");
 
 		internal static bool toDigit(char ch, out uint digit) {
 			digit = ((uint)ch) - '0';

@@ -4,9 +4,9 @@ using System;
 namespace Estree {
 	abstract class Node {
 		internal readonly Loc loc;
-		public override bool Equals(object o) => throw new NotImplementedException();
-		public override int GetHashCode() => throw new NotImplementedException();
-		internal Node(Loc loc) { this.loc = loc; }
+		public override bool Equals(object o) => throw new NotSupportedException();
+		public override int GetHashCode() => throw new NotSupportedException();
+		protected Node(Loc loc) { this.loc = loc; }
 	}
 
 	interface BlockStatementOrExpression {}
@@ -30,14 +30,14 @@ namespace Estree {
 
 	abstract class Function : Node {
 		internal readonly Arr<Pattern> @params;
-		internal Function(Loc loc, Arr<Pattern> @params) : base(loc) {
+		protected Function(Loc loc, Arr<Pattern> @params) : base(loc) {
 			this.@params = @params;
 		}
 	}
 
 	abstract class FunctionDeclarationOrExpression : Function {
 		internal readonly BlockStatement body;
-		internal FunctionDeclarationOrExpression(Loc loc, Arr<Pattern> @params, BlockStatement body) : base(loc, @params) {
+		protected FunctionDeclarationOrExpression(Loc loc, Arr<Pattern> @params, BlockStatement body) : base(loc, @params) {
 			this.body = body;
 		}
 	}
@@ -146,7 +146,7 @@ namespace Estree {
 	abstract class CallOrNewExpression : Node, Expression {
 		internal readonly Expression callee;
 		internal readonly Arr<Expression> arguments;
-		internal CallOrNewExpression(Loc loc, Expression callee, Arr<Expression> arguments) : base(loc) {
+		protected CallOrNewExpression(Loc loc, Expression callee, Arr<Expression> arguments) : base(loc) {
 			this.callee = callee;
 			this.arguments = arguments;
 		}
@@ -182,7 +182,7 @@ namespace Estree {
 		internal readonly Identifier id;
 		internal readonly Op<Expression> superClass;
 		internal readonly ClassBody body;
-		internal Class(Loc loc, Identifier id, Op<Expression> superClass, ClassBody body) : base(loc) {
+		protected Class(Loc loc, Identifier id, Op<Expression> superClass, ClassBody body) : base(loc) {
 			this.id = id;
 			this.superClass = superClass;
 			this.body = body;
@@ -220,7 +220,7 @@ namespace Estree {
 	}
 
 	abstract class ModuleDeclaration : Node {
-		internal ModuleDeclaration(Loc loc) : base(loc) {}
+		protected ModuleDeclaration(Loc loc) : base(loc) {}
 	}
 
 	sealed class AssignmentExpression : Node, Expression {

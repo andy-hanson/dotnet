@@ -47,7 +47,7 @@ class JsWriter : EmitTextWriter {
 		}
 	}
 
-	//Remember to write ';'
+	//Remember to write ';' if necessary.
 	void writeStatement(Estree.Statement s) {
 		switch (s) {
 			case Estree.ExpressionStatement e:
@@ -317,9 +317,11 @@ class JsWriter : EmitTextWriter {
 		}
 
 		writeRaw('{');
-		doIndent();
-		foreach (var statement in b.body)
+		indent++;
+		foreach (var statement in b.body) {
+			writeLine();
 			writeStatement(statement);
+		}
 		doDedent();
 		writeRaw('}');
 	}

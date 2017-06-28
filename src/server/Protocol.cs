@@ -202,8 +202,8 @@ namespace Lsp {
 
 	abstract class Response : ToData<Response> {
 		private Response() {}
-		public override bool Equals(object o) => throw new NotImplementedException();
-		public override int GetHashCode() => throw new NotImplementedException();
+		public override bool Equals(object o) => throw new NotSupportedException();
+		public override int GetHashCode() => throw new NotSupportedException();
 		public abstract bool deepEqual(Response r);
 		public abstract Dat toDat();
 
@@ -499,7 +499,7 @@ namespace Lsp {
 			referencesProvider = true;
 		}
 
-		public bool deepEqual(InitResponse i) => throw new NotImplementedException();
+		public bool deepEqual(InitResponse i) => throw new NotSupportedException();
 		public Dat toDat() => Dat.of(this,
 			nameof(textDocumentSync), Dat.num(textDocumentSync),
 			nameof(hoverProvider), Dat.boolean(hoverProvider),
@@ -519,7 +519,7 @@ namespace Lsp {
 				triggerCharacters = Arr.of('.');
 			}
 
-			public bool deepEqual(CompletionOptions c) => throw new NotImplementedException();
+			public bool deepEqual(CompletionOptions c) => throw new NotSupportedException();
 			public Dat toDat() => Dat.of(this,
 				nameof(resolveProvider), Dat.boolean(resolveProvider),
 				nameof(triggerCharacters), Dat.arr(triggerCharacters));
@@ -533,7 +533,7 @@ namespace Lsp {
 				triggerCharacters = Arr.of(' ');
 			}
 
-			public bool deepEqual(SignatureHelpOptions c) => throw new NotImplementedException();
+			public bool deepEqual(SignatureHelpOptions c) => throw new NotSupportedException();
 			public Dat toDat() => Dat.of(this, nameof(triggerCharacters), Dat.arr(triggerCharacters));
 		}
 	}

@@ -32,27 +32,30 @@ static class Utils {
 	internal static int signed(uint u) => checked((int)u);
 	internal static uint unsigned(int i) => checked((uint)i);
 
-	internal static int hashCombine(int a, int b) =>
-		a * 17 + b;
-
-	#pragma warning disable CC0057 // unused argument 'value'
+	#pragma warning disable S1186, CC0057 // empty methods, unused argument 'value'
 	internal static void unused<T>(Action<T> method) {}
 	internal static void unused<T, U>(Func<T, U> method) {}
 	internal static void unused<T>(T value) {}
 	internal static void unused<T, U>(T value1, U value2) {}
 	#pragma warning restore
 
+	internal static Exception fail(string message) =>
+		new DebugFailureException(message);
+
 	internal static Exception TODO(string message = "TODO!") {
 		Debugger.Break();
-		return new Exception(message);
+		return fail(message);
 	}
 
-	internal static Exception unreachable() => new Exception("UNREACHABLE");
+	internal static Exception unreachable() => fail("UNREACHABLE");
 
-	internal static void assert(bool condition) {
-		if (!condition) {
-			throw new Exception("Assertion failed.");
-		}
+	internal static void assert(bool condition, Func<string> message) {
+		if (!condition)
+			throw fail(message());
+	}
+	internal static void assert(bool condition, string message = "Assertion failed.") {
+		if (!condition)
+			throw fail(message);
 	}
 
 	internal static void doTimes(uint times, Action action) {

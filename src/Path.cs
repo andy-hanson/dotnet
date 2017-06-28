@@ -1,18 +1,19 @@
 using System;
+using System.Text;
 using static System.Math;
 
 using static Utils;
 
 struct Path : ToData<Path>, IEquatable<Path> {
-	Arr<string> parts;
+	readonly Arr<string> parts;
 
 	internal Path(Arr<string> parts) {
 		this.parts = parts;
 	}
 
-	public static Path empty = new Path(Arr.empty<string>());
+	internal static readonly Path empty = new Path(Arr.empty<string>());
 
-	public static Path resolveWithRoot(Path root, Path path) =>
+	internal static Path resolveWithRoot(Path root, Path path) =>
 		new Path(root.parts.Concat(path.parts));
 
 	internal static Path from(params string[] elements) =>
@@ -26,7 +27,7 @@ struct Path : ToData<Path>, IEquatable<Path> {
 	internal Path resolve(RelPath rel) {
 		var nPartsToKeep = parts.length - rel.nParents;
 		if (nPartsToKeep < 0)
-			throw new Exception($"Can't resolve: {rel}\nRelative to: {this}");
+			throw fail($"Can't resolve: {rel}\nRelative to: {this}");
 		var parent = parts.slice(0, nPartsToKeep);
 		return new Path(parent.Concat(rel.relToParent.parts));
 	}
@@ -40,7 +41,7 @@ struct Path : ToData<Path>, IEquatable<Path> {
 			}
 		}
 
-		var nParents = parts.length - firstDifferentPart;
+		var nParents = parts.length - firstDifferentPart - 1;
 		var relToParent = other.parts.slice(firstDifferentPart);
 		return new RelPath(nParents, new Path(relToParent));
 	}
@@ -53,11 +54,11 @@ struct Path : ToData<Path>, IEquatable<Path> {
 	internal Op<string> opLast => isEmpty ? Op<string>.None : Op.Some(last);
 	internal string last => parts.last;
 
-	internal Path removeExtension(string extension) {
+	internal Path withoutExtension(string extension) {
+		var lastPart = last;
+		assert(lastPart.EndsWith(extension));
 		var b = parts.toBuilder();
-		var last = b[parts.length - 1];
-		assert(last.EndsWith(extension));
-		b[parts.length - 1] = last.slice(0, unsigned(last.Length - extension.Length));
+		b[parts.length - 1] = lastPart.slice(0, unsigned(lastPart.Length - extension.Length));
 		return new Path(new Arr<string>(b));
 	}
 
@@ -77,11 +78,13 @@ struct Path : ToData<Path>, IEquatable<Path> {
 
 	internal Path directory() => new Path(parts.rtail());
 
-	public override bool Equals(object o) => throw new NotImplementedException(); //o is Path p && Equals(p);
+	public override bool Equals(object o) => throw new NotSupportedException();
+	public override string ToString() => throw new NotSupportedException();
 	public bool Equals(Path p) => deepEqual(p);
 	public bool deepEqual(Path p) => parts.deepEqual(p.parts);
 	public override int GetHashCode() => parts.GetHashCode();
-	public override string ToString() => parts.join("/");
+	internal string toPathString() => parts.join("/");
+	internal void toPathString(StringBuilder sb) => parts.join("/", sb);
 	public static bool operator ==(Path a, Path b) => a.deepEqual(b);
 	public static bool operator !=(Path a, Path b) => !a.deepEqual(b);
 
@@ -100,9 +103,23 @@ struct RelPath : ToData<RelPath> {
 	internal bool isParentsOnly => relToParent.isEmpty;
 	internal string last => relToParent.last;
 
-	public override bool Equals(object o) => throw new NotImplementedException(); //o is RelPath r && Equals(r);
+	internal string toPathString() {
+		var s = new StringBuilder();
+		if (nParents == 0)
+			s.Append("./");
+		else
+			doTimes(nParents, () => s.Append("../"));
+		relToParent.toPathString(s);
+		return s.ToString();
+	}
+
+	internal RelPath withoutExtension(string extension) =>
+		new RelPath(nParents, relToParent.withoutExtension(extension));
+
+	public override bool Equals(object o) => throw new NotSupportedException();
+	public override string ToString() => throw new NotSupportedException();
 	public bool deepEqual(RelPath r) => nParents == r.nParents && relToParent == r.relToParent;
-	public override int GetHashCode() => throw new NotImplementedException(); //hashCombine(signed(nParents), relToParent.GetHashCode());
+	public override int GetHashCode() => throw new NotSupportedException();
 	public static bool operator ==(RelPath a, RelPath b) => a.deepEqual(b);
 	public static bool operator !=(RelPath a, RelPath b) => !a.deepEqual(b);
 	public Dat toDat() => Dat.of(this, nameof(nParents), Dat.num(nParents), nameof(relToParent), relToParent);

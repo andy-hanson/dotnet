@@ -145,7 +145,7 @@ namespace Model {
 			[NotData] internal readonly Ty _ty; // Cached ommon type of all cases and elseResult.
 			internal WhenTest(Loc loc, Arr<Case> cases, Expr elseResult, Ty ty) : base(loc) { this.cases = cases; this.elseResult = elseResult; this._ty = ty; }
 
-			internal override Ty ty => ty;
+			internal override Ty ty => _ty;
 
 			public override bool deepEqual(Expr e) => e is WhenTest w && deepEqual(w);
 			public bool deepEqual(WhenTest w) => cases.deepEqual(w.cases) && elseResult.deepEqual(w.elseResult);

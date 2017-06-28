@@ -28,7 +28,7 @@ struct Op<T> {
 
 	internal T force {
 		get {
-			if (!has) throw new Exception("Tried to force null value.");
+			assert(has, "Tried to force null value.");
 			return value;
 		}
 	}
@@ -57,8 +57,8 @@ struct Op<T> {
 	internal Op<T> orTry(Func<Op<T>> orTry) =>
 		has ? this : orTry();
 
-	public override bool Equals(object o) => throw new NotImplementedException();
-	public override int GetHashCode() => throw new NotImplementedException();
+	public override bool Equals(object o) => throw new NotSupportedException();
+	public override int GetHashCode() => throw new NotSupportedException();
 }
 
 static class OpUtils {
@@ -90,7 +90,7 @@ struct OpUint : ToData<OpUint> {
 
 	internal uint force {
 		get {
-			if (!has) throw new Exception("Tried to force null value.");
+			assert(has, "Tried to force null value.");
 			return value;
 		}
 	}
@@ -108,8 +108,8 @@ struct OpUint : ToData<OpUint> {
 	internal uint or(Func<uint> or) =>
 		has ? value : or();
 
-	public override bool Equals(object o) => throw new NotImplementedException();
-	public override int GetHashCode() => throw new NotImplementedException();
+	public override bool Equals(object o) => throw new NotSupportedException();
+	public override int GetHashCode() => throw new NotSupportedException();
 	public bool deepEqual(OpUint u) => value == u.value;
 
 	public Dat toDat() =>

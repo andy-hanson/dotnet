@@ -36,7 +36,7 @@ struct Sym : ToData<Sym>, IEquatable<Sym> {
 	internal string str => symToString[this];
 
 	public override string ToString() => str;
-	public override bool Equals(object o) => throw new NotImplementedException();
+	public override bool Equals(object o) => throw new NotSupportedException();
 	public override int GetHashCode() => id;
 	public bool deepEqual(Sym s) => Equals(s);
 	public bool Equals(Sym s) => this == s;

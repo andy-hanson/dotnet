@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RuleSet Name="The Rules" ToolsVersion="10.0">
-
 	<Rules AnalyzerId="StyleCop.Analyzers" RuleNamespace="StyleCop.Analyzers">
 		<Rule Id="SA0001" Action="None" /> <!-- Don't use XML documentation -->
 		<Rule Id="SA1101" Action="None" /> <!-- Don't prefix local calls with 'this' -->
@@ -34,13 +33,9 @@
 		<Rule Id="SA1512" Action="None" /> <!-- Allow blank line after comment -->
 		<Rule Id="SA1516" Action="None" /> <!-- No really -->
 		<Rule Id="SA1513" Action="None" /> <!-- Allow no whitespace after closing brace -->
-		<Rule Id="SA1201" Action="None" /> <!-- Allow static after non-static -->
-		<Rule Id="SA1204" Action="None" /> <!-- No really -->
 		<Rule Id="SA1401" Action="None" /> <!-- Allow non-private fields -->
-		<Rule Id="SA1202" Action="None" /> <!-- Allow "protected" after "private" -->
 		<Rule Id="SA1309" Action="None" /> <!-- Allow underscore in field name -->
 		<Rule Id="SA1302" Action="None" /> <!-- Interfaces do not begin with 'I' -->
-		<Rule Id="SA1200" Action="None" /> <!-- "using" outside of namespace -->
 		<Rule Id="SA1214" Action="None" /> <!-- Don't require readonly fields to appear first -->
 		<Rule Id="SA1314" Action="None" /> <!-- Don't name every type parameter 'T' -->
 		<Rule Id="SA1136" Action="None" /> <!-- Allow single-line enum -->
@@ -52,6 +47,7 @@
 
 	<Rules AnalyzerId="CodeCracker.CSharp" RuleNamespace="CodeCracker.CSharp">
 		<Rule Id="CC0031" Action="None" /> <!-- I don't use nulls -->
+
 		<Rule Id="CC0030" Action="Warning" /> <!-- Prefer 'const' locals -->
 		<Rule Id="CC0006" Action="Warning" /> <!-- Prefor 'foreach' to 'for' loop -->
 		<Rule Id="CC0018" Action="Warning" /> <!-- Prefer existence operator -->
@@ -68,5 +64,19 @@
 		<Rule Id="CC0089" Action="Warning" /> <!-- No empty 'else' block -->
 		<!-- <Rule Id="CC0045" Action="Warning" /> Prefer verbatim strings (TODO: this rule is seriously broken!) -->
 		<!-- <Rule Id="CC0073" Action="Warning" /> Use braces in switch -->
+	</Rules>
+
+	<Rules AnalyzerId="SonarAnalyzer.CSharp" RuleNamespace="SonarAnalyzer.CSharp">
+		<Rule Id="S2436" Action="None" /> <!-- Allow more than 2 generic parameters -->
+		<Rule Id="S125" Action="None" /> <!-- Too many false positives for commented-out code -->
+		<Rule Id="S2372" Action="None" /> <!-- Allow to throw exceptions in getters -->
+		<Rule Id="S3903" Action="None" /> <!-- Allow types outside of namespaces -->
+		<Rule Id="S3459" Action="None" /> <!-- Allow "unassigned" fields; false positive for Late<T> -->
+		<Rule Id="S907" Action="None" /> <!-- Allow 'goto' -->
+		<Rule Id="S101" Action="None" /> <!-- Allow interface name to start with 'I', as in 'Identifiable' -->
+		<Rule Id="S3897" Action="None" /> <!-- Allow types to not implement IEquatable -->
+		<Rule Id="S3871" Action="None" /> <!-- Don't make exceptions public -->
+		<Rule Id="S1206" Action="None" /> <!-- False potive for class inheriting 'Equals' -->
+		<Rule Id="S3881" Action="None" /> <!-- No idea how to fix this -->
 	</Rules>
 </RuleSet>

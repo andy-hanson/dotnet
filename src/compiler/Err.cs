@@ -8,8 +8,8 @@ struct CompileError : ToData<CompileError> {
 	internal readonly Err err;
 	internal CompileError(Loc loc, Err err) { this.loc = loc; this.err = err; }
 
-	public override bool Equals(object o) => throw new NotImplementedException();
-	public override int GetHashCode() => throw new NotImplementedException();
+	public override bool Equals(object o) => throw new NotSupportedException();
+	public override int GetHashCode() => throw new NotSupportedException();
 	public bool deepEqual(CompileError e) => loc.deepEqual(e.loc) && err.deepEqual(e.err);
 	public Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(err), err);
 }
@@ -17,8 +17,8 @@ struct CompileError : ToData<CompileError> {
 abstract class Err : ToData<Err> {
 	Err() {}
 
-	public override bool Equals(object o) => throw new NotImplementedException();
-	public override int GetHashCode() => throw new NotImplementedException();
+	public override bool Equals(object o) => throw new NotSupportedException();
+	public override int GetHashCode() => throw new NotSupportedException();
 
 	public abstract bool deepEqual(Err e);
 	public abstract Dat toDat();

@@ -13,25 +13,24 @@ static class TestCompile {
 		//runCompilerTests(rootDir);
 	}
 
-	static Arr<(MethodInfo, TestFor)> methods() =>
+	static Arr<(MethodInfo, TestForAttribute)> methods() =>
 		new Arr<MethodInfo>(typeof(Tests).GetMethods(BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly))
 		.mapDefined(method => {
 			assert(method.IsStatic);
-			var testForAttribute = method.GetCustomAttribute(typeof(TestFor));
+			var testForAttribute = method.GetCustomAttribute(typeof(TestForAttribute));
 			if (testForAttribute == null)
-				return Op<(MethodInfo, TestFor)>.None;
-			var testFor = (TestFor)testForAttribute;
+				return Op<(MethodInfo, TestForAttribute)>.None;
+			var testFor = (TestForAttribute)testForAttribute;
 			return Op.Some((method, testFor));
 		});
 
 	internal static void runSingle(string name) {
-		if (!methods().find(out var found, mtf => mtf.Item2.testPath.ToString() == name))
-			throw new Exception($"No such test {name}");
-
+		var didFind = methods().find(out var found, mtf => mtf.Item2.testPath == name);
+		assert(didFind, $"No such test {name}");
 		foo(found);
 	}
 
-	static void foo((MethodInfo, TestFor) m) {
+	static void foo((MethodInfo, TestForAttribute) m) {
 		var (method, testFor) = m;
 		var testData = runCompilerTest(Path.from(testFor.testPath));
 		method.Invoke(null, new object[] { testData });
@@ -44,7 +43,7 @@ static class TestCompile {
 
 		foreach (var pair in program.modules) {
 			var module = pair.Value;
-			var path = module.fullPath().removeExtension(ModuleResolver.extension);
+			var path = module.fullPath().withoutExtension(ModuleResolver.extension);
 
 			// TODO: break out if there was an error
 			assertSomething(rootDir, path, ".ast", Dat.either(module.document.parseResult));
@@ -71,7 +70,7 @@ static class TestCompile {
 		assertSomething(rootDir, path, extension, CsonWriter.write(actualDat) + "\n");
 
 	static void assertSomething(Path rootDir, Path path, string extension, string actual) {
-		var fullPath = rootDir.resolve(path.asRel).addExtension(extension).ToString();
+		var fullPath = rootDir.resolve(path.asRel).toPathString() + extension;
 
 		// If it doesn't exist, create it.
 		string expected;
@@ -97,7 +96,7 @@ static class TestCompile {
 		return;
 	}
 
-	static TestCompile() {
+	/*static TestCompile() {
 		AppDomain.CurrentDomain.FirstChanceException += handleFirstChanceException;
 	}
 
@@ -106,13 +105,13 @@ static class TestCompile {
 		if (!(e.Exception is System.Reflection.TargetInvocationException)) {
 			System.Diagnostics.Debugger.Break();
 		}
-	}
+	}*/
 }
 
 [AttributeUsage(AttributeTargets.Method)]
-sealed class TestFor : Attribute {
+sealed class TestForAttribute : Attribute {
 	internal readonly string testPath;
-	internal TestFor(string testRootDir) { this.testPath = testRootDir; }
+	internal TestForAttribute(string testRootDir) { this.testPath = testRootDir; }
 }
 
 sealed class TestData {

@@ -84,12 +84,12 @@ sealed class ILEmitter {
 		} else
 			superClass = null; // No super class
 
-		var typeBuilder = moduleBuilder.DefineType(klass.name.str, TypeAttributes.Public | typeFlags(klass.head));
+		var typeBuilder = moduleBuilder.DefineType(klass.name.str, TypeAttributes.Public | typeFlags(klass.head), superClass);
 
 		typeInfos[klass] = new TypeBuilding(typeBuilder.GetTypeInfo());
 
 		fillHead(typeBuilder, klass);
-		fillMethods(typeBuilder, klass);
+		fillMethodsAndSupers(typeBuilder, klass);
 
 		var type = typeBuilder.CreateTypeInfo();
 		typeInfos[klass] = typeInfos[klass].withType(type); //!!! Too late, it might refer to itself!
@@ -149,24 +149,22 @@ sealed class ILEmitter {
 		this.classToConstructor[klass] = ctr;
 	}
 
-	void fillMethods(TypeBuilder tb, Klass klass) {
-		// Since methods might recursively call each other, must fill them all in first.
+	void fillMethodsAndSupers(TypeBuilder tb, Klass klass) {
 		foreach (var method in klass.methods)
-			methodInfos.Add(
-				method,
-				tb.DefineMethod(
-					method.name.str,
-					methodAttributes(method),
-					toType(method.returnTy),
-					method.parameters.mapToArray(p => toType(p.ty))));
+			methodInfos.Add(method, defineMethod(tb, method, methodAttributes(method)));
+
+		foreach (var super in klass.supers) {
+			foreach (var impl in super.impls) {
+				var mb = defineMethod(tb, impl.implemented, implAttributes);
+				ExprEmitter.emitMethodBody(this, mb, impl.body);
+			}
+		}
 
 		foreach (var method in klass.methods) {
 			switch (method) {
 				case Method.MethodWithBody mwb:
 					var mb = (MethodBuilder)methodInfos[mwb];
-					var iw = new ILWriter(mb);
-					new ExprEmitter(this, iw).emitAny(mwb.body);
-					iw.ret();
+					ExprEmitter.emitMethodBody(this, mb, mwb.body);
 					break;
 				case Method.AbstractMethod a:
 					break;
@@ -176,14 +174,22 @@ sealed class ILEmitter {
 		}
 	}
 
+	MethodBuilder defineMethod(TypeBuilder tb, Method m, MethodAttributes attrs) =>
+		tb.DefineMethod(m.name.str, attrs, toType(m.returnTy), m.parameters.mapToArray(p => toType(p.ty)));
+
+	const MethodAttributes implAttributes = MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final;
+
 	static MethodAttributes methodAttributes(Method method) {
+		var attr = MethodAttributes.Public;
 		switch (method) {
 			case Method.MethodWithBody mwb:
-				return mwb.isStatic
-					? MethodAttributes.Public | MethodAttributes.Static
-					: MethodAttributes.Public | MethodAttributes.Final;
+				if (mwb.isStatic)
+					attr |= MethodAttributes.Static;
+				else
+					attr |= MethodAttributes.Final;
+				return attr;
 			case Method.AbstractMethod a:
-				return MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual;
+				return attr | MethodAttributes.Abstract | MethodAttributes.Virtual;
 			default:
 				throw unreachable();
 		}
@@ -194,9 +200,15 @@ sealed class ExprEmitter {
 	readonly ILEmitter emitter;
 	readonly ILWriter il;
 	readonly Dictionary<Pattern.Single, ILWriter.Local> localToIl = new Dictionary<Pattern.Single, ILWriter.Local>();
-	internal ExprEmitter(ILEmitter emitter, ILWriter il) { this.emitter = emitter; this.il = il; }
+	ExprEmitter(ILEmitter emitter, ILWriter il) { this.emitter = emitter; this.il = il; }
 
-	internal void emitAny(Expr expr) {
+	internal static void emitMethodBody(ILEmitter emitter, MethodBuilder mb, Expr body) {
+		var iw = new ILWriter(mb);
+		new ExprEmitter(emitter, iw).emitAny(body);
+		iw.ret();
+	}
+
+	void emitAny(Expr expr) {
 		switch (expr) {
 			case Expr.AccessParameter p:
 				emitAccessParameter(p);

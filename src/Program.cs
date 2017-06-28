@@ -5,7 +5,7 @@ using Lsp;
 [AttributeUsage(AttributeTargets.Method)]
 sealed class TestAttribute : Attribute {}
 
-class Program {
+static class Program {
 	static void Main() {
 		TestCompile.runSingle("Impl");
 	}

@@ -58,6 +58,7 @@ static class TestUtils {
 			var convertedReturnType = JsConvert.mpType(implementationMethod.ReturnType);
 			var mb = implementer.DefineMethod(
 				name,
+				//Mark implementer 'virtual' because the thing it's implementing is.
 				MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final,
 				convertedReturnType,
 				convertedParameters);

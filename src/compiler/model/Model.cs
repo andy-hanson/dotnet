@@ -6,8 +6,8 @@ using static Utils;
 
 namespace Model {
 	abstract class M {
-		public override bool Equals(object o) => throw new NotImplementedException();
-		public override int GetHashCode() => throw new NotImplementedException();
+		public override bool Equals(object o) => throw new NotSupportedException();
+		public override int GetHashCode() => throw new NotSupportedException();
 	}
 
 	// A module's identity is its path.
@@ -76,9 +76,9 @@ namespace Model {
 		// For a
 		internal struct Id : ToData<Id> {
 			// If this is a builtin, this will be missing.
-			private string id;
+			private readonly string id;
 			Id(string id) { this.id = id; }
-			internal static Id ofPath(Path path) => new Id(path.ToString());
+			internal static Id ofPath(Path path) => new Id(path.toPathString());
 			internal static Id ofBuiltin(Sym name) => new Id(name.str);
 			public bool deepEqual(Id i) => id == i.id;
 			public Dat toDat() => Dat.str(id);
@@ -136,11 +136,9 @@ namespace Model {
 
 		/** Safe to call this twice on the same type. */
 		internal static BuiltinClass fromDotNetType(Type dotNetType) {
-			if (badTypes.Contains(dotNetType)) {
-				throw new Exception($"Should not attempt to use {dotNetType} as a builtin");
-			}
+			assert(!badTypes.Contains(dotNetType), () => $"Should not attempt to use {dotNetType} as a builtin");
 
-			var customName = dotNetType.GetCustomAttribute<BuiltinName>(inherit: false);
+			var customName = dotNetType.GetCustomAttribute<BuiltinNameAttribute>(inherit: false);
 			var name = customName != null ? customName.name : unescapeName(dotNetType.Name);
 
 			if (byName.TryGetValue(name, out var old)) {
@@ -154,7 +152,7 @@ namespace Model {
 
 			//BAD! GetMethods() gets inherited methosd!
 			klass._membersMap = dotNetType.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public).mapToDict<MethodInfo, Sym, Member>(m => {
-				if (m.GetCustomAttribute<Hid>(inherit: true) != null)
+				if (m.GetCustomAttribute<HidAttribute>(inherit: true) != null)
 					return Op<(Sym, Member)>.None;
 
 				Member m2 = new Method.BuiltinMethod(klass, m);
@@ -168,8 +166,8 @@ namespace Model {
 
 		public override ClassLike.Id getId() => ClassLike.Id.ofBuiltin(name);
 
-		public override bool deepEqual(Ty t) => throw new NotImplementedException();
-		public bool deepEqual(BuiltinClass b) => throw new NotImplementedException(); // This should never happen.
+		public override bool deepEqual(Ty t) => throw new NotSupportedException();
+		public bool deepEqual(BuiltinClass b) => throw new NotSupportedException(); // This should never happen.
 		public override int GetHashCode() => name.GetHashCode();
 		public override Dat toDat() => Dat.of(this, nameof(name), name);
 
@@ -209,7 +207,7 @@ namespace Model {
 		Late<Head> _head;
 		internal Head head { get => _head.get; set => _head.set(value); }
 
-		internal Late<Arr<Super>> _supers;
+		Late<Arr<Super>> _supers;
 		internal override Arr<Super> supers => _supers.get;
 		internal void setSupers(Arr<Super> value) => _supers.set(value);
 
@@ -358,7 +356,7 @@ namespace Model {
 	abstract class Member : M, ToData<Member> {
 		internal readonly Loc loc;
 		internal readonly Sym name;
-		internal Member(Loc loc, Sym name) { this.loc = loc; this.name = name; }
+		protected Member(Loc loc, Sym name) { this.loc = loc; this.name = name; }
 		public abstract bool deepEqual(Member m);
 		public abstract Dat toDat();
 	}
@@ -433,7 +431,7 @@ namespace Model {
 				nameof(parameters), Dat.arr(parameters));
 
 			static Sym getName(MethodInfo m) {
-				var customName = m.GetCustomAttribute<BuiltinName>(inherit: true);
+				var customName = m.GetCustomAttribute<BuiltinNameAttribute>(inherit: true);
 				return customName != null ? customName.name : Sym.of(m.Name);
 			}
 
