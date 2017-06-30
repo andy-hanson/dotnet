@@ -4,8 +4,8 @@ using System;
 namespace Estree {
 	abstract class Node {
 		internal readonly Loc loc;
-		public override bool Equals(object o) => throw new NotSupportedException();
-		public override int GetHashCode() => throw new NotSupportedException();
+		public sealed override bool Equals(object o) => throw new NotSupportedException();
+		public sealed override int GetHashCode() => throw new NotSupportedException();
 		protected Node(Loc loc) { this.loc = loc; }
 	}
 

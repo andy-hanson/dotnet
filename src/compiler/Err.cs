@@ -17,8 +17,8 @@ struct CompileError : ToData<CompileError> {
 abstract class Err : ToData<Err> {
 	Err() {}
 
-	public override bool Equals(object o) => throw new NotSupportedException();
-	public override int GetHashCode() => throw new NotSupportedException();
+	public sealed override bool Equals(object o) => throw new NotSupportedException();
+	public sealed override int GetHashCode() => throw new NotSupportedException();
 
 	public abstract bool deepEqual(Err e);
 	public abstract Dat toDat();
@@ -26,7 +26,7 @@ abstract class Err : ToData<Err> {
 	internal abstract string Show { get; }
 
 	internal abstract class ErrImpl<Self> : Err, ToData<Self> where Self : Err, ToData<Self> {
-		public override bool deepEqual(Err e) => e is Self s && deepEqual(s);
+		public sealed override bool deepEqual(Err e) => e is Self s && deepEqual(s);
 		public abstract bool deepEqual(Self s);
 	}
 

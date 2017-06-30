@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 
 using static Utils;
 
+[DebuggerDisplay("[{join(\", \")}]")]
 struct Arr<T> {
 	readonly T[] inner;
 
@@ -87,6 +89,16 @@ struct Arr<T> {
 		return b.finish();
 	}
 
+	internal Dict<K, V> mapDefinedToDict<K, V>(Func<T, Op<(K, V)>> mapper) where K : IEquatable<K> {
+		var b = Dict.builder<K, V>();
+		for (uint i = 0; i < length; i++) {
+			var res = mapper(this[i]);
+			if (res.get(out var r))
+				b.Add(r.Item1, r.Item2);
+		}
+		return new Dict<K, V>(b);
+	}
+
 	internal Arr<T> rcons(T next) {
 		var b = new T[length + 1];
 		for (uint i = 0; i < length; i++)
@@ -166,9 +178,37 @@ struct Arr<T> {
 	internal bool isEmpty => length == 0;
 
 	internal T[] toBuilder() => sliceToBuilder(0, length);
+
+	internal string join(string joiner) {
+		if (length == 0)
+			return string.Empty;
+
+		var res = new StringBuilder();
+		join(joiner, res);
+		return res.ToString();
+	}
+
+	internal void join(string joiner, StringBuilder sb) {
+		if (length == 0)
+			return;
+
+		for (uint i = 0; i < length - 1; i++) {
+			sb.Append(this[i]);
+			sb.Append(joiner);
+		}
+
+		sb.Append(this[this.length - 1]);
+	}
 }
 
 static class Arr {
+	internal static Arr<T> toArr<T>(this IEnumerable<T> xs) {
+		var b = builder<T>();
+		foreach (var x in xs)
+			b.add(x);
+		return b.finish();
+	}
+
 	internal static void each<T>(this T[] a, Action<T, uint> action) {
 		for (uint i = 0; i < a.Length; i++)
 			action(a[i], i);
@@ -180,27 +220,6 @@ static class Arr {
 		for (uint i = 0; i < a.Length; i++)
 			res[i] = zipper(a[i], b[i]);
 		return res;
-	}
-
-	internal static string join<T>(this Arr<T> xs, string joiner) {
-		if (xs.length == 0)
-			return string.Empty;
-
-		var res = new StringBuilder();
-		join(xs, joiner, res);
-		return res.ToString();
-	}
-
-	internal static void join<T>(this Arr<T> xs, string joiner, StringBuilder sb) {
-		if (xs.length == 0)
-			return;
-
-		for (uint i = 0; i < xs.length - 1; i++) {
-			sb.Append(xs[i]);
-			sb.Append(joiner);
-		}
-
-		sb.Append(xs[xs.length - 1]);
 	}
 
 	//Have to define this here to get the type constraint.

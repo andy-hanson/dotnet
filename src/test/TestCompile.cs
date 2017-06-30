@@ -1,111 +1,104 @@
 using System;
-using System.IO;
 using System.Reflection;
 
+using static FileUtils;
 using static Utils;
 
-static class TestCompile {
-	static readonly Path testRootDir = Path.from("tests");
+sealed class TestFailureException : Exception {
+	internal TestFailureException(string message) : base(message) {}
+}
 
-	internal static void runAllCompilerTests() {
-		foreach (var m in methods())
-			foo(m);
-		//runCompilerTests(rootDir);
+class TestCompile {
+	const string testsDir = "tests";
+	static readonly Path casesRootDir = Path.fromParts(testsDir, "cases");
+	static readonly Path baselinesRootDir = Path.fromParts(testsDir, "baselines");
+
+	readonly bool updateBaselines;
+	internal TestCompile(bool updateBaselines) {
+		this.updateBaselines = updateBaselines;
 	}
 
-	static Arr<(MethodInfo, TestForAttribute)> methods() =>
-		new Arr<MethodInfo>(typeof(Tests).GetMethods(BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly))
-		.mapDefined(method => {
+	internal void runTestNamed(string name) =>
+		runSingle(name, getTestMethods()[name]);
+
+	internal void runAllCompilerTests() {
+		var allTests = listDirectoriesInDirectory(casesRootDir).toArr();
+		checkNoExtraBaselines(allTests);
+		var methods = getTestMethods();
+
+		foreach (var test in allTests) {
+			var method = methods[test];
+			runSingle(test, method);
+		}
+	}
+
+	void checkNoExtraBaselines(Arr<string> allTests) {
+		var allBaselines = listDirectoriesInDirectory(baselinesRootDir).toArr();
+		if (allBaselines.length == allTests.length) return;
+
+		var extraBaselines = Set.setDifference(allBaselines, allTests.toSet());
+
+		throw new TestFailureException($"Baselines have no associated tests: {string.Join(", ", extraBaselines)}");
+	}
+
+	static Dict<string, MethodInfo> getTestMethods() {
+		var flags = BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly;
+		return new Arr<MethodInfo>(typeof(Tests).GetMethods(flags)).mapDefinedToDict(method => {
 			assert(method.IsStatic);
 			var testForAttribute = method.GetCustomAttribute(typeof(TestForAttribute));
 			if (testForAttribute == null)
-				return Op<(MethodInfo, TestForAttribute)>.None;
+				return Op<(string, MethodInfo)>.None;
 			var testFor = (TestForAttribute)testForAttribute;
-			return Op.Some((method, testFor));
+			return Op.Some((testFor.testPath, method));
 		});
-
-	internal static void runSingle(string name) {
-		var didFind = methods().find(out var found, mtf => mtf.Item2.testPath == name);
-		assert(didFind, $"No such test {name}");
-		foo(found);
 	}
 
-	static void foo((MethodInfo, TestForAttribute) m) {
-		var (method, testFor) = m;
-		var testData = runCompilerTest(Path.from(testFor.testPath));
+	void runSingle(string testName, MethodInfo method) {
+		var testData = runCompilerTest(Path.fromParts(testName));
 		method.Invoke(null, new object[] { testData });
 	}
 
-	static TestData runCompilerTest(Path testPath) {
-		var rootDir = testRootDir.resolve(testPath.asRel);
-		var host = DocumentProviders.CommandLine(rootDir);
-		var (program, m) = Compiler.compile(Path.empty, host, Op<CompiledProgram>.None);
+	TestData runCompilerTest(Path testPath) {
+		var testDirectory = casesRootDir.resolve(testPath.asRel);
+		var host = DocumentProviders.CommandLine(testDirectory);
+		var (program, indexModule) = Compiler.compile(Path.empty, host, Op<CompiledProgram>.None);
+		var baselinesDirectory = baselinesRootDir.resolve(testPath.asRel);
 
-		foreach (var pair in program.modules) {
-			var module = pair.Value;
-			var path = module.fullPath().withoutExtension(ModuleResolver.extension);
+		foreach (var (_, module) in program.modules) {
+			var modulePath = module.fullPath().withoutExtension(ModuleResolver.extension);
 
-			// TODO: break out if there was an error
-			assertSomething(rootDir, path, ".ast", Dat.either(module.document.parseResult));
-
-			assertSomething(rootDir, path, ".model", module.klass.toDat());
-
-			assertSomething(rootDir, path, ".js", JsEmitter.emitToString(module));
-
-			//module.imports; We'll just not test this then...
+			assertBaseline(baselinesDirectory, modulePath, ".ast", Dat.either(module.document.parseResult));
+			assertBaseline(baselinesDirectory, modulePath, ".model", module.klass.toDat());
+			assertBaseline(baselinesDirectory, modulePath, ".js", JsEmitter.emitToString(module));
 		}
 
-		return new TestData(program, m, rootDir.add("index.js"));
-
-		//var x = CsonWriter.write(program);
-		//var moduleAst = new Ast.Module()
-		//var document = new DocumentInfo("static\n\nfun Void foo()\n\tpass\n", 1, Either<Module, CompileError>.Left(moduleAst))
-		//var moduleA = new Module(Path.from("A"), isIndex: false, document: document, klass: klass);
-		//var expected = new CompiledProgram(host, Dict.of(Sym.of("A"), moduleA));
-
-		//Console.WriteLine(x);
+		return new TestData(program, indexModule, baselinesDirectory.add("index.js"));
 	}
 
-	static void assertSomething(Path rootDir, Path path, string extension, Dat actualDat) =>
-		assertSomething(rootDir, path, extension, CsonWriter.write(actualDat) + "\n");
+	void assertBaseline(Path testDirectory, Path modulePath, string extension, Dat actualDat) =>
+		assertBaseline(testDirectory, modulePath, extension, CsonWriter.write(actualDat) + "\n");
 
-	static void assertSomething(Path rootDir, Path path, string extension, string actual) {
-		var fullPath = rootDir.resolve(path.asRel).toPathString() + extension;
+	void assertBaseline(Path testDirectory, Path modulePath, string extension, string actual) {
+		var fullModulePath = testDirectory.resolve(modulePath.asRel);
+		var baselineDirectory = fullModulePath.directory().toPathString();
+		var baselinePath = fullModulePath.addExtension(extension);
 
 		// If it doesn't exist, create it.
-		string expected;
-		try {
-			expected = File.ReadAllText(fullPath);
-		} catch (FileNotFoundException) {
-			// Write the new result.
-			File.WriteAllText(fullPath, actual);
+		if (!fileExists(baselinePath)) {
+			writeFileAndEnsureDirectory(baselinePath, actual);
 			return;
 		}
 
-		if (actual == expected) {
-			// Great!
+		var expected = readFile(baselinePath);
+		if (actual == expected)
 			return;
+
+		if (updateBaselines) {
+			writeFile(baselinePath, actual);
+		} else {
+			throw new TestFailureException($"Unexpected output!\nExpected: {expected}\nActual: {actual}");
 		}
-
-		Console.WriteLine("Unexpected output!");
-		Console.WriteLine($"Expected: {expected}");
-		Console.WriteLine($"Actual: {actual}");
-		//TODO: put under --accept option
-		File.WriteAllText(fullPath, actual);
-
-		return;
 	}
-
-	/*static TestCompile() {
-		AppDomain.CurrentDomain.FirstChanceException += handleFirstChanceException;
-	}
-
-	static void handleFirstChanceException(object sender, System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs e) {
-		//https://stackoverflow.com/questions/15833498/how-to-not-breaking-on-an-exception
-		if (!(e.Exception is System.Reflection.TargetInvocationException)) {
-			System.Diagnostics.Debugger.Break();
-		}
-	}*/
 }
 
 [AttributeUsage(AttributeTargets.Method)]

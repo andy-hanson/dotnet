@@ -26,12 +26,12 @@ abstract class Writer {
 	internal void writeDict<T>(Dict<string, T> d) where T : ToData<T> {
 		writeDictStart<Dict<Sym, T>>();
 		var first = true;
-		foreach (var pair in d) {
+		foreach (var (k, v) in d) {
 			if (first) {
-				writeFirstDictEntry(pair.Key, pair.Value);
+				writeFirstDictEntry(k, v);
 				first = false;
 			} else
-				writeNextDictEntry(pair.Key, pair.Value);
+				writeNextDictEntry(k, v);
 		}
 
 		writeDictEnd();

@@ -136,8 +136,10 @@ abstract class Lexer : Reader {
 	Token takeNameOrKeyword(Pos startPos) {
 		skipWhile(CharUtils.isNameChar);
 		var s = sliceFrom(startPos);
-		var t = TokenU.keywordFromName(s);
-		if (t.get(out var tok)) return tok;
+
+		if (TokenU.keywordFromName(s, out var kw))
+			return kw;
+
 		this.tokenValue = s;
 		return Token.Name;
 	}
@@ -410,6 +412,8 @@ abstract class Lexer : Reader {
 		expectCharacter("keyword", CharUtils.isLowerCaseLetter);
 		skipWhile(CharUtils.isNameChar);
 		var name = sliceFrom(startPos);
-		return TokenU.keywordFromName(name).or(() => throw unexpected(startPos, "keyword", name));
+		if (TokenU.keywordFromName(name, out var kw))
+			return kw;
+		throw unexpected(startPos, "keyword", name);
 	}
 }

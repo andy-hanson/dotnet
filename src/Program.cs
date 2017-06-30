@@ -7,7 +7,8 @@ sealed class TestAttribute : Attribute {}
 
 static class Program {
 	static void Main() {
-		TestCompile.runSingle("Impl");
+		var tc = new TestCompile(updateBaselines: false);
+		tc.runTestNamed("Slots");
 	}
 }
 

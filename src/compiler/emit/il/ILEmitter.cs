@@ -6,32 +6,48 @@ using System.Reflection.Emit;
 using Model;
 using static Utils;
 
-struct TypeBuilding {
-	internal readonly TypeInfo info;
-	readonly Op<Type> _type;
-	internal Type type => _type.force;
-
-	internal TypeBuilding(TypeInfo info) { this.info = info; this._type = Op<Type>.None; }
-	internal TypeBuilding(TypeInfo info, Type type) { this.info = info; this._type = Op.Some(type); }
-	internal TypeBuilding withType(Type type) => new TypeBuilding(this.info, type);
+interface EmitterMaps {
+	MethodInfo getMethodInfo(Method method);
+	ConstructorInfo getConstructorInfo(Klass klass);
+	FieldInfo getFieldInfo(Slot slot);
+	Type toType(Ty ty);
 }
 
-/**
-Note: We *lazily* compile modules. But we must compile all of a module's imports before we compile it.
-*/
-sealed class ILEmitter {
-	readonly AssemblyName assemblyName = new AssemblyName("noze");
-	readonly Dictionary<Klass, TypeBuilding> typeInfos = new Dictionary<Klass, TypeBuilding>();
+sealed class EmitterMapsBuilder : EmitterMaps {
 	// This will not be filled for a BuiltinMethod
-	readonly Dictionary<Method, MethodInfo> methodInfos = new Dictionary<Method, MethodInfo>();
-	readonly Dictionary<Klass, ConstructorInfo> classToConstructor = new Dictionary<Klass, ConstructorInfo>();
-	readonly Dictionary<Klass.Head.Slots.Slot, FieldInfo> slotToField = new Dictionary<Klass.Head.Slots.Slot, FieldInfo>();
-	readonly AssemblyBuilder assemblyBuilder;
-	readonly ModuleBuilder moduleBuilder;
+	readonly Dictionary<Klass, TypeBuilding> typeInfos = new Dictionary<Klass, TypeBuilding>();
+	internal readonly Dictionary<Method, MethodInfo> methodInfos = new Dictionary<Method, MethodInfo>();
+	internal readonly Dictionary<Klass, ConstructorInfo> classToConstructor = new Dictionary<Klass, ConstructorInfo>();
+	internal readonly Dictionary<Slot, FieldInfo> slotToField = new Dictionary<Slot, FieldInfo>();
 
-	internal ConstructorInfo getClassConstructor(Klass klass) => classToConstructor[klass];
-	internal FieldInfo getSlotField(Klass.Head.Slots.Slot slot) => slotToField[slot];
+	struct TypeBuilding {
+		internal readonly TypeInfo info;
+		readonly Op<Type> _type;
+		internal Type type => _type.force;
 
+		internal TypeBuilding(TypeInfo info) { this.info = info; this._type = Op<Type>.None; }
+		internal TypeBuilding(TypeInfo info, Type type) { this.info = info; this._type = Op.Some(type); }
+		internal TypeBuilding withType(Type type) => new TypeBuilding(this.info, type);
+	}
+
+	MethodInfo EmitterMaps.getMethodInfo(Method method) => methodInfos[method];
+	ConstructorInfo EmitterMaps.getConstructorInfo(Klass klass) => classToConstructor[klass];
+	FieldInfo EmitterMaps.getFieldInfo(Slot slot) => slotToField[slot];
+
+	internal TypeInfo getTypeInfo(Klass k) => typeInfos[k].info;
+
+	internal bool tryGetType(Klass k, out Type t) {
+		var res = typeInfos.TryGetValue(k, out var tb);
+		t = res ? tb.type : null;
+		return res;
+	}
+
+	internal void beginTypeBuilding(Klass klass, TypeInfo info) =>
+		typeInfos[klass] = new TypeBuilding(info);
+	internal void finishTypeBuilding(Klass klass, Type type) =>
+		typeInfos[klass] = typeInfos[klass].withType(type);
+
+	Type EmitterMaps.toType(Ty ty) => toType(ty);
 	internal Type toType(Ty ty) {
 		switch (ty) {
 			case BuiltinClass b:
@@ -43,8 +59,20 @@ sealed class ILEmitter {
 		}
 	}
 
+	internal FieldInfo getSlotField(Slot slot) => slotToField[slot];
+
 	internal MethodInfo toMethodInfo(Method method) =>
 		method is Method.BuiltinMethod b ? b.methodInfo : methodInfos[method];
+}
+
+/**
+Note: We *lazily* compile modules. But we must compile all of a module's imports before we compile it.
+*/
+sealed class ILEmitter {
+	readonly AssemblyName assemblyName = new AssemblyName("noze");
+	readonly AssemblyBuilder assemblyBuilder;
+	readonly ModuleBuilder moduleBuilder;
+	readonly EmitterMapsBuilder maps = new EmitterMapsBuilder();
 
 	internal ILEmitter() {
 		assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndCollect);
@@ -61,9 +89,8 @@ sealed class ILEmitter {
 	}
 
 	internal Type emitModule(Model.Module m) {
-		if (typeInfos.TryGetValue(m.klass, out var b)) {
-			return b.type;
-		}
+		if (maps.tryGetType(m.klass, out var b))
+			return b;
 
 		foreach (var im in m.imports)
 			emitModule(im);
@@ -80,19 +107,19 @@ sealed class ILEmitter {
 		if (klass.supers.length != 0) {
 			if (klass.supers.length > 1) throw TODO();
 			var super = (Klass)klass.supers.only.superClass; //TODO: handle builtins
-			superClass = typeInfos[super].info;
+			superClass = maps.getTypeInfo(super);
 		} else
 			superClass = null; // No super class
 
 		var typeBuilder = moduleBuilder.DefineType(klass.name.str, TypeAttributes.Public | typeFlags(klass.head), superClass);
 
-		typeInfos[klass] = new TypeBuilding(typeBuilder.GetTypeInfo());
+		maps.beginTypeBuilding(klass, typeBuilder.GetTypeInfo());
 
 		fillHead(typeBuilder, klass);
 		fillMethodsAndSupers(typeBuilder, klass);
 
 		var type = typeBuilder.CreateTypeInfo();
-		typeInfos[klass] = typeInfos[klass].withType(type); //!!! Too late, it might refer to itself!
+		maps.finishTypeBuilding(klass, type);
 		return type;
 	}
 
@@ -121,8 +148,8 @@ sealed class ILEmitter {
 
 			case Klass.Head.Slots slots:
 				var fields = slots.slots.map<FieldInfo>(slot => {
-					var field = tb.DefineField(slot.name.str, toType(slot.ty), FieldAttributes.Public);
-					slotToField.Add(slot, field);
+					var field = tb.DefineField(slot.name.str, maps.toType(slot.ty), FieldAttributes.Public);
+					maps.slotToField.Add(slot, field);
 					return field;
 				});
 				generateConstructor(tb, klass, fields);
@@ -146,25 +173,25 @@ sealed class ILEmitter {
 		}
 		il.ret();
 
-		this.classToConstructor[klass] = ctr;
+		maps.classToConstructor[klass] = ctr;
 	}
 
 	void fillMethodsAndSupers(TypeBuilder tb, Klass klass) {
 		foreach (var method in klass.methods)
-			methodInfos.Add(method, defineMethod(tb, method, methodAttributes(method)));
+			maps.methodInfos.Add(method, defineMethod(tb, method, methodAttributes(method)));
 
 		foreach (var super in klass.supers) {
 			foreach (var impl in super.impls) {
 				var mb = defineMethod(tb, impl.implemented, implAttributes);
-				ExprEmitter.emitMethodBody(this, mb, impl.body);
+				ExprEmitter.emitMethodBody(maps, mb, impl.body);
 			}
 		}
 
 		foreach (var method in klass.methods) {
 			switch (method) {
 				case Method.MethodWithBody mwb:
-					var mb = (MethodBuilder)methodInfos[mwb];
-					ExprEmitter.emitMethodBody(this, mb, mwb.body);
+					var mb = (MethodBuilder)maps.methodInfos[mwb];
+					ExprEmitter.emitMethodBody(maps, mb, mwb.body);
 					break;
 				case Method.AbstractMethod a:
 					break;
@@ -175,7 +202,7 @@ sealed class ILEmitter {
 	}
 
 	MethodBuilder defineMethod(TypeBuilder tb, Method m, MethodAttributes attrs) =>
-		tb.DefineMethod(m.name.str, attrs, toType(m.returnTy), m.parameters.mapToArray(p => toType(p.ty)));
+		tb.DefineMethod(m.name.str, attrs, maps.toType(m.returnTy), m.parameters.mapToArray(p => maps.toType(p.ty)));
 
 	const MethodAttributes implAttributes = MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final;
 
@@ -197,14 +224,14 @@ sealed class ILEmitter {
 }
 
 sealed class ExprEmitter {
-	readonly ILEmitter emitter;
+	readonly EmitterMaps maps;
 	readonly ILWriter il;
 	readonly Dictionary<Pattern.Single, ILWriter.Local> localToIl = new Dictionary<Pattern.Single, ILWriter.Local>();
-	ExprEmitter(ILEmitter emitter, ILWriter il) { this.emitter = emitter; this.il = il; }
+	ExprEmitter(EmitterMaps maps, ILWriter il) { this.maps = maps; this.il = il; }
 
-	internal static void emitMethodBody(ILEmitter emitter, MethodBuilder mb, Expr body) {
+	internal static void emitMethodBody(EmitterMaps maps, MethodBuilder mb, Expr body) {
 		var iw = new ILWriter(mb);
-		new ExprEmitter(emitter, iw).emitAny(body);
+		new ExprEmitter(maps, iw).emitAny(body);
 		iw.ret();
 	}
 
@@ -257,7 +284,7 @@ sealed class ExprEmitter {
 	void emitLet(Expr.Let l) {
 		emitAny(l.value);
 		var assigned = (Pattern.Single)l.assigned; //TODO:patterns
-		var loc = il.initLocal(emitter.toType(assigned.ty));
+		var loc = il.initLocal(maps.toType(assigned.ty));
 		localToIl.Add(assigned, loc);
 		emitAny(l.then);
 		// Don't bother taking it out of the dictionary,
@@ -347,17 +374,17 @@ sealed class ExprEmitter {
 
 	void emitStaticMethodCall(Expr.StaticMethodCall s) {
 		emitArgs(s.args);
-		il.callStaticMethod(emitter.toMethodInfo(s.method));
+		il.callStaticMethod(maps.getMethodInfo(s.method));
 	}
 
 	void emitInstanceMethodCall(Expr.InstanceMethodCall m) {
 		emitAny(m.target);
 		emitArgs(m.args);
-		il.callInstanceMethod(emitter.toMethodInfo(m.method), m.method is Method.AbstractMethod);
+		il.callInstanceMethod(maps.getMethodInfo(m.method), m.method is Method.AbstractMethod);
 	}
 
 	void emitNew(Expr.New n) {
-		var ctr = this.emitter.getClassConstructor(n.klass);
+		var ctr = this.maps.getConstructorInfo(n.klass);
 		emitArgs(n.args);
 		il.callConstructor(ctr);
 	}
@@ -369,11 +396,11 @@ sealed class ExprEmitter {
 
 	void emitGetSlot(Expr.GetSlot g) {
 		emitAny(g.target);
-		il.getField(this.emitter.getSlotField(g.slot));
+		il.getField(this.maps.getFieldInfo(g.slot));
 	}
 
 	void emitGetMySlot(Expr.GetMySlot g) {
 		il.getThis();
-		il.getField(this.emitter.getSlotField(g.slot));
+		il.getField(this.maps.getFieldInfo(g.slot));
 	}
 }

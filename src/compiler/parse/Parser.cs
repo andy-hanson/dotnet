@@ -148,7 +148,7 @@ sealed class Parser : Lexer {
 		return new Ast.Klass.Head.Slots(locFrom(start), vars);
 	}
 
-	(Ast.Klass.Head.Slots.Slot, bool isNext) parseSlot() {
+	(Ast.Slot, bool isNext) parseSlot() {
 		var start = pos;
 		var next = takeKeyword();
 		bool mutable;
@@ -167,7 +167,7 @@ sealed class Parser : Lexer {
 		var ty = parseTy();
 		takeSpace();
 		var name = takeName();
-		var slot = new Ast.Klass.Head.Slots.Slot(locFrom(start), mutable, ty, name);
+		var slot = new Ast.Slot(locFrom(start), mutable, ty, name);
 		var isNext = takeNewlineOrDedent() == NewlineOrDedent.Newline;
 		return (slot, isNext);
 	}
@@ -266,10 +266,10 @@ sealed class Parser : Lexer {
 	}
 
 	enum Ctx {
-		//??
+		/** Parse a line in a block. */
 		Line,
-		/** Line Line, but forbid `=` because we're already on the rhs of one. */
-		EqualsRHS,
+		/** Like Line, but forbid `assert` or `=` because we're already on the rhs of one. */
+		LineExpr,
 		/** Parse an expression and expect ')' at the end. */
 		Paren,
 		/** Looking for a QuoteEnd */
@@ -347,7 +347,7 @@ sealed class Parser : Lexer {
 					if (ctx != Ctx.Line) throw TODO(); //diagnostic
 					var pattern = partsToPattern(patternLoc, parts);
 					takeSpace();
-					var (value, next) = parseExpr(Ctx.EqualsRHS);
+					var (value, next) = parseExpr(Ctx.LineExpr);
 					if (next == Next.CtxEnded) throw exit(locFrom(loopStart), Err.BlockCantEndInLet);
 					assert(next == Next.NewlineAfterStatement);
 					return (new Ast.Expr.Let(locFrom(loopStart), pattern, value), Next.NewlineAfterEquals);
@@ -358,12 +358,22 @@ sealed class Parser : Lexer {
 						throw TODO();
 					var left = finishRegular(exprStart, isNew, parts);
 					var (right, next) = parseExpr(ctx);
-					var expr = new Ast.Expr.OperatorCall(locFrom(left.loc.start), left, tokenSym, right);
+					var expr = new Ast.Expr.OperatorCall(locFrom(exprStart), left, tokenSym, right);
 					return (expr, next);
 				}
 
+				case Token.Assert: {
+					if (!parts.isEmpty)
+						throw TODO();
+					if (ctx != Ctx.Line)
+						throw TODO();
+					var (asserted, next) = parseExpr(Ctx.LineExpr);
+					var assert = new Ast.Expr.Assert(locFrom(exprStart), asserted);
+					return (assert, next);
+				}
+
 				case Token.When: {
-					if (ctx != Ctx.Line && ctx != Ctx.EqualsRHS) throw TODO();
+					if (ctx != Ctx.Line && ctx != Ctx.LineExpr) throw TODO();
 					//It will give us newlineafterequals or dedent
 					parts.add(parseWhen(loopStart));
 					var expr = finishRegular(exprStart, isNew, parts);
@@ -383,7 +393,7 @@ sealed class Parser : Lexer {
 
 						case Token.Newline:
 						case Token.Dedent: {
-							if (ctx != Ctx.Line && ctx != Ctx.EqualsRHS) throw TODO();
+							if (ctx != Ctx.Line && ctx != Ctx.LineExpr) throw TODO();
 							var expr = finishRegular(exprStart, isNew, parts);
 							Next next;
 							switch (tokenAfter) {

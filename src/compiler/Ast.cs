@@ -4,8 +4,8 @@ namespace Ast {
 	abstract class Node : ToData<Node> {
 		internal readonly Loc loc;
 		protected Node(Loc loc) { this.loc = loc; }
-		public override bool Equals(object o) => throw new NotSupportedException();
-		public override int GetHashCode() => throw new NotSupportedException();
+		public sealed override bool Equals(object o) => throw new NotSupportedException();
+		public sealed override int GetHashCode() => throw new NotSupportedException();
 		public abstract bool deepEqual(Node n);
 		protected bool locEq(Node n) => loc.deepEqual(n.loc);
 		public abstract Dat toDat();
@@ -89,27 +89,27 @@ namespace Ast {
 				public override bool deepEqual(Node n) => n is Slots s && deepEqual(s);
 				public bool deepEqual(Slots s) => locEq(s) && slots.deepEqual(s.slots);
 				public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(slots), Dat.arr(slots));
-
-				internal sealed class Slot : Node, ToData<Slot> {
-					internal readonly bool mutable;
-					internal readonly Ty ty;
-					internal readonly Sym name;
-					internal Slot(Loc loc, bool mutable, Ty ty, Sym name) : base(loc) {
-						this.mutable = mutable;
-						this.ty = ty;
-						this.name = name;
-					}
-
-					public override bool deepEqual(Node n) => n is Slot s && deepEqual(s);
-					public bool deepEqual(Slot s) => locEq(s) && mutable == s.mutable && ty.deepEqual(s.ty) && name.deepEqual(s.name);
-					public override Dat toDat() => Dat.of(this,
-						nameof(loc), loc,
-						nameof(mutable), Dat.boolean(mutable),
-						nameof(ty), ty,
-						nameof(name), name);
-				}
 			}
 		}
+	}
+
+	internal sealed class Slot : Node, ToData<Slot> {
+		internal readonly bool mutable;
+		internal readonly Ty ty;
+		internal readonly Sym name;
+		internal Slot(Loc loc, bool mutable, Ty ty, Sym name) : base(loc) {
+			this.mutable = mutable;
+			this.ty = ty;
+			this.name = name;
+		}
+
+		public override bool deepEqual(Node n) => n is Slot s && deepEqual(s);
+		public bool deepEqual(Slot s) => locEq(s) && mutable == s.mutable && ty.deepEqual(s.ty) && name.deepEqual(s.name);
+		public override Dat toDat() => Dat.of(this,
+			nameof(loc), loc,
+			nameof(mutable), Dat.boolean(mutable),
+			nameof(ty), ty,
+			nameof(name), name);
 	}
 
 	internal sealed class Super : Node, ToData<Super> {
@@ -415,6 +415,15 @@ namespace Ast {
 				public bool deepEqual(Case c) => loc.deepEqual(c.loc) && test.deepEqual(c.test) && result.deepEqual(c.result);
 				public Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(test), test, nameof(result), result);
 			}
+		}
+
+		internal sealed class Assert : Expr, ToData<Assert> {
+			internal readonly Expr asserted;
+			internal Assert(Loc loc, Expr asserted) : base(loc) { this.asserted = asserted; }
+
+			public override bool deepEqual(Node n) => n is Assert a && deepEqual(a);
+			public bool deepEqual(Assert a) => locEq(a) && asserted.deepEqual(a.asserted);
+			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(asserted), asserted);
 		}
 	}
 

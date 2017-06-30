@@ -1,9 +1,11 @@
 using System;
+using System.Diagnostics;
 using System.Text;
 using static System.Math;
 
 using static Utils;
 
+[DebuggerDisplay(":{toPathString()}")]
 struct Path : ToData<Path>, IEquatable<Path> {
 	readonly Arr<string> parts;
 
@@ -16,13 +18,16 @@ struct Path : ToData<Path>, IEquatable<Path> {
 	internal static Path resolveWithRoot(Path root, Path path) =>
 		new Path(root.parts.Concat(path.parts));
 
-	internal static Path from(params string[] elements) =>
+	internal static Path fromParts(params string[] elements) =>
 		new Path(new Arr<string>(elements));
 
 	internal static Path fromString(string str) =>
 		new Path(Arr.of(str.Split('/')));
 
 	internal RelPath asRel => new RelPath(0, this);
+
+	internal Path resolve(RelPath rel1, RelPath rel2) =>
+		resolve(rel1).resolve(rel2);
 
 	internal Path resolve(RelPath rel) {
 		var nPartsToKeep = parts.length - rel.nParents;

@@ -1,4 +1,12 @@
-using static Utils;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+
+[AttributeUsage(AttributeTargets.Field)]
+sealed class TextAttribute : Attribute {
+	internal readonly string text;
+	internal TextAttribute(string text) { this.text = text; }
+}
 
 internal enum Token {
 	Nil, // Reserved so that default(Token) is available for use by Op
@@ -13,27 +21,51 @@ internal enum Token {
 	QuoteStart,
 
 	// Keywords
+	[Text("abstract")]
 	Abstract,
+	[Text("assert")]
+	Assert,
+	[Text("def")]
 	Def,
+	[Text("do")]
 	Do,
+	[Text("enum")]
 	Enum,
+	[Text("else")]
 	Else,
+	[Text("false")]
 	False,
+	[Text("for")]
 	For,
+	[Text("fun")]
 	Fun,
+	[Text("generic")]
 	Generic,
+	[Text("if")]
 	If,
+	[Text("import")]
 	Import,
+	[Text("in")]
 	In,
+	[Text("is")]
 	Is,
+	[Text("new")]
 	New,
+	[Text("pass")]
 	Pass,
+	[Text("self")]
 	Self,
+	[Text("slots")]
 	Slots,
+	[Text("static")]
 	Static,
+	[Text("true")]
 	True,
+	[Text("val")]
 	Val,
+	[Text("var")]
 	Var,
+	[Text("when")]
 	When,
 
 	// Punctuation
@@ -58,56 +90,24 @@ internal enum Token {
 }
 
 static class TokenU {
-	internal static Op<Token> keywordFromName(string s) {
-		switch (s) {
-			case "abstract":
-				return Op.Some(Token.Abstract);
-			case "def":
-				return Op.Some(Token.Def);
-			case "do":
-				return Op.Some(Token.Do);
-			case "else":
-				return Op.Some(Token.Else);
-			case "enum":
-				return Op.Some(Token.Enum);
-			case "false":
-				return Op.Some(Token.False);
-			case "for":
-				return Op.Some(Token.For);
-			case "fun":
-				return Op.Some(Token.Fun);
-			case "generic":
-				return Op.Some(Token.Generic);
-			case "if":
-				return Op.Some(Token.If);
-			case "import":
-				return Op.Some(Token.Import);
-			case "in":
-				return Op.Some(Token.In);
-			case "is":
-				return Op.Some(Token.Is);
-			case "new":
-				return Op.Some(Token.New);
-			case "pass":
-				return Op.Some(Token.Pass);
-			case "self":
-				return Op.Some(Token.Self);
-			case "slots":
-				return Op.Some(Token.Slots);
-			case "static":
-				return Op.Some(Token.Static);
-			case "true":
-				return Op.Some(Token.True);
-			case "val":
-				return Op.Some(Token.Val);
-			case "var":
-				return Op.Some(Token.Var);
-			case "when":
-				return Op.Some(Token.When);
-			default:
-				return Op<Token>.None;
+	static readonly Dictionary<Token, string> keywordToText = new Dictionary<Token, string>();
+	static readonly Dictionary<string, Token> textToKeyword = new Dictionary<string, Token>();
+
+	static TokenU() {
+		foreach (var field in typeof(Token).GetFields()) {
+			var textAttr = field.GetCustomAttribute(typeof(TextAttribute));
+			if (textAttr == null)
+				continue;
+
+			var text = ((TextAttribute)textAttr).text;
+			var token = (Token) field.GetValue(null);
+			keywordToText.Add(token, text);
+			textToKeyword.Add(text, token);
 		}
 	}
+
+	internal static bool keywordFromName(string name, out Token token) =>
+		textToKeyword.TryGetValue(name, out token);
 
 	internal static string TokenName(Token tk) {
 		switch (tk) {
@@ -118,29 +118,6 @@ static class TokenU {
 			case Token.IntLiteral: return "number literal";
 			case Token.FloatLiteral: return "float literal";
 			case Token.QuoteStart: return "quote start";
-
-			case Token.Abstract: return "abstract";
-			case Token.Def: return "def";
-			case Token.Do: return "do";
-			case Token.Enum: return "enum";
-			case Token.Else: return "else";
-			case Token.False: return "false";
-			case Token.For: return "for";
-			case Token.Fun: return "fun";
-			case Token.Generic: return "generic";
-			case Token.If: return "if";
-			case Token.Import: return "import";
-			case Token.In: return "in";
-			case Token.Is: return "is";
-			case Token.New: return "new";
-			case Token.Pass: return "pass";
-			case Token.Self: return "self";
-			case Token.Slots: return "slots";
-			case Token.Static: return "static";
-			case Token.True: return "true";
-			case Token.Val: return "val";
-			case Token.Var: return "var";
-			case Token.When: return "when";
 
 			case Token.Space: return "<space>";
 			case Token.Backslash: return "\\";
@@ -161,7 +138,8 @@ static class TokenU {
 			case Token.Comma: return ",";
 			case Token.Dot: return ".";
 			case Token.DotDot: return "..";
-			default: throw fail(tk.ToString());
+			default:
+				return keywordToText[tk];
 		}
 	}
 }

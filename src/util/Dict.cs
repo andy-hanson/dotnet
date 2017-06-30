@@ -10,15 +10,15 @@ struct Dict<K, V> where K : IEquatable<K> {
 
 	internal Dict<K2, V> mapKeys<K2>(Func<K, K2> mapper) where K2 : IEquatable<K2> {
 		var b = new Dictionary<K2, V>();
-		foreach (var pair in inner)
-			b[mapper(pair.Key)] = pair.Value;
+		foreach (var (k, v) in inner)
+			b[mapper(k)] = v;
 		return new Dict<K2, V>(b);
 	}
 
 	internal Arr<T> map<T>(Func<K, V, T> mapper) {
 		var b = Arr.builder<T>();
-		foreach (var pair in inner)
-			b.add(mapper(pair.Key, pair.Value));
+		foreach (var (k, v) in inner)
+			b.add(mapper(k, v));
 		return b.finish();
 	}
 
@@ -26,11 +26,17 @@ struct Dict<K, V> where K : IEquatable<K> {
 
 	internal bool has(K k) => inner.ContainsKey(k);
 
+	internal V this[K k] {
+		get {
+			var has = get(k, out var v);
+			assert(has);
+			return v;
+		}
+	}
+
 	internal bool get(K k, out V v) => inner.TryGetValue(k, out v);
 
 	internal uint size => unsigned(inner.Count);
-
-	internal Dictionary<K, V>.ValueCollection values => inner.Values;
 }
 
 static class Dict {
@@ -38,10 +44,10 @@ static class Dict {
 		if (a.size != b.size)
 			return false;
 
-		foreach (var pair in a) {
-			if (!b.get(pair.Key, out var bv))
+		foreach (var (k, av) in a) {
+			if (!b.get(k, out var bv))
 				return false;
-			if (!pair.Value.deepEqual(bv))
+			if (!av.deepEqual(bv))
 				return false;
 		}
 
@@ -57,7 +63,7 @@ static class Dict {
 		return true;
 	}
 
-	internal static Dictionary<K, V> builder<K, V>() where K : IEquatable<K> => new Dictionary<K, V>();
+	internal static Dictionary<K, V> builder<K, V>() => new Dictionary<K, V>();
 
 	internal static Dict<K, V> of<K, V>(params (K, V)[] pairs) where K : IEquatable<K> {
 		var b = new Dictionary<K, V>();
@@ -68,8 +74,8 @@ static class Dict {
 
 	internal static Dict<V, K> reverse<K, V>(this Dict<K, V> dict) where K : IEquatable<K> where V : IEquatable<V> {
 		var b = new Dictionary<V, K>();
-		foreach (var pair in dict)
-			b[pair.Value] = pair.Key;
+		foreach (var (k, v) in dict)
+			b[v] = k;
 		return new Dict<V, K>(b);
 	}
 
@@ -91,8 +97,8 @@ static class Dict {
 static class DictionaryUtils {
 	internal static Dictionary<K, V2> mapValuesToDictionary<K, V1, V2>(this IDictionary<K, V1> dict, Func<V1, V2> mapper) {
 		var b = new Dictionary<K, V2>();
-		foreach (var pair in dict)
-			b[pair.Key] = mapper(pair.Value);
+		foreach (var (k, v) in dict)
+			b[k] = mapper(v);
 		return b;
 	}
 

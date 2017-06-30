@@ -165,7 +165,7 @@ class Checker {
 			case Ast.Klass.Head.Slots slotsAst: {
 				var slots = new Klass.Head.Slots(loc, klass);
 				slots.slots = slotsAst.slots.map(var => {
-					var slot = new Klass.Head.Slots.Slot(slots, ast.loc, var.mutable, baseScope.getTy(var.ty), var.name);
+					var slot = new Slot(slots, ast.loc, var.mutable, baseScope.getTy(var.ty), var.name);
 					addMember(slot);
 					return slot;
 				});
@@ -260,6 +260,8 @@ class MethodChecker {
 				return checkSelf(ref e, s);
 			case Ast.Expr.WhenTest w:
 				return checkWhenTest(ref e, w);
+			case Ast.Expr.Assert ass:
+				return checkAssert(ref e, ass);
 			default:
 				throw unreachable();
 		}
@@ -310,7 +312,7 @@ class MethodChecker {
 
 	Expr checkGetProperty(ref Expected expected, Ast.Expr.GetProperty g) {
 		getProperty(g.loc, g.target, g.propertyName, out var target, out var member);
-		var slot = (Klass.Head.Slots.Slot)member; //TODO
+		var slot = (Slot)member; //TODO
 		return handle(ref expected, new Expr.GetSlot(g.loc, target, slot));
 	}
 
@@ -352,6 +354,9 @@ class MethodChecker {
 
 		return new Expr.WhenTest(w.loc, cases, elseResult, expected.inferredType);
 	}
+
+	Expr checkAssert(ref Expected expected, Ast.Expr.Assert a) =>
+		handle(ref expected, new Expr.Assert(a.loc, checkSubtype(BuiltinClass.Void, a.asserted)));
 
 	Expr callStaticMethod(ref Expected expected, Loc loc, ClassLike klass, Sym methodName, Arr<Ast.Expr> argAsts) {
 		if (!klass.membersMap.get(methodName, out var member)) TODO();
@@ -410,7 +415,7 @@ class MethodChecker {
 			throw TODO(); //error: cannot find name...
 
 		switch (member) {
-			case Klass.Head.Slots.Slot slot:
+			case Slot slot:
 				if (isStatic) throw TODO();
 				return new Expr.GetMySlot(loc, currentClass, slot);
 

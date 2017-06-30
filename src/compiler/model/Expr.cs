@@ -227,22 +227,22 @@ namespace Model {
 		//Note: this should only happen in a non-static method. Otherwise we have Expr.Error
 		internal sealed class GetMySlot : Expr, ToData<GetMySlot> {
 			[ParentPointer] internal readonly Klass klass; // Class of the method this expression is in.
-			[UpPointer] internal readonly Klass.Head.Slots.Slot slot;
-			internal GetMySlot(Loc loc, Klass klass, Klass.Head.Slots.Slot slot) : base(loc) {
+			[UpPointer] internal readonly Slot slot;
+			internal GetMySlot(Loc loc, Klass klass, Slot slot) : base(loc) {
 				this.klass = klass;
 				this.slot = slot;
 			}
 			internal override Ty ty => slot.ty;
 
 			public override bool deepEqual(Expr e) => e is GetMySlot g && deepEqual(g);
-			public bool deepEqual(GetMySlot g) => slot.equalsId<Klass.Head.Slots.Slot, Klass.Head.Slots.Slot.Id>(g.slot);
+			public bool deepEqual(GetMySlot g) => slot.equalsId<Slot, Slot.Id>(g.slot);
 			public override Dat toDat() => Dat.of(this, nameof(slot), slot.getId());
 		}
 
 		internal sealed class GetSlot : Expr, ToData<GetSlot> {
-			[UpPointer] internal readonly Klass.Head.Slots.Slot slot;
+			[UpPointer] internal readonly Slot slot;
 			internal readonly Expr target;
-			internal GetSlot(Loc loc, Expr target, Klass.Head.Slots.Slot slot) : base(loc) {
+			internal GetSlot(Loc loc, Expr target, Slot slot) : base(loc) {
 				this.target = target;
 				this.slot = slot;
 			}
@@ -265,6 +265,17 @@ namespace Model {
 				return locEq(s);
 			}
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc);
+		}
+
+		internal sealed class Assert : Expr, ToData<Assert> {
+			internal readonly Expr asserted;
+			internal Assert(Loc loc, Expr asserted) : base(loc) { this.asserted = asserted; }
+
+			internal override Ty ty => BuiltinClass.Void;
+
+			public override bool deepEqual(Expr e) => e is Assert a && deepEqual(a);
+			public bool deepEqual(Assert a) => locEq(a) && asserted.deepEqual(a.asserted);
+			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(asserted), asserted);
 		}
 
 		/*internal sealed class GetMethod : Get {
