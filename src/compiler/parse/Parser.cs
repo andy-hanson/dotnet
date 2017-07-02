@@ -367,15 +367,16 @@ sealed class Parser : Lexer {
 						throw TODO();
 					if (ctx != Ctx.Line)
 						throw TODO();
+					takeSpace();
 					var (asserted, next) = parseExpr(Ctx.LineExpr);
 					var assert = new Ast.Expr.Assert(locFrom(exprStart), asserted);
 					return (assert, next);
 				}
 
+				case Token.Try:
 				case Token.When: {
 					if (ctx != Ctx.Line && ctx != Ctx.LineExpr) throw TODO();
-					//It will give us newlineafterequals or dedent
-					parts.add(parseWhen(loopStart));
+					parts.add(loopNext == Token.Try ? parseTry(loopStart) : parseWhen(loopStart));
 					var expr = finishRegular(exprStart, isNew, parts);
 					var next = tryTakeDedentFromDedenting() ? Next.CtxEnded : Next.NewlineAfterStatement;
 					return (expr, next);
@@ -496,6 +497,71 @@ sealed class Parser : Lexer {
 			default:
 				throw TODO(); //diagnostic
 		}
+	}
+
+	Ast.Expr parseTry(Pos startPos) {
+		/*
+		try
+			do
+				...
+			catch Exception e | optional
+				...
+			else | optional
+				...
+			finally | optional
+				...
+		*/
+		takeIndent();
+		this.takeSpecificKeyword(Token.Do);
+		takeIndent();
+		var do_ = parseBlock();
+		var nextStart = pos;
+
+		Op<Ast.Expr.Try.Catch> catch_ = Op<Ast.Expr.Try.Catch>.None;
+		Op<Ast.Expr> else_ = Op<Ast.Expr>.None;
+		Op<Ast.Expr> finally_ = Op<Ast.Expr>.None;
+
+		switch (takeKeyword()) {
+			case Token.Catch: {
+				takeSpace();
+				var exceptionType = parseTy();
+				takeSpace();
+				var nameStart = pos;
+				var exceptionName = takeName();
+				var nameLoc = locFrom(nameStart);
+				takeIndent();
+				var catchBlock = parseBlock();
+				catch_ = Op.Some(new Ast.Expr.Try.Catch(locFrom(nextStart), exceptionType, nameLoc, exceptionName, catchBlock));
+
+				if (tryTakeDedent())
+					break;
+				nextStart = pos;
+				var kw = takeKeyword();
+				if (kw == Token.Else)
+					goto case Token.Else;
+				else if (kw == Token.Finally)
+					goto case Token.Finally;
+				throw unexpected(nextStart, "'else' or 'finally'", kw);
+			}
+			case Token.Else: {
+				takeIndent();
+				else_ = Op.Some(parseBlock());
+
+				if (tryTakeDedent())
+					break;
+				takeSpecificKeyword(Token.Finally);
+				goto case Token.Finally;
+			}
+
+			case Token.Finally: {
+				takeIndent();
+				finally_ = Op.Some(parseBlock());
+				takeDedent();
+				break;
+			}
+		}
+
+		return new Ast.Expr.Try(locFrom(startPos), do_, catch_, else_, finally_);
 	}
 
 	Ast.Expr parseWhen(Pos startPos) {

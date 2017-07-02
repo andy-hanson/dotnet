@@ -1,5 +1,7 @@
 using System;
 
+using static Utils;
+
 // https://github.com/estree/estree
 namespace Estree {
 	abstract class Node {
@@ -53,14 +55,35 @@ namespace Estree {
 		}
 	}
 
-	sealed class ArrowFunctionExpression : Function, Expression {
-		internal readonly BlockStatementOrExpression body;
-		internal ArrowFunctionExpression(Loc loc, Arr<Pattern> @params, BlockStatementOrExpression body) : base(loc, @params) {
-			this.body = body;
+	interface Statement {}
+
+	sealed class ThrowStatement : Node, Statement {
+		internal readonly Expression argument;
+		internal ThrowStatement(Loc loc, Expression argument) : base(loc) {
+			this.argument = argument;
 		}
 	}
 
-	interface Statement {}
+	sealed class TryStatement : Node, Statement{
+		internal readonly BlockStatement block;
+		internal readonly Op<CatchClause> handler;
+		internal readonly Op<BlockStatement> finalizer;
+		internal TryStatement(Loc loc, BlockStatement block, Op<CatchClause> handler, Op<BlockStatement> finalizer) : base(loc) {
+			assert(handler.has || finalizer.has);
+			this.block = block;
+			this.handler = handler;
+			this.finalizer = finalizer;
+		}
+	}
+
+	sealed class CatchClause : Node {
+		internal readonly Pattern param;
+		internal readonly BlockStatement body;
+		internal CatchClause(Loc loc, Pattern param, BlockStatement body) : base(loc) {
+			this.param = param;
+			this.body = body;
+		}
+	}
 
 	sealed class ExpressionStatement : Node, Statement {
 		internal readonly Expression expression;
@@ -82,6 +105,21 @@ namespace Estree {
 		internal readonly Expression argument;
 		internal ReturnStatement(Loc loc, Expression argument) : base(loc) {
 			this.argument = argument;
+		}
+	}
+
+	sealed class IfStatement : Node, Statement {
+		internal readonly Expression test;
+		internal readonly Statement consequent;
+		internal readonly Op<Statement> alternate;
+		internal IfStatement(Loc loc, Expression test, Statement consequent) : base(loc) {
+			this.test = test;
+			if (this.consequent is IfStatement i) {
+				if (!i.alternate.has)
+					assert(i.consequent is BlockStatement);
+			}
+			this.consequent = consequent;
+			this.alternate = Op<Statement>.None;
 		}
 	}
 
@@ -232,6 +270,31 @@ namespace Estree {
 			this.left = left;
 			this.right = right;
 		}
+	}
+
+	sealed class BinaryExpression : Node, Expression {
+		internal readonly string @operator;
+		internal readonly Expression left;
+		internal readonly Expression right;
+		internal BinaryExpression(Loc loc, string @operator, Expression left, Expression right) : base(loc) {
+			this.@operator = @operator;
+			this.left = left;
+			this.right = right;
+		}
+	}
+
+	sealed class UnaryExpression : Node, Expression {
+		internal readonly string @operator;
+		internal readonly bool prefix;
+		internal readonly Expression argument;
+		UnaryExpression(Loc loc, string @operator, bool prefix, Expression argument) : base(loc) {
+			this.@operator = @operator;
+			this.prefix = prefix;
+			this.argument = argument;
+		}
+
+		internal static UnaryExpression not(Loc loc, Expression argument) =>
+			new UnaryExpression(loc, "!", prefix: true, argument: argument);
 	}
 
 	/*sealed class ImportDeclaration : ModuleDeclaration {

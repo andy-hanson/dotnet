@@ -67,12 +67,22 @@ class Checker {
 		this.baseScope = new BaseScope(klass, imports);
 	}
 
-	//neater
-	//TODO: also handle abstract methods in superclass of superclass
-	static Arr<Method.AbstractMethod> getAbstractMethods(Klass superClass) {
-		if (!(superClass.head is Klass.Head.Abstract abs))
+	static Arr<Method> getAbstractMethods(Ty superClass) {
+		if (!superClass.supers.isEmpty)
+			//TODO: also handle abstract methods in superclass of superclass
 			throw TODO();
-		return abs.abstractMethods;
+
+		switch (superClass) {
+			case BuiltinClass b:
+				return b.abstractMethods;
+			case Klass k: {
+				if (!(k.head is Klass.Head.Abstract abs))
+					throw TODO();
+				return abs.abstractMethods;
+			}
+			default:
+				throw TODO();
+		}
 	}
 
 	Klass checkClass(Klass klass, Ast.Klass ast) {
@@ -99,7 +109,7 @@ class Checker {
 			var superClass = (Klass)baseScope.accessTy(superAst.loc, superAst.name); //TODO: handle builtin
 			var super = new Super(superAst.loc, klass, superClass);
 
-			var abstractMethods = getAbstractMethods((Klass)super.superClass); //TODO: handle other kinds of superClass
+			var abstractMethods = getAbstractMethods(super.superClass);
 
 			var implAsts = superAst.impls;
 
@@ -158,7 +168,7 @@ class Checker {
 				return new Klass.Head.Static(loc);
 
 			case Ast.Klass.Head.Abstract _: {
-				var abstractMethods = methods.keepOfType<Method.AbstractMethod>();
+				var abstractMethods = methods.keep(m => m is Method.AbstractMethod);
 				return new Klass.Head.Abstract(loc, abstractMethods);
 			}
 
@@ -222,7 +232,7 @@ class MethodChecker {
 	}
 
 	Expr checkVoid(Ast.Expr a) {
-		var e = Expected.Void;
+		var e = Expected.SubTypeOf(BuiltinClass.Void);
 		return checkExpr(ref e, a);
 	}
 
@@ -262,6 +272,8 @@ class MethodChecker {
 				return checkWhenTest(ref e, w);
 			case Ast.Expr.Assert ass:
 				return checkAssert(ref e, ass);
+			case Ast.Expr.Try t:
+				return checkTry(ref e, t);
 			default:
 				throw unreachable();
 		}
@@ -336,10 +348,6 @@ class MethodChecker {
 	Expr checkSelf(ref Expected expected, Ast.Expr.Self s) => new Expr.Self(s.loc, currentClass);
 
 	Expr checkWhenTest(ref Expected expected, Ast.Expr.WhenTest w) {
-		if (expected.isVoid)
-			//Need to test this here of expected.inferredType will fail
-			throw TODO();
-
 		//Can't use '.map' because of the ref parameter
 		var casesBuilder = w.cases.mapBuilder<Expr.WhenTest.Case>();
 		for (uint i = 0; i < casesBuilder.Length; i++) {
@@ -356,7 +364,26 @@ class MethodChecker {
 	}
 
 	Expr checkAssert(ref Expected expected, Ast.Expr.Assert a) =>
-		handle(ref expected, new Expr.Assert(a.loc, checkSubtype(BuiltinClass.Void, a.asserted)));
+		handle(ref expected, new Expr.Assert(a.loc, checkSubtype(BuiltinClass.Bool, a.asserted)));
+
+	Expr checkTry(ref Expected expected, Ast.Expr.Try t) {
+		if (t.else_.get(out var e)) throw TODO(); //Don't need this feature?
+
+		var do_ = checkExpr(ref expected, t.do_);
+		var catch_ = t.catch_.get(out var c) ? Op.Some(checkCatch(ref expected, c)) : Op<Expr.Try.Catch>.None;
+		var finally_ = t.finally_.get(out var f) ? Op.Some(checkVoid(f)) : Op<Expr>.None;
+
+		return new Expr.Try(t.loc, do_, catch_, finally_, expected.inferredType);
+	}
+
+	Expr.Try.Catch checkCatch(ref Expected expected, Ast.Expr.Try.Catch c) {
+		var exceptionTy = baseScope.getTy(c.exceptionTy);
+		var caught = new Pattern.Single(c.exceptionNameLoc, exceptionTy, c.exceptionName);
+		addToScope(caught);
+		var then = checkExpr(ref expected, c.then);
+		popFromScope();
+		return new Expr.Try.Catch(c.loc, caught, then);
+	}
 
 	Expr callStaticMethod(ref Expected expected, Loc loc, ClassLike klass, Sym methodName, Arr<Ast.Expr> argAsts) {
 		if (!klass.membersMap.get(methodName, out var member)) TODO();
@@ -403,6 +430,9 @@ class MethodChecker {
 			throw TODO(); //Illegal shadowing.
 		locals.Push(local);
 	}
+	void popFromScope() {
+		locals.Pop();
+	}
 
 	Expr get(Loc loc, Sym name) {
 		if (parameters.find(out var param, p => p.name == name))
@@ -433,7 +463,7 @@ class MethodChecker {
 
 	/** PASS BY REF! */
 	struct Expected {
-		enum Kind { Void, SubTypeOf, Infer }
+		enum Kind { SubTypeOf, Infer }
 		readonly Kind kind;
 		//For Void, this is always null.
 		//For SubTypeOf, this is always non-null.
@@ -441,9 +471,6 @@ class MethodChecker {
 		Op<Ty> expectedTy;
 		Expected(Kind kind, Ty ty) { this.kind = kind; this.expectedTy = Op.fromNullable(ty); }
 
-		internal bool isVoid => kind == Kind.Void;
-
-		internal static Expected Void => new Expected(Kind.Void, null);
 		internal static Expected SubTypeOf(Ty ty) => new Expected(Kind.SubTypeOf, ty);
 		internal static Expected Infer() => new Expected(Kind.Infer, null);
 
@@ -452,8 +479,6 @@ class MethodChecker {
 
 		internal Expr handle(Expr e, MethodChecker c) {
 			switch (kind) {
-				case Kind.Void:
-					throw TODO(); //Diagnostic: expected void, got something else
 				case Kind.SubTypeOf:
 					//Ty must be a subtype of this.
 					return c.checkType(expectedTy.force, e);
@@ -520,7 +545,6 @@ class MethodChecker {
 		}
 	}
 
-	void endCheckPattern(uint nAdded) {
-		doTimes(nAdded, () => locals.Pop());
-	}
+	void endCheckPattern(uint nAdded) =>
+		doTimes(nAdded, popFromScope);
 }

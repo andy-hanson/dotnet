@@ -1,6 +1,8 @@
 #! /usr/bin/env node
 // @ts-check
 
+/// <reference types="node" />
+
 const { writeFileSync } = require('fs')
 /** @type {any} */
 const plist = require('plist')
@@ -8,11 +10,14 @@ const plist = require('plist')
 const keywords = [
 	"_",
 	"abstract",
+	"assert",
+	"catch",
 	"def",
 	"do",
 	"else",
 	"enum",
 	"false",
+	"finally",
 	"for",
 	"fun",
 	"generic",
@@ -27,6 +32,7 @@ const keywords = [
 	"slots",
 	"static",
 	"true",
+	"try",
 	"val",
 	"var",
 	"when",

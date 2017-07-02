@@ -1,0 +1,39 @@
+Module(
+  loc: 0-71,
+  imports: [],
+  klass: Klass(
+    loc: 0-71,
+    head: Abstract(
+      loc: 0-10),
+    supers: [],
+    methods: [
+      AbstractMethod(
+        loc: 10-31,
+        returnTy: Access(
+          loc: 19-25,
+          name: "String"),
+        name: "s",
+        parameters: []),
+      Method(
+        loc: 31-71,
+        isStatic: true,
+        returnTy: Access(
+          loc: 35-41,
+          name: "String"),
+        name: "main",
+        parameters: [Parameter(
+          loc: 47-62,
+          ty: Access(
+            loc: 47-60,
+            name: "AbstractClass"),
+          name: "a")],
+        body: Call(
+          loc: 68-70,
+          target: GetProperty(
+            loc: 66-68,
+            target: Access(
+              loc: 65-66,
+              name: "a"),
+            propertyName: "s"),
+          args: []))
+    ]))

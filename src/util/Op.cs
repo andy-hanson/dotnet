@@ -46,17 +46,6 @@ struct Op<T> {
 	internal OpUint mapToUint(Func<T, uint> mapper) =>
 		has ? OpUint.Some(mapper(value)) : OpUint.None;
 
-	internal void each(Action<T> action) {
-		if (has)
-			action(value);
-	}
-
-	internal T or(Func<T> or) =>
-		has ? value : or();
-
-	internal Op<T> orTry(Func<Op<T>> orTry) =>
-		has ? this : orTry();
-
 	public override bool Equals(object o) => throw new NotSupportedException();
 	public override int GetHashCode() => throw new NotSupportedException();
 }

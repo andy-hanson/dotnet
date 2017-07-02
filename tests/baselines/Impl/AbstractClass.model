@@ -1,0 +1,32 @@
+Klass(
+  loc: 0-65,
+  head: Abstract(
+    loc: 0-10),
+  membersMap: Dict<Sym, Member>(
+    n: AbstractMethod(
+      loc: 10-28,
+      returnTy: "Int",
+      name: "n",
+      parameters: []),
+    getN: MethodWithBody(
+      loc: 28-65,
+      isStatic: true,
+      returnTy: "Int",
+      name: "getN",
+      parameters: [Parameter(
+        loc: 41-56,
+        ty: "AbstractClass",
+        name: "a",
+        index: 0)],
+      body: InstanceMethodCall(
+        target: AccessParameter(
+          loc: 59-60,
+          param: Parameter(
+            loc: 41-56,
+            ty: "AbstractClass",
+            name: "a",
+            index: 0)),
+        method: Id(
+          klassId: "AbstractClass",
+          name: "n"),
+        args: []))))

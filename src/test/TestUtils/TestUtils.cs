@@ -180,12 +180,23 @@ static class TestUtils {
 	}
 
 	internal static void assertEqual2(Jint.Native.JsValue expected, Jint.Native.JsValue actual) {
-		if (!expected.Equals(actual)) {
+		if (!jsValueEqual(expected, actual)) {
 			Console.WriteLine($"Expected: {expected.GetType()} {expected}");
 			Console.WriteLine($"Actual: {actual.GetType()} {actual}");
 			throw TODO();
 		}
 	}
+
+	static bool jsValueEqual(Jint.Native.JsValue a, Jint.Native.JsValue b) {
+		if (a.IsBoolean() || a.IsNumber())
+			// Works for these.
+			return a.Equals(b);
+		if (a.IsString())
+			return b.IsString() && a.AsString() == b.AsString();
+
+		throw TODO();
+	}
+
 
 	//mv
 	internal static void assertEqual<T>(T expected, object actual) where T : ToData<T> {

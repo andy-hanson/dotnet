@@ -126,7 +126,7 @@ namespace Model {
 				internal sealed class Str : LiteralValue {
 					internal readonly string value;
 					internal Str(string value) { this.value = value; }
-					internal override Ty ty => BuiltinClass.Str;
+					internal override Ty ty => BuiltinClass.String;
 
 					public override bool deepEqual(LiteralValue l) => l is Str s && deepEqual(s);
 					public bool deepEqual(Str s) => value == s.value;
@@ -142,14 +142,24 @@ namespace Model {
 		internal sealed class WhenTest : Expr, ToData<WhenTest> {
 			internal readonly Arr<Case> cases;
 			internal readonly Expr elseResult;
-			[NotData] internal readonly Ty _ty; // Cached ommon type of all cases and elseResult.
-			internal WhenTest(Loc loc, Arr<Case> cases, Expr elseResult, Ty ty) : base(loc) { this.cases = cases; this.elseResult = elseResult; this._ty = ty; }
+			[NotData] internal readonly Ty _ty; // Cached common type of all cases and elseResult.
+			internal WhenTest(Loc loc, Arr<Case> cases, Expr elseResult, Ty ty) : base(loc) {
+				this.cases = cases;
+				this.elseResult = elseResult;
+				this._ty = ty;
+			}
 
 			internal override Ty ty => _ty;
 
 			public override bool deepEqual(Expr e) => e is WhenTest w && deepEqual(w);
-			public bool deepEqual(WhenTest w) => cases.deepEqual(w.cases) && elseResult.deepEqual(w.elseResult);
-			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(cases), Dat.arr(cases), nameof(elseResult), elseResult);
+			public bool deepEqual(WhenTest w) =>
+				locEq(w) &&
+				cases.deepEqual(w.cases) &&
+				elseResult.deepEqual(w.elseResult);
+			public override Dat toDat() => Dat.of(this,
+				nameof(loc), loc,
+				nameof(cases), Dat.arr(cases),
+				nameof(elseResult), elseResult);
 
 			internal struct Case : ToData<Case> {
 				internal readonly Loc loc;
@@ -159,6 +169,57 @@ namespace Model {
 
 				public bool deepEqual(Case c) => loc.deepEqual(c.loc) && test.deepEqual(c.test) && result.deepEqual(c.result);
 				public Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(test), test, nameof(result), result);
+			}
+		}
+
+		internal sealed class Try : Expr, ToData<Try> {
+			internal readonly Expr do_;
+			internal readonly Op<Catch> catch_;
+			internal readonly Op<Expr> finally_;
+			[NotData] internal readonly Ty _ty; // Cached common type of 'do' and 'catch'
+			internal Try(Loc loc, Expr do_, Op<Catch> catch_, Op<Expr> finally_, Ty ty) : base(loc) {
+				this.do_ = do_;
+				this.catch_ = catch_;
+				this.finally_ = finally_;
+				this._ty = ty;
+			}
+
+			internal override Ty ty => _ty;
+
+			public override bool deepEqual(Expr e) => e is Try t && deepEqual(t);
+			public bool deepEqual(Try t) =>
+				locEq(t) &&
+				do_.deepEqual(t.do_) &&
+				catch_.deepEqual(t.catch_) &&
+				finally_.deepEqual(t.finally_);
+			public override Dat toDat() => Dat.of(this,
+				nameof(loc), loc,
+				nameof(do_), do_,
+				nameof(catch_), Dat.op(catch_),
+				nameof(finally_), Dat.op(finally_));
+
+			internal struct Catch : ToData<Catch> {
+				internal readonly Loc loc;
+				// Normally the type of a Pattern.Local is an inferred type, but here it's data! But avoid storing it twice.
+				internal Ty exceptionTy => caught.ty;
+				internal readonly Pattern.Single caught; // Includes the exception ty
+				internal readonly Expr then;
+				internal Catch(Loc loc, Pattern.Single exception, Expr then) {
+					this.loc = loc;
+					this.caught = exception;
+					this.then = then;
+				}
+
+				public bool deepEqual(Catch c) =>
+					loc.deepEqual(c.loc) &&
+					exceptionTy.equalsId<Ty, ClassLike.Id>(c.exceptionTy) &&
+					caught.deepEqual(c.caught) &&
+					then.deepEqual(c.then);
+				public Dat toDat() => Dat.of(this,
+					nameof(loc), loc,
+					nameof(exceptionTy), exceptionTy.getId(),
+					nameof(caught), caught,
+					nameof(then), then);
 			}
 		}
 

@@ -11,19 +11,29 @@
         "Languages"
     ],
     "contributes": {
-        "languages": [{
-            "id": "noze",
-            "aliases": ["noze", "noze"],
-            "extensions": [".nz"],
-            "configuration": "./language-configuration.json"
-        }],
-        "grammars": [{
-            "language": "noze",
-            "scopeName": "source.noze",
-            "path": "./syntaxes/noze.tmLanguage"
-        }]
+        "languages": [
+            {
+                "id": "noze",
+                "aliases": [
+                    "noze",
+                    "noze"
+                ],
+                "extensions": [
+                    ".nz"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "noze",
+                "scopeName": "source.noze",
+                "path": "./syntaxes/noze.tmLanguage"
+            }
+        ]
     },
     "devDependencies": {
-        "plist": "^1.2.0"
+        "plist": "^1.2.0",
+        "@types/node": "*"
     }
 }

@@ -18,8 +18,11 @@ class TestCompile {
 		this.updateBaselines = updateBaselines;
 	}
 
-	internal void runTestNamed(string name) =>
-		runSingle(name, getTestMethods()[name]);
+	internal void runTestNamed(string name) {
+		if (!getTestMethods().get(name, out var method))
+			throw TODO($"No test method for {name}");
+		runSingle(name, method);
+	}
 
 	internal void runAllCompilerTests() {
 		var allTests = listDirectoriesInDirectory(casesRootDir).toArr();
@@ -64,15 +67,21 @@ class TestCompile {
 		var (program, indexModule) = Compiler.compile(Path.empty, host, Op<CompiledProgram>.None);
 		var baselinesDirectory = baselinesRootDir.resolve(testPath.asRel);
 
+		var emitter = new ILEmitter(shouldLog: true);
+		var emittedRoot = emitter.emitModule(indexModule);
+
 		foreach (var (_, module) in program.modules) {
 			var modulePath = module.fullPath().withoutExtension(ModuleResolver.extension);
+
+			var logs = emitter.getLogs(module);
 
 			assertBaseline(baselinesDirectory, modulePath, ".ast", Dat.either(module.document.parseResult));
 			assertBaseline(baselinesDirectory, modulePath, ".model", module.klass.toDat());
 			assertBaseline(baselinesDirectory, modulePath, ".js", JsEmitter.emitToString(module));
+			assertBaseline(baselinesDirectory, modulePath, ".il", emitter.getLogs(module));
 		}
 
-		return new TestData(program, indexModule, baselinesDirectory.add("index.js"));
+		return new TestData(program, indexModule, baselinesDirectory.add("index.js"), emittedRoot);
 	}
 
 	void assertBaseline(Path testDirectory, Path modulePath, string extension, Dat actualDat) =>
@@ -111,14 +120,12 @@ sealed class TestData {
 	internal readonly CompiledProgram compiledProgram;
 	internal readonly Model.Module rootModule;
 	internal readonly Path indexJs;
-	internal readonly ILEmitter emitter; // Will always be emitted before running custom test.
 	internal readonly Type emittedRoot;
 
-	internal TestData(CompiledProgram compiledProgram, Model.Module rootModule, Path indexJs) {
+	internal TestData(CompiledProgram compiledProgram, Model.Module rootModule, Path indexJs, Type emittedRoot) {
 		this.compiledProgram = compiledProgram;
 		this.rootModule = rootModule;
 		this.indexJs = indexJs;
-		this.emitter = new ILEmitter();
-		this.emittedRoot = emitter.emitModule(rootModule);
+		this.emittedRoot = emittedRoot;
 	}
 }

@@ -1,5 +1,8 @@
 using System.Reflection;
+using System.Runtime.ExceptionServices;
+
 using static TestUtils;
+using static Utils;
 
 static class Tests {
 	static readonly Builtins.Int one = Builtins.Int.of(1);
@@ -18,13 +21,17 @@ static class Tests {
 		try {
 			csres = cls.GetMethod("main").Invoke(null, new object[] { impl });
 		} catch (TargetInvocationException e) {
-			throw e.InnerException;
+			ExceptionDispatchInfo.Capture(e.InnerException).Throw();
+			throw unreachable();
 		}
-		var expected = one;
+		var expected = Builtins.String.of("s");
 		assertEqual(expected, csres);
 
 		//Also in JS
-		var engine = new Jint.Engine();
+		var engine = new Jint.Engine(options => {
+			options.DebugMode(true);
+			options.Strict(true);
+		});
 		var jscls = JsRunner.evalScript(engine, t.indexJs);
 		var jsImpl = Jint.Native.JsValue.FromObject(engine, TestUtils.foooo(engine, jscls, impl));
 
@@ -41,11 +48,21 @@ static class Tests {
 	static void Slots(TestData t) {
 		runCsJsTests(t, new object[] { one }, one);
 	}
+
+	[TestFor(nameof(Assert))]
+	static void Assert(TestData t) {
+		runCsJsTests(t, new object[] {}, Builtins.Void.instance);
+	}
+
+	[TestFor(nameof(Try))]
+	static void Try(TestData t) {
+		runCsJsTests(t, new object[] {}, Builtins.String.of("Assertion failed."));
+	}
 }
 
 // Must be public since it's used dynamically
 public sealed class AbstractClassImpl {
 	#pragma warning disable CC0091 // Can't make it static
-	public Builtins.Int n() => Builtins.Int.of(1);
+	public Builtins.String s() => Builtins.String.of("s");
 	#pragma warning restore
 }

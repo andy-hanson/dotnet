@@ -8,8 +8,12 @@ sealed class BuiltinNameAttribute : Attribute {
 	internal BuiltinNameAttribute(string name) { this.name = Sym.of(name); }
 }
 
+// Note that constructors are always hidden, so don't need this attribute.
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Field)]
 sealed class HidAttribute : Attribute {}
+
+[AttributeUsage(AttributeTargets.Class)]
+sealed class HidSuperClassAttribute : Attribute {}
 
 public static class Builtins {
 	public sealed class Void : ToData<Void> {
@@ -35,10 +39,10 @@ public static class Builtins {
 	}
 
 	public struct Int : ToData<Int> {
-		public static Int parse(Str s) =>
+		public static Int parse(String s) =>
 			of(int.Parse(s.value)); //TODO: exceptions
 
-		internal readonly int value;
+		[Hid] internal readonly int value;
 		Int(int value) { this.value = value; }
 
 		[Hid] public static Int of(int value) => new Int(value);
@@ -55,10 +59,10 @@ public static class Builtins {
 	}
 
 	public struct Float : ToData<Float> {
-		public static Float parse(Str s) =>
+		public static Float parse(String s) =>
 			of(double.Parse(s.value)); //TODO: exceptions
 
-		internal readonly double value;
+		[Hid] internal readonly double value;
 
 		Float(double value) { this.value = value; }
 
@@ -75,17 +79,28 @@ public static class Builtins {
 		public Float _div(Float other) => of(checked(value / other.value));
 	}
 
-	public struct Str : ToData<Str> {
-		internal readonly string value;
+	public struct String : ToData<String> {
+		[Hid] internal readonly string value;
 
-		Str(string value) { this.value = value; }
+		String(string value) { this.value = value; }
 
-		[Hid] public static Str of(string value) => new Str(value);
+		[Hid] public static String of(string value) => new String(value);
 
-		bool DeepEqual<Str>.deepEqual(Str s) => value == s.value;
-		Dat ToData<Str>.toDat() => Dat.str(value);
+		bool DeepEqual<String>.deepEqual(String s) => value == s.value;
+		Dat ToData<String>.toDat() => Dat.str(value);
 
-		public Str _add(Str other) => of(value + other.value);
+		public String _add(String other) => of(value + other.value);
+	}
+
+	[HidSuperClass]
+	public abstract class Exception : System.Exception {
+		protected Exception() : base() {}
+		public abstract String description();
+	}
+
+	public sealed class AssertionException : Exception {
+		public AssertionException() : base() {}
+		public override String description() => String.of("Assertion failed.");
 	}
 
 	internal static void register() {

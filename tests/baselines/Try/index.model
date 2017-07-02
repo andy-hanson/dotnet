@@ -1,0 +1,37 @@
+Klass(
+  loc: 0-97,
+  head: Static(
+    loc: 0-8),
+  membersMap: Dict<Sym, Member>(
+    main: MethodWithBody(
+      loc: 8-97,
+      isStatic: true,
+      returnTy: "String",
+      name: "main",
+      parameters: [],
+      body: Try(
+        loc: 27-97,
+        do_: Seq(
+          loc: 39-60,
+          action: Assert(
+            loc: 39-55,
+            asserted: Literal(
+              loc: 46-51,
+              value: false)),
+          then: Literal(
+            loc: 55-57,
+            value: "")),
+        catch_: Catch(
+          loc: 60-97,
+          exceptionTy: "Exception",
+          caught: Single(
+            loc: 76-77,
+            name: "e"),
+          then: InstanceMethodCall(
+            target: AccessLocal(
+              local: "e"),
+            method: Id(
+              klassId: "Exception",
+              name: "description"),
+            args: [])),
+        finally_: null))))

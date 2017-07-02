@@ -58,14 +58,22 @@ static class JsRunner {
 		return result;
 	}
 
+	const string nzlib = "nzlib";
+	static readonly Path nzlibPath = Path.fromParts(nzlib, "index.js");
+
 	static Path resolveRequirePath(Path requiredFrom, string required) {
+		if (required == nzlib)
+			return nzlibPath;
+
 		var requiredFromDir = requiredFrom.directory();
 		var plain = requiredFromDir.add($"{required}.js");
 		if (File.Exists(plain.toPathString()))
 			return plain;
+
 		var index = requiredFromDir.add(required, "index.js");
 		if (File.Exists(index.toPathString()))
 			return index;
+
 		throw fail($"Could not find JS module at {plain.toPathString()} or at {index.toPathString()}");
 	}
 }

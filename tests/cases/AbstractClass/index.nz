@@ -1,6 +1,6 @@
 abstract
 
-abstract Int n()
+abstract String s()
 
-fun Int main(AbstractClass a)
-	a.n()
+fun String main(AbstractClass a)
+	a.s()

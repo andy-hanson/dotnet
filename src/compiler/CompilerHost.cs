@@ -95,9 +95,10 @@ sealed class DocumentsCache : DocumentProvider {
 		if (pathToText.TryGetValue(path, out var cached))
 			return Op.Some(cached);
 
-		var x = this.fallback.getDocument(path);
-		x.each(v => pathToText.Add(path, v));
-		return x;
+		var document = this.fallback.getDocument(path);
+		if (document.get(out var v))
+			pathToText.Add(path, v);
+		return document;
 	}
 
 	Sym DocumentProvider.rootName => fallback.rootName;

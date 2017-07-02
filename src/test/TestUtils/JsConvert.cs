@@ -18,7 +18,7 @@ static class JsConvert {
 				return __Converters.__intToJs(i);
 			case Builtins.Float f:
 				return __Converters.__floatToJs(f);
-			case Builtins.Str s:
+			case Builtins.String s:
 				return __Converters.__strToJs(s);
 			default:
 				throw TODO();
@@ -30,7 +30,7 @@ static class JsConvert {
 		{ typeof(Builtins.Bool), nameof(__Converters.__boolToJs) },
 		{ typeof(Builtins.Int), nameof(__Converters.__intToJs) },
 		{ typeof(Builtins.Float), nameof(__Converters.__floatToJs) },
-		{ typeof(Builtins.Str), nameof(__Converters.__strToJs) }
+		{ typeof(Builtins.String), nameof(__Converters.__strToJs) }
 	}.mapValuesToDictionary(typeof(__Converters).GetMethod);
 
 	internal static bool converterToJs(Type t, out MethodInfo m) => convertersToJs.TryGetValue(t, out m);
@@ -40,7 +40,7 @@ static class JsConvert {
 		{ typeof(Builtins.Bool), nameof(__Converters.__boolFromJs) },
 		{ typeof(Builtins.Int), nameof(__Converters.__intFromJs) },
 		{ typeof(Builtins.Float), nameof(__Converters.__floatFromJs) },
-		{ typeof(Builtins.Str), nameof(__Converters.__strFromJs) }
+		{ typeof(Builtins.String), nameof(__Converters.__strFromJs) }
 	}.mapValuesToDictionary(typeof(__Converters).GetMethod);
 
 	internal static bool converterFromJs(Type t, out MethodInfo m) => convertersFromJs.TryGetValue(t, out m);
@@ -61,7 +61,7 @@ public static class __Converters {
 		new Jint.Native.JsValue(i.value);
 	public static Jint.Native.JsValue __floatToJs(Builtins.Float f) =>
 		new Jint.Native.JsValue(f.value);
-	public static Jint.Native.JsValue __strToJs(Builtins.Str s) =>
+	public static Jint.Native.JsValue __strToJs(Builtins.String s) =>
 		new Jint.Native.JsValue(s.value);
 
 	public static Builtins.Void __voidFromJs(Jint.Native.JsValue j) {
@@ -77,6 +77,6 @@ public static class __Converters {
 	}
 	public static Builtins.Float __floatFromJs(Jint.Native.JsValue j) =>
 		Builtins.Float.of(j.AsNumber());
-	public static Builtins.Str __strFromJs(Jint.Native.JsValue j) =>
-		Builtins.Str.of(j.AsString());
+	public static Builtins.String __strFromJs(Jint.Native.JsValue j) =>
+		Builtins.String.of(j.AsString());
 }

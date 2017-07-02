@@ -71,18 +71,18 @@ namespace Lsp.Server {
 
 		protected override void init() {
 			var msg = read();
-			logger.each(l => l.received(msg));
+			if (logger.get(out var l)) l.received(msg);
 
 			var pms = JsonParser.parseInitialize(msg);
 
 			// "interface ServerCapabilities" in https://github.com/Microsoft/language-server-protocol/blob/master/protocol.md#initialize
 			var sentMsg = getResponseText(pms.rqId, new InitResponse(true));
-			logger.each(l => l.sent(sentMsg));
+			if (logger.get(out var ll)) ll.sent(sentMsg);
 			send(sentMsg);
 		}
 
 		protected override (Op<string> response, bool shutDown) getResponse(string inputMessage) {
-			logger.each(l => l.received(inputMessage));
+			if (logger.get(out var l)) l.received(inputMessage);
 			var message = JsonParser.parseMessage(inputMessage);
 			switch (message) {
 				case LspMethod.Shutdown sd:
@@ -123,7 +123,7 @@ namespace Lsp.Server {
 
 		void notifyServer<T>(string methodName, T body) where T : ToData<T> {
 			var msg = JsonWriter.write(new NotifyWrapper<T>(methodName, body));
-			logger.each(l => l.sent(msg));
+			if (logger.get(out var l)) l.sent(msg);
 			send(msg);
 		}
 

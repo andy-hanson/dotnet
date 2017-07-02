@@ -1,0 +1,9 @@
+static
+
+fun String main()
+	try
+		do
+			assert false
+			""
+		catch Exception e
+			e.description()

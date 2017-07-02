@@ -62,7 +62,7 @@ abstract class Lexer : Reader {
 	protected Sym tokenSym => Sym.of(tokenValue);
 
 	protected Lexer(string source) : base(source) {
-		skipNewlines();
+		skipEmptyLines();
 	}
 
 	protected Loc locFrom(Pos start) => new Loc(start, pos);
@@ -71,7 +71,7 @@ abstract class Lexer : Reader {
 		while (pred(peek)) skip();
 	}
 
-	void skipNewlines() {
+	void skipEmptyLines() {
 		skipWhile(ch => ch == '\n');
 	}
 
@@ -283,7 +283,7 @@ abstract class Lexer : Reader {
 	}
 
 	Token handleNewline() {
-		skipNewlines();
+		skipEmptyLines();
 		var oldIndent = indent;
 		indent = lexIndent();
 		if (indent > oldIndent) {
@@ -300,7 +300,7 @@ abstract class Lexer : Reader {
 	protected enum NewlineOrDedent { Newline, Dedent }
 	protected NewlineOrDedent takeNewlineOrDedent() {
 		expectCharacter('\n');
-		skipNewlines();
+		skipEmptyLines();
 		doTimes(indent - 1, () => expectCharacter('\t'));
 		if (tryTake('\t'))
 			return NewlineOrDedent.Newline;
@@ -313,7 +313,7 @@ abstract class Lexer : Reader {
 	protected enum NewlineOrIndent { Newline, Indent }
 	protected NewlineOrIndent takeNewlineOrIndent() {
 		expectCharacter('\n');
-		skipNewlines();
+		skipEmptyLines();
 		doTimes(indent, () => expectCharacter('\t'));
 		if (tryTake('\t')) {
 			indent++;
@@ -335,7 +335,10 @@ abstract class Lexer : Reader {
 	}
 
 	protected bool tryTakeDedent() {
-		assert(dedenting == 0);
+		if (dedenting != 0) {
+			dedenting--;
+			return true;
+		}
 
 		var start = pos;
 		if (!tryTake('\n'))
@@ -349,22 +352,34 @@ abstract class Lexer : Reader {
 		return true;
 	}
 
+	protected void takeDedent() {
+		if (dedenting != 0) {
+			dedenting--;
+			return;
+		}
+
+		expectCharacter('\n');
+		skipEmptyLines();
+		this.indent--;
+		doTimes(this.indent, () => expectCharacter('\t'));
+	}
+
 	protected void takeNewline() {
 		expectCharacter('\n');
-		skipNewlines();
+		skipEmptyLines();
 		doTimes(this.indent, () => expectCharacter('\t'));
 	}
 
 	protected bool tryTakeNewline() {
 		if (!tryTake('\n')) return false;
-		skipNewlines();
+		skipEmptyLines();
 		doTimes(this.indent, () => expectCharacter('\t'));
 		return true;
 	}
 
 	protected void takeIndent() {
-		this.indent++;
 		expectCharacter('\n');
+		this.indent++;
 		doTimes(this.indent, () => expectCharacter('\t'));
 	}
 

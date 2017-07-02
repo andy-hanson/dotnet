@@ -66,6 +66,15 @@ class JsWriter : EmitTextWriter {
 			case Estree.ClassDeclaration c:
 				writeClass(c);
 				break;
+			case Estree.IfStatement i:
+				writeIfStatement(i);
+				break;
+			case Estree.ThrowStatement t:
+				writeThrowStatement(t);
+				break;
+			case Estree.TryStatement tr:
+				writeTryStatement(tr);
+				break;
 			default:
 				throw TODO();
 		}
@@ -92,6 +101,39 @@ class JsWriter : EmitTextWriter {
 		if (v.init.get(out var i)) {
 			writeRaw(" = ");
 			writeExpr(i);
+		}
+	}
+
+	void writeIfStatement(Estree.IfStatement i) {
+		writeRaw("if (");
+		writeExpr(i.test);
+		writeRaw(") ");
+		writeStatement(i.consequent);
+		if (i.alternate.get(out var alt)) {
+			writeLine();
+			writeRaw("else ");
+			writeStatement(alt);
+		}
+	}
+
+	void writeThrowStatement(Estree.ThrowStatement t) {
+		writeRaw("throw ");
+		writeExpr(t.argument);
+		writeRaw(';');
+	}
+
+	void writeTryStatement(Estree.TryStatement tr) {
+		writeRaw("try ");
+		writeBlockStatement(tr.block);
+		if (tr.handler.get(out var h)) {
+			writeRaw(" catch (");
+			writePattern(h.param);
+			writeRaw(") ");
+			writeBlockStatement(h.body);
+		}
+		if (tr.finalizer.get(out var f)) {
+			writeRaw(" finally ");
+			writeBlockStatement(f);
 		}
 	}
 
@@ -122,9 +164,6 @@ class JsWriter : EmitTextWriter {
 			case Estree.FunctionExpression f:
 				writeFunctionDeclarationOrExpression(f, Op<Estree.Identifier>.None);
 				break;
-			case Estree.ArrowFunctionExpression a:
-				writeArrowFunction(a);
-				break;
 			case Estree.ClassExpression c:
 				writeClass(c);
 				break;
@@ -134,9 +173,39 @@ class JsWriter : EmitTextWriter {
 			case Estree.ObjectExpression o:
 				writeObjectExpression(o);
 				break;
+			case Estree.UnaryExpression u:
+				writeUnaryExpression(u);
+				break;
+			case Estree.BinaryExpression be:
+				writeBinaryExpression(be);
+				break;
 			default:
 				throw unreachable();
 		}
+	}
+
+	void writeUnaryExpression(Estree.UnaryExpression e) {
+		if (e.prefix) {
+			writeRaw(e.@operator);
+			writeParenthesized(e.argument);
+		} else {
+			writeParenthesized(e.argument);
+			writeRaw(e.@operator);
+		}
+	}
+
+	void writeParenthesized(Estree.Expression e) {
+		writeRaw('(');
+		writeExpr(e);
+		writeRaw(')');
+	}
+
+	void writeBinaryExpression(Estree.BinaryExpression e) {
+		writeExpr(e.left);
+		writeRaw(" ");
+		writeRaw(e.@operator);
+		writeRaw(" ");
+		writeExpr(e.right);
 	}
 
 	void writeObjectExpression(Estree.ObjectExpression o) {
@@ -274,16 +343,10 @@ class JsWriter : EmitTextWriter {
 		writeRaw(") ");
 	}
 
-	void writeArrowFunction(Estree.ArrowFunctionExpression a) {
-		writeParameters(a.@params);
-		writeRaw("=> ");
-		writeBlockStatementOrExpression(a.body);
-	}
-
 	void writeBlockStatementOrExpression(Estree.BlockStatementOrExpression be) {
 		switch (be) {
 			case Estree.BlockStatement b:
-				writeBlock(b);
+				writeBlockStatement(b);
 				break;
 			case Estree.Expression e:
 				writeExpr(e);
@@ -295,12 +358,12 @@ class JsWriter : EmitTextWriter {
 
 	void writeFunctionOrMethodCommon(Estree.FunctionDeclarationOrExpression f) {
 		writeParameters(f.@params);
-		writeBlock(f.body);
+		writeBlockStatement(f.body);
 	}
 
 	void writeFunctionDeclarationOrExpression(Estree.FunctionDeclarationOrExpression f, Op<Estree.Identifier> id) {
 		writeRaw("function ");
-		id.each(writeId);
+		if (id.get(out var i)) writeId(i);
 		writeFunctionOrMethodCommon(f);
 	}
 
@@ -310,7 +373,7 @@ class JsWriter : EmitTextWriter {
 		writeRaw(';');
 	}
 
-	void writeBlock(Estree.BlockStatement b) {
+	void writeBlockStatement(Estree.BlockStatement b) {
 		if (b.body.length == 0) {
 			writeRaw("{}");
 			return;

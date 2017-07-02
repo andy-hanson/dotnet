@@ -2,14 +2,29 @@ using Model;
 
 using static Utils;
 
-static class JsEmitter {
+sealed class JsEmitter {
 	internal static string emitToString(Module m) {
-		var p = emitToProgram(m);
+		var p = new JsEmitter().emitToProgram(m);
 		return JsWriter.writeToString(p);
 	}
 
-	static Estree.Program emitToProgram(Module m) {
+	private bool needsLib = false;
+
+	static Estree.Identifier baseId(string name) => id(Loc.zero, Sym.of(name));
+	static readonly Estree.Identifier requireId = baseId("require");
+	static readonly Estree.Identifier idNzlib = baseId("_");
+	static readonly Estree.Statement requireNzlib = importStatement(Sym.of("_"), "nzlib");
+
+	Estree.Expression getFromLib(Loc loc, Sym id) {
+		needsLib = true;
+		return Estree.MemberExpression.simple(loc, idNzlib, id);
+	}
+
+	Estree.Program emitToProgram(Module m) {
 		var body = Arr.builder<Estree.Statement>();
+
+		// Eagerly add lib import. If we don't need this, we'll finishTail()
+		body.add(requireNzlib);
 
 		foreach (var import in m.imports)
 			body.add(emitImport(m, import));
@@ -18,28 +33,27 @@ static class JsEmitter {
 
 		body.add(assign(m.klass.loc, moduleExports, id(m.klass.loc, m.klass.name)));
 
-		return new Estree.Program(Loc.zero, body.finish());
+		return new Estree.Program(Loc.zero, needsLib ? body.finish() : body.finishTail());
 	}
 
-	static Estree.Identifier baseId(string name) => id(Loc.zero, Sym.of(name));
 
-	static readonly Estree.Identifier requireId = baseId("require");
-	static Estree.Statement emitImport(Module importer, Module imported) {
-		// Don't care about Loc since shouldn't be possible to get an error here.
-		var loc = Loc.zero;
-
+	Estree.Statement emitImport(Module importer, Module imported) {
 		var relPath = importer.fullPath().relTo(imported.fullPath());
 		// Must find relative path.
 		var pathStr = relPath.withoutExtension(ModuleResolver.extension).toPathString();
-		Estree.Expression required = new Estree.Literal(loc, new Expr.Literal.LiteralValue.Str(pathStr));
-		var require = Estree.CallExpression.of(loc, requireId, required);
-		return Estree.VariableDeclaration.simple(loc, imported.name, require);
+		return importStatement(imported.name, pathStr);
+	}
+
+	static Estree.Statement importStatement(Sym importedName, string importedPath) {
+		var required = new Estree.Literal(Loc.zero, new Expr.Literal.LiteralValue.Str(importedPath));
+		var require = Estree.CallExpression.of(Loc.zero, requireId, required);
+		return Estree.VariableDeclaration.simple(Loc.zero, importedName, require);
 	}
 
 	static readonly Estree.MemberExpression moduleExports = Estree.MemberExpression.simple(Loc.zero, Sym.of("module"), Sym.of("exports"));
 
 	static readonly Estree.MemberExpression objectCreate = Estree.MemberExpression.simple(Loc.zero, Sym.of("Object"), Sym.of("create"));
-	static void emitClass(Arr.Builder<Estree.Statement> body, Klass klass) {
+	void emitClass(Arr.Builder<Estree.Statement> body, Klass klass) {
 		var loc = klass.loc;
 		var klassName = klass.name;
 
@@ -83,12 +97,8 @@ static class JsEmitter {
 	static Estree.Statement assign(Loc loc, Sym a, Sym b, Sym c, Estree.Expression rhs) =>
 		assign(loc, Estree.MemberExpression.simple(loc, a, b, c), rhs);
 
-	/*
-	function Kls(x) {
-		this.x = x;
-	}
-	*/
 	static Estree.FunctionDeclaration emitSlots(Klass klass, Klass.Head.Slots s) {
+		// function Kls(x) { this.x = x; }
 		var patterns = s.slots.map<Estree.Pattern>(slot => id(slot.loc, slot.name));
 		var statements = s.slots.map<Estree.Statement>((slot, i) => {
 			var slotLoc = slot.loc;
@@ -104,10 +114,10 @@ static class JsEmitter {
 
 	static readonly Sym symPrototype = Sym.of("prototype");
 
-	static void emitImpl(Arr.Builder<Estree.Statement> body, Sym klassName, Impl impl) =>
+	void emitImpl(Arr.Builder<Estree.Statement> body, Sym klassName, Impl impl) =>
 		body.add(emitInstanceMethodLike(impl.loc, klassName, impl.implemented.name, impl.implemented.parameters, impl.body));
 
-	static void emitMethod(Arr.Builder<Estree.Statement> body, Sym klassName, Method method) {
+	void emitMethod(Arr.Builder<Estree.Statement> body, Sym klassName, Method method) {
 		switch (method) {
 			case Method.MethodWithBody mb:
 				body.add(emitMethodWithBody(klassName, mb));
@@ -120,24 +130,35 @@ static class JsEmitter {
 		}
 	}
 
-	static Estree.Statement emitMethodWithBody(Sym klassName, Method.MethodWithBody method) =>
+	Estree.Statement emitMethodWithBody(Sym klassName, Method.MethodWithBody method) =>
 		method.isStatic
 			// Cls.foo = function() { ... }
 			? assign(method.loc, klassName, method.name, methodExpression(method.loc, method.parameters, method.body))
 			: emitInstanceMethodLike(method.loc, klassName, method.name, method.parameters, method.body);
 
-	static Estree.Statement emitInstanceMethodLike(Loc loc, Sym klassName, Sym methodName, Arr<Method.Parameter> parameters, Expr body) =>
+	Estree.Statement emitInstanceMethodLike(Loc loc, Sym klassName, Sym methodName, Arr<Method.Parameter> parameters, Expr body) =>
 		// Cls.prototype.foo = function() { ... }
 		assign(loc, klassName, symPrototype, methodName, methodExpression(loc, parameters, body));
 
-	static Estree.FunctionExpression methodExpression(Loc loc, Arr<Method.Parameter> parameters, Expr body) =>
+	Estree.FunctionExpression methodExpression(Loc loc, Arr<Method.Parameter> parameters, Expr body) =>
 		new Estree.FunctionExpression(loc, parameters.map(emitParameter), exprToBlockStatement(body));
 
 	static Estree.Pattern emitParameter(Method.Parameter p) => id(p.loc, p.name);
 
-	static Estree.BlockStatement exprToBlockStatement(Expr expr) {
+	Estree.BlockStatement exprToBlockStatement(Expr expr) {
 		var parts = Arr.builder<Estree.Statement>();
+		writeExprToBlockStatement(parts, expr);
+		return new Estree.BlockStatement(expr.loc, parts.finish());
+	}
 
+	Estree.BlockStatement exprToBlockStatement(Expr expr, Estree.Statement firstStatement) {
+		var parts = Arr.builder<Estree.Statement>();
+		parts.add(firstStatement);
+		writeExprToBlockStatement(parts, expr);
+		return new Estree.BlockStatement(expr.loc, parts.finish());
+	}
+
+	void writeExprToBlockStatement(Arr.Builder<Estree.Statement> parts, Expr expr) {
 		while (true) {
 			var loc = expr.loc;
 			switch (expr) {
@@ -147,27 +168,80 @@ static class JsEmitter {
 					expr = l.then;
 					break;
 				case Expr.Seq s:
-					parts.add(new Estree.ExpressionStatement(s.action.loc, exprToExpr(s.action)));
+					parts.add(exprToStatement(s.action));
 					expr = s.then;
 					break;
+				case Expr.Assert a:
+					parts.add(assertToStatement(a));
+					return;
+				case Expr.Try t:
+					parts.add(tryToStatement(t));
+					return;
 				case Expr.Literal l:
 					if (l.value is Expr.Literal.LiteralValue.Pass)
-						goto end;
+						return;
 					goto default;
 				default:
 					parts.add(new Estree.ReturnStatement(expr.loc, exprToExpr(expr)));
-					goto end;
+					return;
 			}
 		}
 
-		end:
-		return new Estree.BlockStatement(expr.loc, parts.finish());
 	}
 
-	static Estree.Expression iife(Expr expr) =>
-		new Estree.ArrowFunctionExpression(expr.loc, Arr.empty<Estree.Pattern>(), exprToBlockStatement(expr));
+	Estree.Statement exprToStatement(Expr expr) {
+		switch (expr) {
+			case Expr.Assert a:
+				return assertToStatement(a);
+			default:
+				return new Estree.ExpressionStatement(expr.loc, exprToExpr(expr));
+		}
+	}
 
-	static Estree.Expression exprToExpr(Expr expr) {
+	Estree.Statement assertToStatement(Expr.Assert a) {
+		var loc = a.loc;
+		var idAssertionException = getFromLib(loc, Sym.of(nameof(Builtins.AssertionException)));
+		var fail = new Estree.ThrowStatement(loc,
+			new Estree.NewExpression(loc, idAssertionException, Arr.of<Estree.Expression>()));
+		var notAsserted = Estree.UnaryExpression.not(a.asserted.loc, exprToExpr(a.asserted));
+		return new Estree.IfStatement(loc, notAsserted, fail);
+	}
+
+	Estree.Statement tryToStatement(Expr.Try t) {
+		var do_ = exprToBlockStatement(t.do_);
+		var catch_ = t.catch_.get(out var c) ? Op.Some(catchToCatch(c)) : Op<Estree.CatchClause>.None;
+		var finally_ = t.finally_.get(out var f) ? Op.Some(exprToBlockStatement(f)) : Op<Estree.BlockStatement>.None;
+		return new Estree.TryStatement(t.loc, do_, catch_, finally_);
+	}
+
+	Estree.CatchClause catchToCatch(Expr.Try.Catch c) {
+		var loc = c.loc;
+		var caught = id(c.caught.loc, c.caught.name);
+
+		// `if (!(e is ExceptionType)) throw e;`
+		var isInstance = new Estree.BinaryExpression(loc, "instanceof", caught, accessTy(loc, c.exceptionTy));
+		var test = Estree.UnaryExpression.not(loc, isInstance);
+		var first = new Estree.IfStatement(loc, test, new Estree.ThrowStatement(c.loc, caught));
+
+		var caughtBlock = exprToBlockStatement(c.then, first);
+		return new Estree.CatchClause(loc, caught, caughtBlock);
+	}
+
+	Estree.Expression accessTy(Loc loc, Ty ty) {
+		switch (ty) {
+			case Klass k:
+				return id(loc, k.name);
+			case BuiltinClass b:
+				return getFromLib(loc, b.name);
+			default:
+				throw TODO();
+		}
+	}
+
+	Estree.Expression iife(Expr expr) =>
+		throw TODO();//new Estree.ArrowFunctionExpression(expr.loc, Arr.empty<Estree.Pattern>(), exprToBlockStatement(expr));
+
+	Estree.Expression exprToExpr(Expr expr) {
 		var loc = expr.loc;
 		switch (expr) {
 			case Expr.AccessParameter p:
@@ -176,6 +250,8 @@ static class JsEmitter {
 				return id(loc, lo.local.name);
 			case Expr.Let l:
 			case Expr.Seq s:
+			case Expr.Assert a:
+			case Expr.Try t:
 				return iife(expr);
 			case Expr.Literal li:
 				return new Estree.Literal(loc, li.value);
@@ -202,7 +278,7 @@ static class JsEmitter {
 	static Estree.Identifier id(Loc loc, Sym name) =>
 		new Estree.Identifier(loc, name);
 
-	static Estree.Expression whenToExpr(Expr.WhenTest w) {
+	Estree.Expression whenToExpr(Expr.WhenTest w) {
 		var cases = w.cases;
 
 		// Build it backwards.

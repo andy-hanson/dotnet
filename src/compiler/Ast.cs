@@ -406,14 +406,14 @@ namespace Ast {
 			public bool deepEqual(WhenTest w) => locEq(w) && cases.deepEqual(w.cases) && elseResult.deepEqual(w.elseResult);
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(cases), Dat.arr(cases), nameof(elseResult), elseResult);
 
-			internal struct Case : ToData<Case> {
-				internal readonly Loc loc;
+			internal sealed class Case : Node, ToData<Case> {
 				internal readonly Expr test;
 				internal readonly Expr result;
-				internal Case(Loc loc, Expr test, Expr result) { this.loc = loc; this.test = test; this.result = result; }
+				internal Case(Loc loc, Expr test, Expr result) : base(loc) { this.test = test; this.result = result; }
 
-				public bool deepEqual(Case c) => loc.deepEqual(c.loc) && test.deepEqual(c.test) && result.deepEqual(c.result);
-				public Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(test), test, nameof(result), result);
+				public override bool deepEqual(Node n) => n is Case && deepEqual(n);
+				public bool deepEqual(Case c) => locEq(c) && test.deepEqual(c.test) && result.deepEqual(c.result);
+				public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(test), test, nameof(result), result);
 			}
 		}
 
@@ -424,6 +424,51 @@ namespace Ast {
 			public override bool deepEqual(Node n) => n is Assert a && deepEqual(a);
 			public bool deepEqual(Assert a) => locEq(a) && asserted.deepEqual(a.asserted);
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(asserted), asserted);
+		}
+
+		/** It will be a checker error if 'catch' is missing, except in the case of do-finally. */
+		internal sealed class Try : Expr, ToData<Try> {
+			internal readonly Expr do_;
+			internal readonly Op<Catch> catch_;
+			internal readonly Op<Expr> else_;
+			internal readonly Op<Expr> finally_;
+			internal Try(Loc loc, Expr do_, Op<Catch> catch_, Op<Expr> else_, Op<Expr> finally_) : base(loc) {
+				this.do_ = do_;
+				this.catch_ = catch_;
+				this.else_ = else_;
+				this.finally_ = finally_;
+			}
+
+			public override bool deepEqual(Node n) => n is Try t && deepEqual(t);
+			public bool deepEqual(Try t) =>
+				locEq(t) &&
+				do_.deepEqual(t.do_) &&
+				catch_.deepEqual(t.catch_) &&
+				else_.deepEqual(t.else_) &&
+				finally_.deepEqual(t.finally_);
+			public override Dat toDat() => Dat.of(this,
+				nameof(loc), loc,
+				nameof(do_), do_,
+				nameof(catch_), Dat.op(catch_),
+				nameof(else_), Dat.op(else_),
+				nameof(finally_), Dat.op(finally_));
+
+			internal sealed class Catch : Node, ToData<Catch> {
+				internal readonly Ty exceptionTy;
+				internal readonly Loc exceptionNameLoc;
+				internal readonly Sym exceptionName;
+				internal readonly Expr then;
+				internal Catch(Loc loc, Ty ty, Loc nameLoc, Sym name, Expr then) : base(loc) {
+					this.exceptionTy = ty;
+					this.exceptionNameLoc = nameLoc;
+					this.exceptionName = name;
+					this.then = then;
+				}
+
+				public override bool deepEqual(Node n) => n is Catch c && deepEqual(c);
+				public bool deepEqual(Catch c) => locEq(c) && exceptionTy.deepEqual(c.exceptionTy) && exceptionName.deepEqual(c.exceptionName) && then.deepEqual(c.then);
+				public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(exceptionTy), exceptionTy, nameof(exceptionName), exceptionName, nameof(then), then);
+			}
 		}
 	}
 

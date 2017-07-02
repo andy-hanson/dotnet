@@ -25,6 +25,8 @@ internal enum Token {
 	Abstract,
 	[Text("assert")]
 	Assert,
+	[Text("catch")]
+	Catch,
 	[Text("def")]
 	Def,
 	[Text("do")]
@@ -35,6 +37,8 @@ internal enum Token {
 	Else,
 	[Text("false")]
 	False,
+	[Text("finally")]
+	Finally,
 	[Text("for")]
 	For,
 	[Text("fun")]
@@ -61,6 +65,8 @@ internal enum Token {
 	Static,
 	[Text("true")]
 	True,
+	[Text("try")]
+	Try,
 	[Text("val")]
 	Val,
 	[Text("var")]

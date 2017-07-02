@@ -12,7 +12,7 @@ namespace Model {
 	}
 
 	// A module's identity is its path.
-	sealed class Module : M, ToData<Module>, Identifiable<Path> {
+	sealed class Module : M, IEquatable<Module>, ToData<Module>, Identifiable<Path> {
 		/**
 		For "a.nz" this is "a".
 		For "a/index.nz" this is still "a".
@@ -39,6 +39,9 @@ namespace Model {
 
 		internal Path fullPath() => ModuleResolver.fullPath(logicalPath, isIndex);
 		internal Sym name => klass.name;
+
+		bool IEquatable<Module>.Equals(Module m) => object.ReferenceEquals(this, m);
+		public override int GetHashCode() => logicalPath.GetHashCode();
 
 		public bool deepEqual(Module m) =>
 			logicalPath.deepEqual(m.logicalPath) &&
@@ -94,13 +97,23 @@ namespace Model {
 
 	sealed class BuiltinClass : ClassLike, ToData<BuiltinClass> {
 		internal readonly Type dotNetType;
+		readonly Late<Arr<Method>> _abstractMethods;
+		// These will all be BuiltinMethods of course. But Arr is invariant and we want a type compatible with Klass.Head.Abstract.
+		internal Arr<Method> abstractMethods {
+			get { assert(isAbstract); return _abstractMethods.get; }
+			private set => _abstractMethods.set(value);
+		}
 
 		internal override Arr<Super> supers {
 			get {
 				// TODO: handle builtins with supertypes
 				// (TODO: Super has location information, may have to abstract over that)
-				if (dotNetType.BaseType != null) throw TODO();
-				if (dotNetType.GetInterfaces().Length != 0) throw TODO();
+				if (dotNetType.BaseType != typeof(ValueType)) throw TODO();
+				foreach (var iface in dotNetType.GetInterfaces()) {
+					var gen = iface.GetGenericTypeDefinition();
+					if (gen != typeof(ToData<>) && gen != typeof(DeepEqual<>))
+						throw TODO();
+				}
 				return Arr.empty<Super>();
 			}
 		}
@@ -130,7 +143,7 @@ namespace Model {
 		internal static readonly BuiltinClass Bool = fromDotNetType(typeof(Builtins.Bool));
 		internal static readonly BuiltinClass Int = fromDotNetType(typeof(Builtins.Int));
 		internal static readonly BuiltinClass Float = fromDotNetType(typeof(Builtins.Float));
-		internal static readonly BuiltinClass Str = fromDotNetType(typeof(Builtins.Str));
+		internal static readonly BuiltinClass String = fromDotNetType(typeof(Builtins.String));
 
 		/** Get an already-registered type by name. */
 		internal static bool tryGet(Sym name, out BuiltinClass b) => byName.TryGetValue(name, out b);
@@ -151,14 +164,32 @@ namespace Model {
 			// Important that we put this in the map *before* initializing it, so a type's methods can refer to itself.
 			byName[name] = klass;
 
-			//BAD! GetMethods() gets inherited methosd!
-			klass._membersMap = dotNetType.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public).mapToDict<MethodInfo, Sym, Member>(m => {
-				if (m.GetCustomAttribute<HidAttribute>(inherit: true) != null)
+			foreach (var field in dotNetType.GetFields()) {
+				if (field.GetCustomAttribute<HidAttribute>(inherit: true) != null)
+					continue;
+				throw TODO();
+			}
+
+			var abstractMethods = Arr.builder<Method>();
+
+			var dotNetMethods = dotNetType.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance);
+			klass._membersMap = dotNetMethods.mapToDict<MethodInfo, Sym, Member>(method => {
+				if (method.GetCustomAttribute<HidAttribute>(inherit: true) != null)
 					return Op<(Sym, Member)>.None;
 
-				Member m2 = new Method.BuiltinMethod(klass, m);
-				return Op.Some((m2.name, m2));
+				if (method.IsVirtual && !method.IsAbstract) {
+					// Must be an override. Don't add to the table.
+					assert(method.GetBaseDefinition() != method);
+					return Op<(Sym, Member)>.None;
+				}
+
+				var m2 = new Method.BuiltinMethod(klass, method);
+				if (m2.isAbstract)
+					abstractMethods.add(m2);
+				return Op.Some<(Sym, Member)>((m2.name, m2));
 			});
+
+			klass.abstractMethods = abstractMethods.finish();
 
 			return klass;
 		}
@@ -233,7 +264,6 @@ namespace Model {
 			public abstract bool deepEqual(Head head);
 			public abstract Dat toDat();
 
-			// Static class: May only contain "fun"
 			internal class Static : Head, ToData<Static> {
 				internal Static(Loc loc) : base(loc) {}
 				public override bool deepEqual(Head h) => h is Static s && deepEqual(s);
@@ -241,11 +271,11 @@ namespace Model {
 				public override Dat toDat() => Dat.of(this, nameof(loc), loc);
 			}
 
-			// Abstract class: Never instantiated.
 			internal class Abstract : Head, ToData<Abstract> {
-				internal readonly Arr<Method.AbstractMethod> abstractMethods;
+				// These will all be Method.AbstractMethod. But we want a type compatible with BuiltinClass.abstractMethods.
+				internal readonly Arr<Method> abstractMethods;
 
-				internal Abstract(Loc loc, Arr<Method.AbstractMethod> abstractMethods) : base(loc) { this.abstractMethods = abstractMethods; }
+				internal Abstract(Loc loc, Arr<Method> abstractMethods) : base(loc) { this.abstractMethods = abstractMethods; }
 				public override bool deepEqual(Head h) => h is Abstract a && deepEqual(a);
 				public bool deepEqual(Abstract a) => loc.deepEqual(a.loc);
 				public override Dat toDat() => Dat.of(this, nameof(loc), loc);
@@ -333,10 +363,10 @@ namespace Model {
 	internal sealed class Impl : M, ToData<Impl> {
 		internal readonly Loc loc;
 		[ParentPointer] internal readonly Super super;
-		[UpPointer] internal readonly Method.AbstractMethod implemented;
+		[UpPointer] internal readonly Method implemented;
 		internal readonly Expr body;
 
-		internal Impl(Super super, Loc loc, Method.AbstractMethod implemented, Expr body) {
+		internal Impl(Super super, Loc loc, Method implemented, Expr body) {
 			this.super = super;
 			this.loc = loc;
 			this.implemented = implemented;
@@ -345,7 +375,7 @@ namespace Model {
 
 		public bool deepEqual(Impl i) =>
 			loc.deepEqual(i.loc) &&
-			implemented.equalsId<Method.AbstractMethod, Method.Id>(i.implemented) &&
+			implemented.equalsId<Method, Method.Id>(i.implemented) &&
 			body.deepEqual(i.body);
 		public Dat toDat() => Dat.of(this,
 			nameof(loc), loc,
@@ -378,6 +408,7 @@ namespace Model {
 		public sealed override int GetHashCode() => name.GetHashCode();
 
 		[ParentPointer] internal readonly ClassLike klass;
+		internal abstract bool isAbstract { get; }
 		internal abstract bool isStatic { get; }
 		[UpPointer] internal readonly Ty returnTy;
 		internal readonly Arr<Parameter> parameters;
@@ -421,6 +452,7 @@ namespace Model {
 				this.methodInfo = methodInfo;
 			}
 
+			internal override bool isAbstract => methodInfo.IsAbstract;
 			internal override bool isStatic => methodInfo.IsStatic;
 
 			public override bool deepEqual(Method m) => m is BuiltinMethod b && deepEqual(b);
@@ -450,7 +482,10 @@ namespace Model {
 
 		internal sealed class MethodWithBody : Method, ToData<MethodWithBody> {
 			internal readonly bool _isStatic;
+			internal override bool isAbstract => false;
 			internal override bool isStatic => _isStatic;
+			Late<Expr> _body;
+			internal Expr body { get => _body.get; set => _body.set(value); }
 
 			internal MethodWithBody(Klass klass, Loc loc, bool isStatic, Ty returnTy, Sym name, Arr<Parameter> parameters)
 				: base(klass, loc, returnTy, name, parameters) {
@@ -459,13 +494,18 @@ namespace Model {
 
 			public override bool deepEqual(Method m) => m is MethodWithBody mb && deepEqual(mb);
 			public bool deepEqual(MethodWithBody m) => throw TODO(); // TODO: should methods with different (reference identity) parent be not equal?
-			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(isStatic), Dat.boolean(isStatic), nameof(returnTy), returnTy.getId(), nameof(name), name, nameof(parameters), Dat.arr(parameters));
-
-			Late<Expr> _body;
-			internal Expr body { get => _body.get; set => _body.set(value); }
+			public override Dat toDat() => Dat.of(this,
+				nameof(loc), loc,
+				nameof(isStatic), Dat.boolean(isStatic),
+				nameof(returnTy), returnTy.getId(),
+				nameof(name), name,
+				nameof(parameters), Dat.arr(parameters),
+				nameof(body), body);
 		}
 
+		// Remember, BuiltinMethod can be abstract too!
 		internal sealed class AbstractMethod : Method, ToData<AbstractMethod> {
+			internal override bool isAbstract => true;
 			internal override bool isStatic => false;
 
 			internal AbstractMethod(Klass klass, Loc loc, Ty returnTy, Sym name, Arr<Parameter> parameters)
@@ -491,7 +531,7 @@ namespace Model {
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc);
 		}
 		internal sealed class Single : Pattern, ToData<Single>, Identifiable<Sym>, IEquatable<Single> {
-			internal readonly Ty ty;
+			[NotData] internal readonly Ty ty; // Inferred type of the local.
 			internal readonly Sym name;
 			internal Single(Loc loc, Ty ty, Sym name) : base(loc) {
 				this.ty = ty;
@@ -501,8 +541,8 @@ namespace Model {
 			bool IEquatable<Single>.Equals(Single s) => object.ReferenceEquals(this, s);
 			public override int GetHashCode() => name.GetHashCode();
 			public override bool deepEqual(Pattern p) => p is Single s && deepEqual(s);
-			public bool deepEqual(Single s) => loc.deepEqual(s.loc) && ty.equalsId<Ty, ClassLike.Id>(s.ty) && name.deepEqual(s.name);
-			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(ty), ty, nameof(name), name);
+			public bool deepEqual(Single s) => loc.deepEqual(s.loc) && name.deepEqual(s.name);
+			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(name), name);
 			public Sym getId() => name;
 		}
 		internal sealed class Destruct : Pattern, ToData<Destruct> {

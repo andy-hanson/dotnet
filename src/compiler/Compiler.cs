@@ -41,7 +41,8 @@ sealed class Compiler {
 	Compiler(DocumentProvider documentProvider, Op<CompiledProgram> oldProgram) { this.documentProvider = documentProvider; this.oldProgram = oldProgram; }
 
 	internal static (CompiledProgram, Module root) compile(Path path, DocumentProvider documentProvider, Op<CompiledProgram> oldProgram) {
-		oldProgram.each(o => { assert(o.documentProvider == documentProvider); });
+		if (oldProgram.get(out var old))
+			assert(old.documentProvider == documentProvider);
 		var c = new Compiler(documentProvider, oldProgram);
 		var rootModule = c.compileSingle(Op<PathLoc>.None, path).Item1;
 		var newProgram = new CompiledProgram(documentProvider, c.modules.mapValues(o => o.module));
@@ -104,7 +105,8 @@ sealed class Compiler {
 		}
 
 		var module = new Module(logicalPath, isIndex, documentInfo, imports);
-		module.klass = Checker.checkClass(module, imports, ast.klass, name: logicalPath.opLast.map(Sym.of).or(() => documentProvider.rootName));
+		var name = logicalPath.opLast.get(out var nameText) ? Sym.of(nameText) : documentProvider.rootName;
+		module.klass = Checker.checkClass(module, imports, ast.klass, name);
 		return (module, isReused: false);
 	}
 
