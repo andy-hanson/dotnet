@@ -14,8 +14,11 @@ class TestCompile {
 	static readonly Path baselinesRootDir = Path.fromParts(testsDir, "baselines");
 
 	readonly bool updateBaselines;
+	JsTestRunner jsTestRunner;
+
 	internal TestCompile(bool updateBaselines) {
 		this.updateBaselines = updateBaselines;
+		this.jsTestRunner = JsTestRunner.create();
 	}
 
 	internal void runTestNamed(string name) {
@@ -81,7 +84,7 @@ class TestCompile {
 			assertBaseline(baselinesDirectory, modulePath, ".il", emitter.getLogs(module));
 		}
 
-		return new TestData(program, indexModule, baselinesDirectory.add("index.js"), emittedRoot);
+		return new TestData(testPath, program, indexModule, emittedRoot, jsTestRunner);
 	}
 
 	void assertBaseline(Path testDirectory, Path modulePath, string extension, Dat actualDat) =>
@@ -117,15 +120,17 @@ sealed class TestForAttribute : Attribute {
 }
 
 sealed class TestData {
+	internal readonly Path testPath;
 	internal readonly CompiledProgram compiledProgram;
 	internal readonly Model.Module rootModule;
-	internal readonly Path indexJs;
 	internal readonly Type emittedRoot;
+	internal readonly JsTestRunner jsTestRunner;
 
-	internal TestData(CompiledProgram compiledProgram, Model.Module rootModule, Path indexJs, Type emittedRoot) {
+	internal TestData(Path testPath, CompiledProgram compiledProgram, Model.Module rootModule, Type emittedRoot, JsTestRunner jsTestRunner) {
+		this.testPath = testPath;
 		this.compiledProgram = compiledProgram;
 		this.rootModule = rootModule;
-		this.indexJs = indexJs;
 		this.emittedRoot = emittedRoot;
+		this.jsTestRunner = jsTestRunner;
 	}
 }

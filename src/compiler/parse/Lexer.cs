@@ -185,7 +185,6 @@ abstract class Lexer : Reader {
 
 			case '\\': return Token.Backslash;
 			case ':': return Token.Colon;
-			case '=': return Token.Equals;
 			case '(': return Token.Lparen;
 			case ')': return Token.Rparen;
 			case '[': return Token.Lbracket;
@@ -227,6 +226,14 @@ abstract class Lexer : Reader {
 				var next = readChar();
 				if (CharUtils.isDigit(next)) return takeNumber(start);
 				goto case '+';
+
+			case '=':
+				if (peek == '=') {
+					skip();
+					this.tokenValue = "==";
+					return Token.Operator;
+				}
+				return Token.Equals;
 
 			case '+': case '*': case '/': case '^': case '?': case '<': case '>':
 				return takeStringLike(Token.Operator, start, isOperatorChar);

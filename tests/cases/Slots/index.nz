@@ -1,9 +1,10 @@
 slots
 	val Int x
 
-fun Int main(Int x)
-	obj = new x
-	obj.getX()
+fun Void main()
+	obj = new 1
+	gotX = obj.getX()
+	assert gotX == 1
 
 def Int getX()
 	x

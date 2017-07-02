@@ -6,6 +6,7 @@ is AbstractClass
 	n()
 		x
 
-fun Int main(Int x)
-	instance = new x
-	AbstractClass.getN instance
+fun Void main()
+	instance = new 1
+	gotN = AbstractClass.getN instance
+	assert gotN == 1

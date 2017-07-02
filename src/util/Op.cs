@@ -4,7 +4,6 @@ using System.Runtime.CompilerServices;
 using static Utils;
 
 static class Op {
-	//kill?
 	internal static Op<T> fromNullable<T>(T value) =>
 		value != null ? Op<T>.Some(value) : Op<T>.None;
 

@@ -1,15 +1,14 @@
-var nzlib = {};
-
-var Exception = nzlib.Exception = function() {
-	this.error = new Error();
+class Exception extends Error {
+	constructor() {
+		super();
+		this.message = this.description();
+	}
 }
 
-var AssertionException = nzlib.AssertionException = function() {
-	Exception.call(this);
-}
-AssertionException.prototype = Object.create(Exception.prototype);
-AssertionException.prototype.description = function() {
-	return "Assertion failed.";
+class AssertionException extends Exception {
+	description() {
+		return "Assertion failed.";
+	}
 }
 
-module.exports = nzlib;
+module.exports = { Exception, AssertionException };

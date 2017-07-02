@@ -18,6 +18,12 @@ struct Arr<T> {
 		}
 	}
 
+	internal void Deconstruct(out T first, out T second) {
+		assert(length == 2);
+		first = head;
+		second = this[1];
+	}
+
 	public Enumerator GetEnumerator() => new Enumerator(inner);
 	internal struct Enumerator {
 		readonly T[] array;

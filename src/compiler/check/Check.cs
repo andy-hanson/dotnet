@@ -406,9 +406,9 @@ class MethodChecker {
 		member = getMember(loc, target.ty, propertyName);
 	}
 
-	static Member getMember(Loc loc, Ty ty, Sym name) {
+	static Member getMember(Loc loc, Ty ty, Sym memberName) {
 		var klass = (ClassLike)ty; //TODO: error handling
-		if (!klass.membersMap.get(name, out var member)) {
+		if (!klass.membersMap.get(memberName, out var member)) {
 			unused(loc);
 			throw TODO();
 		}

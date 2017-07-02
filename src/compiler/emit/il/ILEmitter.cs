@@ -145,6 +145,7 @@ sealed class ILEmitter {
 					logger = Op.Some<Logger>(l);
 				}
 				ExprEmitter.emitMethodBody(maps, mb, impl.body, logger);
+				if (lw.get(out var l2)) l.endImpl();
 			}
 		}
 
@@ -194,6 +195,8 @@ sealed class ILEmitter {
 
 		internal void beginImpl(Impl i) =>
 			sb.Append($"impl {i.implemented.name}");
+		internal void endImpl() =>
+			sb.Append("\n\n");
 
 		internal void beginConstructor() =>
 			sb.Append("constructor");
@@ -382,7 +385,7 @@ sealed class ILEmitter {
 					il.callStaticMethod(staticMethodFloatOf);
 					return;
 				case Expr.Literal.LiteralValue.Str vs:
-					il.constStr(vs.value);
+					il.constString(vs.value);
 					il.callStaticMethod(staticMethodStrOf);
 					return;
 				case Expr.Literal.LiteralValue.Pass p:

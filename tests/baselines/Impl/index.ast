@@ -1,12 +1,12 @@
 Module(
-  loc: 0-134,
+  loc: 0-155,
   imports: [Relative(
     loc: 7-21,
     path: RelPath(
       nParents: 1,
       relToParent: ["AbstractClass"]))],
   klass: Klass(
-    loc: 23-134,
+    loc: 23-155,
     head: Slots(
       loc: 23-40,
       slots: [Slot(
@@ -27,34 +27,42 @@ Module(
           loc: 64-65,
           name: "x"))])],
     methods: [Method(
-      loc: 67-134,
+      loc: 67-155,
       isStatic: true,
       returnTy: Access(
-        loc: 71-74,
-        name: "Int"),
+        loc: 71-75,
+        name: "Void"),
       name: "main",
-      parameters: [Parameter(
-        loc: 80-85,
-        ty: Access(
-          loc: 80-83,
-          name: "Int"),
-        name: "x")],
+      parameters: [],
       body: Let(
-        loc: 97-106,
+        loc: 93-102,
         assigned: Single(
-          loc: 88-96,
+          loc: 84-92,
           name: "instance"),
         value: New(
-          loc: 99-106,
-          args: [Access(
-            loc: 103-104,
-            name: "x")]),
-        then: Call(
-          loc: 106-134,
-          target: StaticAccess(
-            loc: 106-124,
-            className: "AbstractClass",
-            staticMethodName: "getN"),
-          args: [Access(
-            loc: 125-133,
-            name: "instance")])))]))
+          loc: 95-102,
+          args: [Literal(
+            loc: 99-100,
+            value: 1)]),
+        then: Let(
+          loc: 107-138,
+          assigned: Single(
+            loc: 102-106,
+            name: "gotN"),
+          value: Call(
+            loc: 109-138,
+            target: StaticAccess(
+              loc: 109-127,
+              className: "AbstractClass",
+              staticMethodName: "getN"),
+            args: [Access(
+              loc: 128-136,
+              name: "instance")]),
+          then: Assert(
+            loc: 138-155,
+            asserted: OperatorCall(
+              loc: 145-155,
+              oper: "==",
+              right: Literal(
+                loc: 153-154,
+                value: 2))))))]))

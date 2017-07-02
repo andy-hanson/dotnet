@@ -1,9 +1,10 @@
 static
 
 fun String main()
-	try
+	x = try
 		do
 			assert false
-			""
+			"unreachable"
 		catch Exception e
 			e.description()
+	assert x == "Assertion failed."

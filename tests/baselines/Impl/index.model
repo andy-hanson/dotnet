@@ -1,5 +1,5 @@
 Klass(
-  loc: 23-134,
+  loc: 23-155,
   head: Slots(
     slots: [Slot(
       loc: 23-40,
@@ -9,34 +9,42 @@ Klass(
         name: "Int"))]),
   membersMap: Dict<Sym, Member>(
     main: MethodWithBody(
-      loc: 67-134,
+      loc: 67-155,
       isStatic: true,
-      returnTy: "Int",
+      returnTy: "Void",
       name: "main",
-      parameters: [Parameter(
-        loc: 80-85,
-        ty: "Int",
-        name: "x",
-        index: 0)],
+      parameters: [],
       body: Let(
-        loc: 97-106,
+        loc: 93-102,
         assigned: Single(
-          loc: 88-96,
+          loc: 84-92,
           name: "instance"),
         value: New(
-          args: [AccessParameter(
-            loc: 103-104,
-            param: Parameter(
-              loc: 80-85,
-              ty: "Int",
-              name: "x",
-              index: 0))]),
-        then: StaticMethodCall(
-          method: Id(
-            klassId: "AbstractClass",
-            name: "getN"),
-          args: [AccessLocal(
-            local: "instance")]))),
+          args: [Literal(
+            loc: 99-100,
+            value: 1)]),
+        then: Let(
+          loc: 107-138,
+          assigned: Single(
+            loc: 102-106,
+            name: "gotN"),
+          value: StaticMethodCall(
+            method: Id(
+              klassId: "AbstractClass",
+              name: "getN"),
+            args: [AccessLocal(
+              local: "instance")]),
+          then: Assert(
+            loc: 138-155,
+            asserted: InstanceMethodCall(
+              target: AccessLocal(
+                local: "gotN"),
+              method: Id(
+                klassId: "Int",
+                name: "=="),
+              args: [Literal(
+                loc: 153-154,
+                value: 2)]))))),
     x: Slot(
       loc: 23-40,
       name: "x",

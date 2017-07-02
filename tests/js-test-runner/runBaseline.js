@@ -3,24 +3,37 @@
 const { existsSync } = require("fs");
 const { join } = require("path");
 
+const testDir = join(__dirname, "..");
+
 /**
- * @param {string} name
- * @return {string | undefined}
+ * @param {"normal" | "special"} kind
+ * @param {string} testPath Test path relative to tests/cases
+ * @return {void}
  */
-function runBaseline(name) {
-	const testDir = join(__dirname, "..");
-
-	const testedClass = require(join(testDir, "baselines", name, "index.js"));
-
-	const testScriptPath = join(testDir, "cases", name, "test.js");
-	/** @type {function(any): {}} */
-	const testScript = existsSync(testScriptPath) ? require(testScriptPath) : cls => cls.main();
+function runBaseline(kind, testPath) {
+	const testedClass = require(join(testDir, "baselines", testPath, "index.js"));
 
 	/** @type {{}} */
-	const result = testScript(testedClass);
-	if (result !== undefined && typeof result !== "string")
-		throw new Error("Test result must be string or undefined");
-	return result;
+	const result = kind === "special" ? require(testScriptPath(testPath))(testedClass) : testedClass.main();
+	if (result !== undefined)
+		throw new Error("Test result must be of type 'void'");
 }
 
-module.exports = runBaseline;
+/**
+ * @param {string} testPath
+ * @param {*} testPath
+ */
+function runBaselineAndInferKind(testPath) {
+	const kind = existsSync(testScriptPath(testPath)) ? "special" : "normal";
+	runBaseline(kind, testPath);
+}
+
+/**
+ * @param {string} testPath
+ * @return {string}
+ */
+function testScriptPath(testPath) {
+	return join(testDir, "cases", testPath, "test.js")
+}
+
+module.exports = { runBaseline, runBaselineAndInferKind };

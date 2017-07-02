@@ -138,7 +138,7 @@ sealed class Parser : Lexer {
 		var body = parseBlock();
 
 		var impl = new Ast.Impl(locFrom(start), name, parameters, body);
-		var isNext = !this.tryTakeDedentFromDedenting();
+		var isNext = !tryTakeDedentFromDedenting();
 		return (impl, isNext);
 	}
 
@@ -357,8 +357,10 @@ sealed class Parser : Lexer {
 					if (parts.isEmpty)
 						throw TODO();
 					var left = finishRegular(exprStart, isNew, parts);
+					var @operator = tokenSym;
+					takeSpace();
 					var (right, next) = parseExpr(ctx);
-					var expr = new Ast.Expr.OperatorCall(locFrom(exprStart), left, tokenSym, right);
+					var expr = new Ast.Expr.OperatorCall(locFrom(exprStart), left, @operator, right);
 					return (expr, next);
 				}
 
@@ -512,7 +514,7 @@ sealed class Parser : Lexer {
 				...
 		*/
 		takeIndent();
-		this.takeSpecificKeyword(Token.Do);
+		takeSpecificKeyword(Token.Do);
 		takeIndent();
 		var do_ = parseBlock();
 		var nextStart = pos;

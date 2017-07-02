@@ -155,19 +155,38 @@ namespace Estree {
 
 	sealed class MemberExpression : Node, Expression, Pattern {
 		internal readonly Expression @object;
-		internal readonly Identifier property;
+		internal readonly Expression property;
 		internal readonly bool computed;
-		internal MemberExpression(Loc loc, Expression @object, Identifier property) : base(loc) {
+		MemberExpression(Loc loc, Expression @object, Expression property, bool computed) : base(loc) {
 			this.@object = @object;
 			this.property = property;
-			this.computed = false;
+			this.computed = computed;
 		}
-		internal static Estree.MemberExpression simple(Loc loc, Estree.Expression lhs, Sym name) =>
-			new Estree.MemberExpression(loc, lhs, new Identifier(loc, name));
+
+		internal static MemberExpression notComputed(Loc loc, Expression lhs, Identifier property) =>
+			new MemberExpression(loc, lhs, property, computed: false);
+
+		internal static MemberExpression simple(Loc loc, Expression lhs, Sym name) {
+			var nameStr = name.str;
+			if (isSafeMemberName(nameStr))
+				return notComputed(loc, lhs, new Identifier(loc, name));
+			var property = new Literal(loc, new Model.Expr.Literal.LiteralValue.Str(nameStr));
+			return new MemberExpression(loc, lhs, property, computed: true);
+		}
+
 		internal static MemberExpression simple(Loc loc, Sym left, Sym name) =>
 			simple(loc, new Identifier(loc, left), name);
+
 		internal static MemberExpression simple(Loc loc, Sym a, Sym b, Sym c) =>
 			simple(loc, simple(loc, a, b), c);
+
+		static bool isSafeMemberName(string s) {
+			foreach (var ch in s) {
+				if (!CharUtils.isDigit(ch) && !CharUtils.isLetter(ch))
+					return false;
+			}
+			return true;
+		}
 	}
 
 	sealed class ConditionalExpression : Node, Expression {

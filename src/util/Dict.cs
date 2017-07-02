@@ -15,7 +15,16 @@ struct Dict<K, V> where K : IEquatable<K> {
 		return new Dict<K2, V>(b);
 	}
 
-	internal Arr<T> map<T>(Func<K, V, T> mapper) {
+	internal Dict<K2, V2> map<K2, V2>(Func<K, V, (K2, V2)> mapper) where K2 : IEquatable<K2> {
+		var b = new Dictionary<K2, V2>();
+		foreach (var (k, v) in inner) {
+			var (k2, v2) = mapper(k, v);
+			b[k2] = v2;
+		}
+		return new Dict<K2, V2>(b);
+	}
+
+	internal Arr<T> mapToArr<T>(Func<K, V, T> mapper) {
 		var b = Arr.builder<T>();
 		foreach (var (k, v) in inner)
 			b.add(mapper(k, v));

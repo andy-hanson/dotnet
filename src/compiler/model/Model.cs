@@ -128,13 +128,14 @@ namespace Model {
 			Builtins.register();
 		}
 
-		static Dict<Sym, string> operatorEscapes = Dict.of(
+		static Dict<Sym, Sym> operatorEscapes = Dict.of(
+			("==", "_eq"),
 			("+", "_add"),
 			("-", "_sub"),
 			("*", "_mul"),
 			("/", "_div"),
-			("^", "_pow")).mapKeys(Sym.of);
-		static Dict<string, Sym> operatorUnescapes = operatorEscapes.reverse();
+			("^", "_pow")).map((k, v) => (Sym.of(k), Sym.of(v)));
+		static Dict<Sym, Sym> operatorUnescapes = operatorEscapes.reverse();
 
 		//void is OK for builtins, but we shouldn't attempt to create a class for it.
 		static readonly ISet<Type> badTypes = new HashSet<Type> { typeof(void), typeof(object), typeof(string), typeof(char), typeof(uint), typeof(int), typeof(bool) };
@@ -152,8 +153,7 @@ namespace Model {
 		internal static BuiltinClass fromDotNetType(Type dotNetType) {
 			assert(!badTypes.Contains(dotNetType), () => $"Should not attempt to use {dotNetType} as a builtin");
 
-			var customName = dotNetType.GetCustomAttribute<BuiltinNameAttribute>(inherit: false);
-			var name = customName != null ? customName.name : unescapeName(dotNetType.Name);
+			var name = unescapeName(Sym.of(dotNetType.Name));
 
 			if (byName.TryGetValue(name, out var old)) {
 				assert(old.dotNetType == dotNetType);
@@ -172,7 +172,7 @@ namespace Model {
 
 			var abstractMethods = Arr.builder<Method>();
 
-			var dotNetMethods = dotNetType.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance);
+			var dotNetMethods = dotNetType.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
 			klass._membersMap = dotNetMethods.mapToDict<MethodInfo, Sym, Member>(method => {
 				if (method.GetCustomAttribute<HidAttribute>(inherit: true) != null)
 					return Op<(Sym, Member)>.None;
@@ -203,22 +203,19 @@ namespace Model {
 		public override int GetHashCode() => name.GetHashCode();
 		public override Dat toDat() => Dat.of(this, nameof(name), name);
 
-		internal static string escapeName(Sym name) {
-			if (operatorEscapes.get(name, out var str))
-				return str;
+		internal static Sym escapeName(Sym name) {
+			if (operatorEscapes.get(name, out var sym))
+				return sym;
 
 			foreach (var ch in name.str)
 				if (CharUtils.isLetter(ch))
 					unreachable();
 
-			return name.str;
+			return name;
 		}
 
-		internal static Sym unescapeName(string name) {
-			if (operatorUnescapes.get(name, out var v))
-				return v;
-			return Sym.of(name);
-		}
+		internal static Sym unescapeName(Sym name) =>
+			operatorUnescapes.get(name, out var v) ? v : name;
 
 		public override string ToString() => $"BuiltinClass({name})";
 	}
@@ -464,10 +461,8 @@ namespace Model {
 				nameof(returnTy), returnTy.getId(),
 				nameof(parameters), Dat.arr(parameters));
 
-			static Sym getName(MethodInfo m) {
-				var customName = m.GetCustomAttribute<BuiltinNameAttribute>(inherit: true);
-				return customName != null ? customName.name : Sym.of(m.Name);
-			}
+			static Sym getName(MethodInfo m) =>
+				BuiltinClass.unescapeName(Sym.of(m.Name));
 
 			static Arr<Method.Parameter> mapParams(MethodInfo m) => m.GetParameters().map((p, index) => {
 				assert(!p.IsIn);

@@ -103,7 +103,7 @@ sealed class JsEmitter {
 		var statements = s.slots.map<Estree.Statement>((slot, i) => {
 			var slotLoc = slot.loc;
 			var id = (Estree.Identifier)patterns[i];
-			var member = new Estree.MemberExpression(slotLoc, new Estree.ThisExpression(slotLoc), id);
+			var member = Estree.MemberExpression.notComputed(slotLoc, new Estree.ThisExpression(slotLoc), id);
 			return assign(slotLoc, member, id);
 		});
 		var loc = klass.loc;
@@ -260,8 +260,7 @@ sealed class JsEmitter {
 				var access = Estree.MemberExpression.simple(loc, method.klass.name, method.name);
 				return new Estree.CallExpression(loc, access, sm.args.map(exprToExpr));
 			case Expr.InstanceMethodCall m:
-				var member = Estree.MemberExpression.simple(loc, exprToExpr(m.target), m.method.name);
-				return new Estree.CallExpression(loc, member, m.args.map(exprToExpr));
+				return emitInstanceMethodCall(m);
 			case Expr.New n:
 				return new Estree.NewExpression(loc, id(loc, n.klass.name), n.args.map(exprToExpr));
 			case Expr.GetSlot g:
@@ -273,6 +272,22 @@ sealed class JsEmitter {
 			default:
 				throw TODO();
 		}
+	}
+
+	Estree.Expression emitInstanceMethodCall(Expr.InstanceMethodCall m) {
+		var loc = m.loc;
+		var target = exprToExpr(m.target);
+		var args = m.args.map(exprToExpr);
+
+		//TODO: more general solution
+		var eq = BuiltinClass.Int.membersMap[Sym.of("==")];
+		if (m.method.Equals(eq)) {
+			var other = args.only;
+			return new Estree.BinaryExpression(loc, "===", target, other);
+		}
+
+		var member = Estree.MemberExpression.simple(loc, target, m.method.name);
+		return new Estree.CallExpression(loc, member, args);
 	}
 
 	static Estree.Identifier id(Loc loc, Sym name) =>

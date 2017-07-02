@@ -44,6 +44,12 @@ sealed class ILWriter {
 		il.Emit(OpCodes.Pop);
 	}
 
+	//kill
+	internal void dup() {
+		if (shouldLog) log("dup");
+		il.Emit(OpCodes.Dup);
+	}
+
 	internal void ret() {
 		if (shouldLog) log("return");
 		il.Emit(OpCodes.Ret);
@@ -59,7 +65,7 @@ sealed class ILWriter {
 		il.Emit(OpCodes.Ldc_R8, d);
 	}
 
-	internal void constStr(string s) {
+	internal void constString(string s) {
 		if (shouldLog) log($"const \"{s}\"");
 		il.Emit(OpCodes.Ldstr, s);
 	}

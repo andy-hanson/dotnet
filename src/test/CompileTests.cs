@@ -8,9 +8,7 @@ static class Tests {
 	static readonly Builtins.Int one = Builtins.Int.of(1);
 
 	[TestFor(nameof(MainPass))]
-	static void MainPass(TestData t) {
-		runCsJsTests(t, new object[] {}, Builtins.Void.instance);
-	}
+	static void MainPass(TestData t) => runCsJsTests(t);
 
 	[TestFor(nameof(AbstractClass))]
 	static void AbstractClass(TestData t) { //TODO:NEATER
@@ -25,39 +23,22 @@ static class Tests {
 			throw unreachable();
 		}
 		var expected = Builtins.String.of("s");
-		assertEqual(expected, csres);
+		assertEqual(expected, (Builtins.String) csres);
 
-		//Also in JS
-		var engine = new Jint.Engine(options => {
-			options.DebugMode(true);
-			options.Strict(true);
-		});
-		var jscls = JsRunner.evalScript(engine, t.indexJs);
-		var jsImpl = Jint.Native.JsValue.FromObject(engine, TestUtils.foooo(engine, jscls, impl));
-
-		var jsres = jscls.invokeMethod("main", jsImpl);
-		assertEqual2(JsConvert.toJsValue(expected), jsres);
+		t.jsTestRunner.runTestSpecial(t.testPath);
 	}
 
 	[TestFor(nameof(Impl))]
-	static void Impl(TestData t) {
-		runCsJsTests(t, new object[] { one }, one);
-	}
+	static void Impl(TestData t) => runCsJsTests(t);
 
 	[TestFor(nameof(Slots))]
-	static void Slots(TestData t) {
-		runCsJsTests(t, new object[] { one }, one);
-	}
+	static void Slots(TestData t) => runCsJsTests(t);
 
 	[TestFor(nameof(Assert))]
-	static void Assert(TestData t) {
-		runCsJsTests(t, new object[] {}, Builtins.Void.instance);
-	}
+	static void Assert(TestData t) => runCsJsTests(t);
 
 	[TestFor(nameof(Try))]
-	static void Try(TestData t) {
-		runCsJsTests(t, new object[] {}, Builtins.String.of("Assertion failed."));
-	}
+	static void Try(TestData t) => runCsJsTests(t);
 }
 
 // Must be public since it's used dynamically

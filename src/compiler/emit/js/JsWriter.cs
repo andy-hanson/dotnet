@@ -146,7 +146,7 @@ class JsWriter : EmitTextWriter {
 				writeLiteral(l);
 				break;
 			case Estree.MemberExpression m:
-				writeMember(m);
+				writeMemberExpression(m);
 				break;
 			case Estree.ThisExpression t:
 				writeRaw("this");
@@ -231,10 +231,16 @@ class JsWriter : EmitTextWriter {
 		writeRaw(',');
 	}
 
-	void writeMember(Estree.MemberExpression m) {
+	void writeMemberExpression(Estree.MemberExpression m) {
 		writeExpr(m.@object);
-		writeRaw('.');
-		writeId(m.property);
+		if (m.computed) {
+			writeRaw('[');
+			writeExpr(m.property);
+			writeRaw(']');
+		} else {
+			writeRaw('.');
+			writeId((Estree.Identifier) m.property);
+		}
 	}
 
 	void writeAssignmentExpression(Estree.AssignmentExpression ae) {
@@ -395,7 +401,7 @@ class JsWriter : EmitTextWriter {
 				writeId(i);
 				break;
 			case Estree.MemberExpression m:
-				writeMember(m);
+				writeMemberExpression(m);
 				break;
 			default:
 				throw unreachable();

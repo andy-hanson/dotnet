@@ -12,7 +12,6 @@
 		<PackageReference Include="System.Reflection.Emit" Version="4.3.0" />
 		<PackageReference Include="System.Runtime" Version="4.3.0" />
 		<PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
-		<PackageReference Include="Jint" Version="3.0.0-beta" />
 		<!-- devDependencies -->
 		<!--
 		These just made building way too slow.
