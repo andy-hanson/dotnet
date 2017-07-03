@@ -9,6 +9,8 @@ using static Utils;
 [AttributeUsage(AttributeTargets.Method)]
 sealed class TestAttribute : Attribute {}
 
+#pragma warning disable CC0068 // Allow unused methods in this file
+
 static class Program {
 	static void Main() {
 		var tc = new TestCompile(updateBaselines: true);
@@ -39,19 +41,16 @@ static class Program {
 			typeof(int),
 			new Type[] {});
 		var il = new ILWriter(mb);
-		writeIl(il);
+		writeIl(ref il);
 		il.ret();
 
 		return tb.CreateType();
 	}
 
-	static void writeIl(ILWriter w) {
+	static void writeIl(ref ILWriter w) {
 		w.constInt(1);
 	}
 }
-
-
-
 
 sealed class ConsoleLogger : Lsp.Server.Logger {
 	public void received(string s) {

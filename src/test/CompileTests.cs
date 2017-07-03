@@ -14,7 +14,7 @@ static class Tests {
 	static void AbstractClass(TestData t) { //TODO:NEATER
 		// We need to implement its abstract class.
 		var cls = t.emittedRoot;
-		var impl = TestUtils.implementType(cls, new AbstractClassImpl());
+		var impl = DynamicImplementUtils.implementType(cls, new AbstractClassImpl());
 		try {
 			cls.GetMethod("main").Invoke(null, new object[] { impl });
 		} catch (TargetInvocationException e) {
@@ -41,6 +41,6 @@ static class Tests {
 // Must be public since it's used dynamically
 public sealed class AbstractClassImpl {
 	#pragma warning disable CC0091 // Can't make it static
-	public Builtins.String s() => Builtins.String.of("s");
+	public Builtins.String s() => Builtins.String.of(nameof(s));
 	#pragma warning restore
 }

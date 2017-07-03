@@ -54,15 +54,15 @@ struct SynchronousProcess : IDisposable {
 	}
 
 	internal static SynchronousProcess create() {
-		var process = new Process();
-		var si = process.StartInfo;
+		var proc = new Process();
+		var si = proc.StartInfo;
 		si.FileName = "node";
 		si.Arguments = "tests/js-test-runner/runFromCSharp.js";
 		si.CreateNoWindow = true;
 
-		var proc = new SynchronousProcess(process);
-		proc.start();
-		return proc;
+		var syncProc = new SynchronousProcess(proc);
+		syncProc.start();
+		return syncProc;
 	}
 
 	void IDisposable.Dispose() {

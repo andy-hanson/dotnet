@@ -34,8 +34,7 @@ sealed class JsEmitter {
 		return new Estree.Program(Loc.zero, needsLib ? body.finish() : body.finishTail());
 	}
 
-
-	Estree.Statement emitImport(Module importer, Module imported) {
+	static Estree.Statement emitImport(Module importer, Module imported) {
 		var relPath = importer.fullPath().relTo(imported.fullPath());
 		// Must find relative path.
 		var pathStr = relPath.withoutExtension(ModuleResolver.extension).toPathString();
@@ -66,7 +65,7 @@ sealed class JsEmitter {
 				throw TODO();
 		}
 
-		Op<Estree.Expression> superClass = Op<Estree.Expression>.None;
+		var superClass = Op<Estree.Expression>.None;
 		if (klass.supers.length != 0) {
 			if (klass.supers.length > 1) throw TODO(); //We will need a mixer in this case.
 
@@ -165,7 +164,6 @@ sealed class JsEmitter {
 					return;
 			}
 		}
-
 	}
 
 	Estree.Statement exprToStatement(Expr expr) {
@@ -187,9 +185,9 @@ sealed class JsEmitter {
 	}
 
 	Estree.Statement tryToStatement(Expr.Try t) {
-		var do_ = exprToBlockStatement(t.do_);
-		var catch_ = t.catch_.get(out var c) ? Op.Some(catchToCatch(c)) : Op<Estree.CatchClause>.None;
-		var finally_ = t.finally_.get(out var f) ? Op.Some(exprToBlockStatement(f)) : Op<Estree.BlockStatement>.None;
+		var do_ = exprToBlockStatement(t._do);
+		var catch_ = t._catch.get(out var c) ? Op.Some(catchToCatch(c)) : Op<Estree.CatchClause>.None;
+		var finally_ = t._finally.get(out var f) ? Op.Some(exprToBlockStatement(f)) : Op<Estree.BlockStatement>.None;
 		return new Estree.TryStatement(t.loc, do_, catch_, finally_);
 	}
 

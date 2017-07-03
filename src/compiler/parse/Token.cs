@@ -106,7 +106,7 @@ static class TokenU {
 				continue;
 
 			var text = textAttr.text;
-			var token = (Token) field.GetValue(null);
+			var token = (Token)field.GetValue(null);
 			keywordToText.Add(token, text);
 			textToKeyword.Add(text, token);
 		}

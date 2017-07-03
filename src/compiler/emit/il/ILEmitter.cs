@@ -452,14 +452,13 @@ sealed class ILEmitter {
 			var res = il.declareLocal(maps.toType(t.ty), symTryResult);
 
 			// try
-			var end = il.beginTry();
-			emitAny(t.do_);
+			il.beginTry();
+			emitAny(t._do);
 			il.setLocal(res);
-			//il.Emit(OpCodes.Leave, end);
 
 			// catch
-			if (t.catch_.get(out var c)) {
-				var catch_ = t.catch_.force; //TODO: handle missing catch
+			if (t._catch.get(out var c)) {
+				var catch_ = t._catch.force; //TODO: handle missing catch
 				var exceptionType = maps.toType(catch_.exceptionTy);
 				il.beginCatch(exceptionType);
 				// Catch block starts with exception on the stack. Put it in a local.
@@ -468,7 +467,7 @@ sealed class ILEmitter {
 				this.il.setLocal(res);
 			}
 
-			if (t.finally_.get(out var f)) {
+			if (t._finally.get(out var f)) {
 				throw TODO();
 				//il.???
 				//emitAnyVoid(finally_);

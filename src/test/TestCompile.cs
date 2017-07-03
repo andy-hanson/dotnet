@@ -15,11 +15,11 @@ class TestCompile {
 	static readonly Path baselinesRootDir = Path.fromParts(testsDir, "baselines");
 
 	readonly bool updateBaselines;
-	JsTestRunner jsTestRunner;
+	readonly JsTestRunner jsTestRunner;
 
 	internal TestCompile(bool updateBaselines) {
 		this.updateBaselines = updateBaselines;
-		this.jsTestRunner = JsTestRunner.create();
+		jsTestRunner = JsTestRunner.create();
 	}
 
 	internal void runTestNamed(string name) {
@@ -39,7 +39,7 @@ class TestCompile {
 		}
 	}
 
-	void checkNoExtraBaselines(Arr<string> allTests) {
+	static void checkNoExtraBaselines(Arr<string> allTests) {
 		var allBaselines = listDirectoriesInDirectory(baselinesRootDir).toArr();
 		if (allBaselines.length == allTests.length) return;
 
@@ -49,7 +49,7 @@ class TestCompile {
 	}
 
 	static Dict<string, MethodInfo> getTestMethods() {
-		var flags = BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly;
+		const BindingFlags flags = BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly;
 		return new Arr<MethodInfo>(typeof(Tests).GetMethods(flags)).mapDefinedToDict(method => {
 			assert(method.IsStatic);
 			var testFor = method.GetCustomAttribute<TestForAttribute>();
@@ -74,8 +74,6 @@ class TestCompile {
 		foreach (var (_, module) in program.modules) {
 			var modulePath = module.fullPath().withoutExtension(ModuleResolver.extension);
 
-			var logs = emitter.getLogs(module);
-
 			assertBaseline(baselinesDirectory, modulePath, ".ast", Dat.either(module.document.parseResult));
 			assertBaseline(baselinesDirectory, modulePath, ".model", module.klass.toDat());
 			assertBaseline(baselinesDirectory, modulePath, ".js", JsEmitter.emitToString(module));
@@ -90,7 +88,6 @@ class TestCompile {
 
 	void assertBaseline(Path testDirectory, Path modulePath, string extension, string actual) {
 		var fullModulePath = testDirectory.resolve(modulePath.asRel);
-		var baselineDirectory = fullModulePath.directory().toPathString();
 		var baselinePath = fullModulePath.addExtension(extension);
 
 		// If it doesn't exist, create it.

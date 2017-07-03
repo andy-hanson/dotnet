@@ -367,13 +367,10 @@ class MethodChecker {
 		handle(ref expected, new Expr.Assert(a.loc, checkSubtype(BuiltinClass.Bool, a.asserted)));
 
 	Expr checkTry(ref Expected expected, Ast.Expr.Try t) {
-		if (t.else_.get(out var e)) throw TODO(); //Don't need this feature?
-
-		var do_ = checkExpr(ref expected, t.do_);
-		var catch_ = t.catch_.get(out var c) ? Op.Some(checkCatch(ref expected, c)) : Op<Expr.Try.Catch>.None;
-		var finally_ = t.finally_.get(out var f) ? Op.Some(checkVoid(f)) : Op<Expr>.None;
-
-		return new Expr.Try(t.loc, do_, catch_, finally_, expected.inferredType);
+		var doo = checkExpr(ref expected, t._do);
+		var katch = t._catch.get(out var c) ? Op.Some(checkCatch(ref expected, c)) : Op<Expr.Try.Catch>.None;
+		var finallee = t._finally.get(out var f) ? Op.Some(checkVoid(f)) : Op<Expr>.None;
+		return new Expr.Try(t.loc, doo, katch, finallee, expected.inferredType);
 	}
 
 	Expr.Try.Catch checkCatch(ref Expected expected, Ast.Expr.Try.Catch c) {

@@ -1,7 +1,7 @@
 using System;
 
-using static Utils;
 using static EstreeUtils;
+using static Utils;
 
 // https://github.com/estree/estree
 namespace Estree {
@@ -131,9 +131,8 @@ namespace Estree {
 		internal readonly Op<Statement> alternate;
 		internal IfStatement(Loc loc, Expression test, Statement consequent) : base(loc) {
 			this.test = test;
-			if (this.consequent is IfStatement i) {
-				if (!i.alternate.has)
-					assert(i.consequent is BlockStatement);
+			if (this.consequent is IfStatement i && !i.alternate.has) {
+				assert(i.consequent is BlockStatement);
 			}
 			this.consequent = consequent;
 			this.alternate = Op<Statement>.None;
@@ -146,15 +145,27 @@ namespace Estree {
 
 	sealed class VariableDeclaration : Node, Declaration {
 		internal readonly Arr<VariableDeclarator> declarations;
-		internal string kind; // "var" | "let" | "const"
-		internal VariableDeclaration(Loc loc, Arr<VariableDeclarator> declarations, string kind) : base(loc) {
+		internal Kind kind;
+		internal VariableDeclaration(Loc loc, Arr<VariableDeclarator> declarations, Kind kind) : base(loc) {
 			this.declarations = declarations;
 			this.kind = kind;
 		}
+
 		internal static VariableDeclaration simple(Loc loc, Identifier id, Expression init) =>
-			new VariableDeclaration(loc, Arr.of(new VariableDeclarator(loc, id, Op.Some(init))), "var");
+			new VariableDeclaration(loc, Arr.of(new VariableDeclarator(loc, id, Op.Some(init))), Kind.Const);
 		internal static VariableDeclaration simple(Loc loc, Sym id, Expression init) =>
 			simple(loc, new Identifier(loc, id), init);
+
+		internal enum Kind { Var, Let, Const }
+
+		internal string kindStr() {
+			switch (kind) {
+				case VariableDeclaration.Kind.Var: return "var";
+				case VariableDeclaration.Kind.Let: return "let";
+				case VariableDeclaration.Kind.Const: return "const";
+				default: throw unreachable();
+			}
+		}
 	}
 
 	sealed class VariableDeclarator : Node {
@@ -196,7 +207,6 @@ namespace Estree {
 
 		internal static MemberExpression simple(Loc loc, Sym a, Sym b, Sym c) =>
 			simple(loc, simple(loc, a, b), c);
-
 	}
 
 	sealed class ConditionalExpression : Node, Expression {
@@ -237,12 +247,14 @@ namespace Estree {
 	sealed class Property : Node {
 		internal readonly Identifier key;
 		internal readonly Expression value;
-		internal readonly string kind; // "init" | "get" | "set"
-		internal Property(Loc loc, Identifier key, Expression value, string kind) : base(loc) {
+		internal readonly Kind kind;
+		internal Property(Loc loc, Identifier key, Expression value, Kind kind) : base(loc) {
 			this.key = key;
 			this.value = value;
 			this.kind = kind;
 		}
+
+		internal enum Kind { Init, Get, Set }
 	}
 
 	abstract class Class : Node {
@@ -274,10 +286,10 @@ namespace Estree {
 	sealed class MethodDefinition : Node {
 		internal readonly Expression key; // If kind == "constructor", must be "constructor"
 		internal readonly FunctionExpression value;
-		internal readonly string kind; // "constructor" | "method" | "get" | "set"
+		internal readonly Kind kind;
 		internal readonly bool computed;
 		internal readonly bool @static;
-		MethodDefinition(Loc loc, Expression key, FunctionExpression value, string kind, bool computed, bool @static) : base(loc) {
+		MethodDefinition(Loc loc, Expression key, FunctionExpression value, Kind kind, bool computed, bool @static) : base(loc) {
 			this.key = key;
 			this.value = value;
 			this.kind = kind;
@@ -289,14 +301,16 @@ namespace Estree {
 			var nameStr = name.str;
 			var computed = !isSafeMemberName(nameStr);
 			var key = computed ? new Literal(loc, new Model.Expr.Literal.LiteralValue.Str(nameStr)) : (Expression)new Identifier(loc, name);
-			return new MethodDefinition(loc, key, new FunctionExpression(loc, @params, body), "method", computed, @static);
+			return new MethodDefinition(loc, key, new FunctionExpression(loc, @params, body), Kind.Method, computed, @static);
 		}
 
-		internal static readonly Sym symConstructor = Sym.of("constructor");
+		internal static readonly Sym symConstructor = Sym.of(nameof(constructor));
 		internal static MethodDefinition constructor(Loc loc, Arr<Pattern> @params, Arr<Statement> body) {
 			var fn = new FunctionExpression(loc, @params, new BlockStatement(loc, body));
-			return new MethodDefinition(loc, new Identifier(loc, symConstructor), fn, "constructor", computed: false, @static: false);
+			return new MethodDefinition(loc, new Identifier(loc, symConstructor), fn, Kind.Constructor, computed: false, @static: false);
 		}
+
+		internal enum Kind { Constructor, Method, Get, Set }
 	}
 
 	abstract class ModuleDeclaration : Node {

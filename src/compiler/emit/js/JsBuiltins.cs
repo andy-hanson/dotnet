@@ -5,7 +5,6 @@ using System.Reflection;
 using Model;
 using static Utils;
 
-
 /**
 Treat everything besides `emitInstanceMethodCall` and `emitStaticMethodCall` private.
 They are marked internal only so that in Builtin.cs one can write `nameof(JsBuiltins.eq)`.
@@ -55,16 +54,15 @@ static class JsBuiltins {
 			if (k.supers.length > 0) throw TODO(); // We would have to emit impls as well.
 
 			foreach (var method in methods.values) {
-				var builtin = (Method.BuiltinMethod) method;
+				var builtin = (Method.BuiltinMethod)method;
 				var attr = builtin.methodInfo.GetCustomAttribute<JsTranslateAttribute>();
 				assert(attr != null); // Must add a translator for every method on a class marked JsPrimitive.
-				var translator = typeof(JsBuiltins).GetMethod(attr.builtinMethodName);
 
 				var methodName = attr.builtinMethodName;
 				if (builtin.isStatic)
-					statics[builtin] = (StaticTranslator) Delegate.CreateDelegate(typeof(StaticTranslator), typeof(JsBuiltins), methodName);
+					statics[builtin] = (StaticTranslator)Delegate.CreateDelegate(typeof(StaticTranslator), typeof(JsBuiltins), methodName);
 				else
-					instance[builtin] = (InstanceTranslator) Delegate.CreateDelegate(typeof(InstanceTranslator), typeof(JsBuiltins), methodName);
+					instance[builtin] = (InstanceTranslator)Delegate.CreateDelegate(typeof(InstanceTranslator), typeof(JsBuiltins), methodName);
 			}
 		}
 
@@ -73,7 +71,7 @@ static class JsBuiltins {
 	}
 
 	internal static Estree.Expression emitInstanceMethodCall(ref bool usedNzlib, Method invokedMethod, Loc loc, Estree.Expression target, Arr<Estree.Expression> args) {
-		InstanceCtx ctx = new InstanceCtx(loc, target, args);
+		var ctx = new InstanceCtx(loc, target, args);
 		if (invokedMethod is Method.BuiltinMethod b && specialInstanceMethods.get(b, out var translator)) {
 			var result = translator(ref ctx);
 			if (ctx.usedNzlib)
@@ -86,7 +84,7 @@ static class JsBuiltins {
 	}
 
 	internal static Estree.Expression emitStaticMethodCall(ref bool usedNzlib, Method invokedMethod, Loc loc, Arr<Estree.Expression> args) {
-		StaticCtx ctx = new StaticCtx(loc, args);
+		var ctx = new StaticCtx(loc, args);
 		if (invokedMethod is Method.BuiltinMethod b && specialStaticMethods.get(b, out var translator)) {
 			var result = translator(ref ctx);
 			if (ctx.usedNzlib)

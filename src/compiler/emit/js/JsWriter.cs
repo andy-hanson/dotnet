@@ -90,7 +90,7 @@ class JsWriter : EmitTextWriter {
 	}
 
 	void writeVariableDeclaration(Estree.VariableDeclaration v) {
-		writeRaw(v.kind);
+		writeRaw(v.kindStr());
 		writeRaw(' ');
 		writeCommaSeparatedList(v.declarations, writeVariableDeclarator);
 		writeRaw(';');
@@ -296,13 +296,13 @@ class JsWriter : EmitTextWriter {
 			writeRaw("static ");
 
 		switch (m.kind) {
-			case "get":
-			case "set":
-				writeRaw(m.kind);
+			case Estree.MethodDefinition.Kind.Get:
+			case Estree.MethodDefinition.Kind.Set:
+				writeRaw(m.kind == Estree.MethodDefinition.Kind.Get ? "get" : "set");
 				writeRaw(' ');
 				break;
-			case "method":
-			case "constructor":
+			case Estree.MethodDefinition.Kind.Method:
+			case Estree.MethodDefinition.Kind.Constructor:
 				break;
 			default:
 				throw unreachable();

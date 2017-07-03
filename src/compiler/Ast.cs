@@ -428,30 +428,27 @@ namespace Ast {
 
 		/** It will be a checker error if 'catch' is missing, except in the case of do-finally. */
 		internal sealed class Try : Expr, ToData<Try> {
-			internal readonly Expr do_;
-			internal readonly Op<Catch> catch_;
-			internal readonly Op<Expr> else_;
-			internal readonly Op<Expr> finally_;
-			internal Try(Loc loc, Expr do_, Op<Catch> catch_, Op<Expr> else_, Op<Expr> finally_) : base(loc) {
-				this.do_ = do_;
-				this.catch_ = catch_;
-				this.else_ = else_;
-				this.finally_ = finally_;
+			// TODO: name these @do, @catch, @finally. But currently breaks syntax highlighting. (https://github.com/dotnet/csharp-tmLanguage/issues/46)
+			internal readonly Expr _do;
+			internal readonly Op<Catch> _catch;
+			internal readonly Op<Expr> _finally;
+			internal Try(Loc loc, Expr _do, Op<Catch> _catch, Op<Expr> _finally) : base(loc) {
+				this._do = _do;
+				this._catch = _catch;
+				this._finally = _finally;
 			}
 
 			public override bool deepEqual(Node n) => n is Try t && deepEqual(t);
 			public bool deepEqual(Try t) =>
 				locEq(t) &&
-				do_.deepEqual(t.do_) &&
-				catch_.deepEqual(t.catch_) &&
-				else_.deepEqual(t.else_) &&
-				finally_.deepEqual(t.finally_);
+				_do.deepEqual(t._do) &&
+				_catch.deepEqual(t._catch) &&
+				_finally.deepEqual(t._finally);
 			public override Dat toDat() => Dat.of(this,
 				nameof(loc), loc,
-				nameof(do_), do_,
-				nameof(catch_), Dat.op(catch_),
-				nameof(else_), Dat.op(else_),
-				nameof(finally_), Dat.op(finally_));
+				nameof(_do), _do,
+				nameof(_catch), Dat.op(_catch),
+				nameof(_finally), Dat.op(_finally));
 
 			internal sealed class Catch : Node, ToData<Catch> {
 				internal readonly Ty exceptionTy;

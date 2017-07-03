@@ -8,8 +8,10 @@ sealed class HidAttribute : Attribute {}
 sealed class HidSuperClassAttribute : Attribute {}
 
 /**
-Attribute for types that are implemented by JS primitives, not by a class.
+Attribute for types that are implemented by JS primitives, not by a JS class.
 Every method in these classes must have a JsTranslate annotation.
+
+For all other classes, there should be an equivalent version in nzlib.
 */
 [AttributeUsage(AttributeTargets.Class)]
 sealed class JsPrimitiveAttribute : Attribute {}

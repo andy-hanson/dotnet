@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 
 struct Set<T> where T : IEquatable<T> {
-	HashSet<T> inner;
+	readonly HashSet<T> inner;
 
 	internal Set(HashSet<T> inner) { this.inner = inner; }
 

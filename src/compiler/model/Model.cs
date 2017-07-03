@@ -108,7 +108,7 @@ namespace Model {
 			get {
 				// TODO: handle builtins with supertypes
 				// (TODO: Super has location information, may have to abstract over that)
-				if (dotNetType.BaseType != typeof(Object)) throw TODO();
+				if (dotNetType.BaseType != typeof(object)) throw TODO();
 				foreach (var iface in dotNetType.GetInterfaces()) {
 					var gen = iface.GetGenericTypeDefinition();
 					if (gen != typeof(ToData<>) && gen != typeof(DeepEqual<>))
@@ -141,9 +141,6 @@ namespace Model {
 			("^", "_pow")).map((k, v) => (Sym.of(k), Sym.of(v)));
 		static Dict<Sym, Sym> operatorUnescapes = operatorEscapes.reverse();
 
-		//void is OK for builtins, but we shouldn't attempt to create a class for it.
-		static readonly ISet<Type> badTypes = new HashSet<Type> { typeof(void), typeof(object), typeof(string), typeof(char), typeof(uint), typeof(int), typeof(bool) };
-
 		internal static readonly BuiltinClass Void = fromDotNetType(typeof(Builtins.Void));
 		internal static readonly BuiltinClass Bool = fromDotNetType(typeof(Builtins.Bool));
 		internal static readonly BuiltinClass Int = fromDotNetType(typeof(Builtins.Int));
@@ -155,7 +152,7 @@ namespace Model {
 
 		/** Safe to call this twice on the same type. */
 		internal static BuiltinClass fromDotNetType(Type dotNetType) {
-			assert(!badTypes.Contains(dotNetType), () => $"Should not attempt to use {dotNetType} as a builtin");
+			assert(dotNetType.DeclaringType == typeof(Builtins));
 
 			var name = unescapeName(Sym.of(dotNetType.Name));
 
@@ -174,7 +171,7 @@ namespace Model {
 				throw TODO();
 			}
 
-			var abstractMethods = Arr.builder<Method>();
+			var abstracts = Arr.builder<Method>();
 
 			var dotNetMethods = dotNetType.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
 			klass._membersMap = dotNetMethods.mapToDict<MethodInfo, Sym, Member>(method => {
@@ -189,11 +186,11 @@ namespace Model {
 
 				var m2 = new Method.BuiltinMethod(klass, method);
 				if (m2.isAbstract)
-					abstractMethods.add(m2);
+					abstracts.add(m2);
 				return Op.Some<(Sym, Member)>((m2.name, m2));
 			});
 
-			klass.abstractMethods = abstractMethods.finish();
+			klass.abstractMethods = abstracts.finish();
 
 			return klass;
 		}

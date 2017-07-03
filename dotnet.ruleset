@@ -39,6 +39,14 @@
 		<Rule Id="SA1214" Action="None" /> <!-- Don't require readonly fields to appear first -->
 		<Rule Id="SA1314" Action="None" /> <!-- Don't name every type parameter 'T' -->
 		<Rule Id="SA1136" Action="None" /> <!-- Allow single-line enum -->
+		<Rule Id="SA1507" Action="None" /> <!-- No idea how to fix this -->
+
+		<!--
+		TODO: I currently need a few '_' for parameter names to avoid syntax highlight issues
+		https://github.com/dotnet/csharp-tmLanguage/issues/46
+		-->
+		<Rule Id="SA1313" Action="None" />
+		<!--  -->
 
 		<Rule Id="SA1413" Action="None" /> <!-- TODO: this rule is buggy with single-line enums -->
 		<Rule Id="SA1008" Action="None" /> <!-- TODO: stylecop bug: This doesn't play well with tuples -->
@@ -78,5 +86,8 @@
 		<Rule Id="S3871" Action="None" /> <!-- Don't make exceptions public -->
 		<Rule Id="S1206" Action="None" /> <!-- False potive for class inheriting 'Equals' -->
 		<Rule Id="S3881" Action="None" /> <!-- No idea how to fix this -->
+		<Rule Id="S3925" Action="None" /> <!-- Ditto -->
+		<Rule Id="S1117" Action="None" /> <!-- Allow local variable to shadow method. Useful in `class C { int x; static create(int x) { ... } }` -->
+		<Rule Id="S3877" Action="None" /> <!-- Allow throwing exceptions -->
 	</Rules>
 </RuleSet>

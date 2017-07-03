@@ -173,14 +173,14 @@ namespace Model {
 		}
 
 		internal sealed class Try : Expr, ToData<Try> {
-			internal readonly Expr do_;
-			internal readonly Op<Catch> catch_;
-			internal readonly Op<Expr> finally_;
+			internal readonly Expr _do;
+			internal readonly Op<Catch> _catch;
+			internal readonly Op<Expr> _finally;
 			[NotData] internal readonly Ty _ty; // Cached common type of 'do' and 'catch'
-			internal Try(Loc loc, Expr do_, Op<Catch> catch_, Op<Expr> finally_, Ty ty) : base(loc) {
-				this.do_ = do_;
-				this.catch_ = catch_;
-				this.finally_ = finally_;
+			internal Try(Loc loc, Expr _do, Op<Catch> _catch, Op<Expr> _finally, Ty ty) : base(loc) {
+				this._do = _do;
+				this._catch = _catch;
+				this._finally = _finally;
 				this._ty = ty;
 			}
 
@@ -189,14 +189,14 @@ namespace Model {
 			public override bool deepEqual(Expr e) => e is Try t && deepEqual(t);
 			public bool deepEqual(Try t) =>
 				locEq(t) &&
-				do_.deepEqual(t.do_) &&
-				catch_.deepEqual(t.catch_) &&
-				finally_.deepEqual(t.finally_);
+				_do.deepEqual(t._do) &&
+				_catch.deepEqual(t._catch) &&
+				_finally.deepEqual(t._finally);
 			public override Dat toDat() => Dat.of(this,
 				nameof(loc), loc,
-				nameof(do_), do_,
-				nameof(catch_), Dat.op(catch_),
-				nameof(finally_), Dat.op(finally_));
+				nameof(_do), _do,
+				nameof(_catch), Dat.op(_catch),
+				nameof(_finally), Dat.op(_finally));
 
 			internal struct Catch : ToData<Catch> {
 				internal readonly Loc loc;

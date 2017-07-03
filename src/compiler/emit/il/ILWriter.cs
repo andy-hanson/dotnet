@@ -12,7 +12,7 @@ interface Logger {
 /**
 Friendlier wrapper around ILGenerator.
 */
-sealed class ILWriter {
+struct ILWriter {
 	readonly ILGenerator il;
 	readonly bool isStatic;
 	readonly Op<Logger> logger;
@@ -34,20 +34,9 @@ sealed class ILWriter {
 		this.logger = logger;
 	}
 
-	ILWriter(ILGenerator il, bool isStatic) {
-		this.il = il;
-		this.isStatic = isStatic;
-	}
-
 	internal void pop() {
-		if (shouldLog) log("pop");
+		if (shouldLog) log(nameof(pop));
 		il.Emit(OpCodes.Pop);
-	}
-
-	//kill
-	internal void dup() {
-		if (shouldLog) log("dup");
-		il.Emit(OpCodes.Dup);
 	}
 
 	internal void ret() {
@@ -179,7 +168,7 @@ sealed class ILWriter {
 	}
 
 	internal void @throw() {
-		if (shouldLog) log("throw");
+		if (shouldLog) log(nameof(@throw));
 		il.Emit(OpCodes.Throw);
 	}
 

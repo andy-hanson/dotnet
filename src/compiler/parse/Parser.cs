@@ -517,11 +517,11 @@ sealed class Parser : Lexer {
 		takeSpecificKeyword(Token.Do);
 		takeIndent();
 		var do_ = parseBlock();
-		var nextStart = pos;
 
-		Op<Ast.Expr.Try.Catch> catch_ = Op<Ast.Expr.Try.Catch>.None;
-		Op<Ast.Expr> else_ = Op<Ast.Expr>.None;
-		Op<Ast.Expr> finally_ = Op<Ast.Expr>.None;
+		var catch_ = Op<Ast.Expr.Try.Catch>.None;
+		var finally_ = Op<Ast.Expr>.None;
+
+		var catchStart = pos;
 
 		switch (takeKeyword()) {
 			case Token.Catch: {
@@ -533,26 +533,14 @@ sealed class Parser : Lexer {
 				var nameLoc = locFrom(nameStart);
 				takeIndent();
 				var catchBlock = parseBlock();
-				catch_ = Op.Some(new Ast.Expr.Try.Catch(locFrom(nextStart), exceptionType, nameLoc, exceptionName, catchBlock));
+				catch_ = Op.Some(new Ast.Expr.Try.Catch(locFrom(catchStart), exceptionType, nameLoc, exceptionName, catchBlock));
 
 				if (tryTakeDedent())
 					break;
-				nextStart = pos;
-				var kw = takeKeyword();
-				if (kw == Token.Else)
-					goto case Token.Else;
-				else if (kw == Token.Finally)
+				else {
+					takeSpecificKeyword(Token.Finally);
 					goto case Token.Finally;
-				throw unexpected(nextStart, "'else' or 'finally'", kw);
-			}
-			case Token.Else: {
-				takeIndent();
-				else_ = Op.Some(parseBlock());
-
-				if (tryTakeDedent())
-					break;
-				takeSpecificKeyword(Token.Finally);
-				goto case Token.Finally;
+				}
 			}
 
 			case Token.Finally: {
@@ -563,7 +551,7 @@ sealed class Parser : Lexer {
 			}
 		}
 
-		return new Ast.Expr.Try(locFrom(startPos), do_, catch_, else_, finally_);
+		return new Ast.Expr.Try(locFrom(startPos), do_, catch_, finally_);
 	}
 
 	Ast.Expr parseWhen(Pos startPos) {
