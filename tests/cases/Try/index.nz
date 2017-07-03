@@ -1,6 +1,6 @@
 static
 
-fun String main()
+fun Void main()
 	x = try
 		do
 			assert false

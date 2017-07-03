@@ -1,8 +1,8 @@
 Module(
-  loc: 0-71,
+  loc: 0-83,
   imports: [],
   klass: Klass(
-    loc: 0-71,
+    loc: 0-83,
     head: Abstract(
       loc: 0-10),
     supers: [],
@@ -15,25 +15,24 @@ Module(
         name: "s",
         parameters: []),
       Method(
-        loc: 31-71,
+        loc: 31-83,
         isStatic: true,
         returnTy: Access(
-          loc: 35-41,
-          name: "String"),
+          loc: 35-39,
+          name: "Void"),
         name: "main",
         parameters: [Parameter(
-          loc: 47-62,
+          loc: 45-60,
           ty: Access(
-            loc: 47-60,
+            loc: 45-58,
             name: "AbstractClass"),
           name: "a")],
-        body: Call(
-          loc: 68-70,
-          target: GetProperty(
-            loc: 66-68,
-            target: Access(
-              loc: 65-66,
-              name: "a"),
-            propertyName: "s"),
-          args: []))
+        body: Assert(
+          loc: 63-83,
+          asserted: OperatorCall(
+            loc: 70-83,
+            oper: "==",
+            right: Literal(
+              loc: 79-82,
+              value: "s"))))
     ]))

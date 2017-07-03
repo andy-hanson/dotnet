@@ -95,10 +95,10 @@ abstract class Lexer : Reader {
 				case '\n':
 					throw TODO(); // unterminated quote
 				case '\\':
-					s.Append(escape(readChar()));
+					s.Append(escape(ch));
 					break;
 				default:
-					s.Append(readChar());
+					s.Append(ch);
 					break;
 			}
 		}

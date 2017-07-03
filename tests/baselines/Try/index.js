@@ -1,12 +1,15 @@
 var _ = require("nzlib");
-var Try = {};
-Try.main = function (){
-	try {
-		if (!(false)) throw new _.AssertionException();
-		return "";
-	} catch (e) {
-		if (!(e instanceof _.Exception)) throw e;
-		return e.description();
+module.exports = class Try {
+	static main(){
+		var x = (() => {
+			try {
+				if (!(false)) throw new _.AssertionException();
+				return "unreachable";
+			} catch (e) {
+				if (!(e instanceof _.Exception)) throw e;
+				return e.description();
+			}
+		})();
+		if (!(x === "Assertion failed.")) throw new _.AssertionException();
 	}
 };
-module.exports = Try;

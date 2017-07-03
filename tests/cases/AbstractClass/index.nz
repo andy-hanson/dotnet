@@ -2,5 +2,5 @@ abstract
 
 abstract String s()
 
-fun String main(AbstractClass a)
-	a.s()
+fun Void main(AbstractClass a)
+	assert a.s() == "s"

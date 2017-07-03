@@ -44,7 +44,7 @@ Klass(
                 name: "=="),
               args: [Literal(
                 loc: 153-154,
-                value: 2)]))))),
+                value: 1)]))))),
     x: Slot(
       loc: 23-40,
       name: "x",

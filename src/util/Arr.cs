@@ -24,6 +24,14 @@ struct Arr<T> {
 		second = this[1];
 	}
 
+	internal Arr<T> addLeft(T value) {
+		var b = new T[length + 1];
+		b[0] = value;
+		for (uint i = 0; i < length; i++)
+			b[i + 1] = this[i];
+		return new Arr<T>(b);
+	}
+
 	public Enumerator GetEnumerator() => new Enumerator(inner);
 	internal struct Enumerator {
 		readonly T[] array;
@@ -82,6 +90,16 @@ struct Arr<T> {
 		var b = new U[length];
 		for (uint i = 0; i < length; i++)
 			b[i] = mapper(this[i], i);
+		return new Arr<U>(b);
+	}
+
+	internal Arr<U> mapWithFirst<U>(Op<U> first, Func<T, uint, U> mapper) =>
+		first.get(out var f) ? mapWithFirst(f, mapper) : map(mapper);
+	internal Arr<U> mapWithFirst<U>(U first, Func<T, uint, U> mapper) {
+		var b = new U[length + 1];
+		b[0] = first;
+		for (uint i = 0; i < length; i++)
+			b[i + 1] = mapper(this[i], i);
 		return new Arr<U>(b);
 	}
 

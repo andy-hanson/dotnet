@@ -4,22 +4,17 @@ constructor
 	set instance field x
 	return
 
-impl n
-	this
-	get instance field Impl.x
-	return
-
 fun main
 	const 1
 	call static Int.of
-	new Impl
-	declare local instance
-	set local instance
-	get local instance
-	call static AbstractClass.getN
-	declare local gotN
-	set local gotN
-	get local gotN
+	new Slots
+	declare local obj
+	set local obj
+	get local obj
+	call instance Slots.getX
+	declare local gotX
+	set local gotX
+	get local gotX
 	const 1
 	call static Int.of
 	call instance Int._eq
@@ -29,5 +24,10 @@ fun main
 	throw
 	endAssert:
 	load static field Void.instance
+	return
+
+def getX
+	this
+	get instance field Slots.x
 	return
 

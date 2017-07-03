@@ -101,11 +101,11 @@ static class TokenU {
 
 	static TokenU() {
 		foreach (var field in typeof(Token).GetFields()) {
-			var textAttr = field.GetCustomAttribute(typeof(TextAttribute));
+			var textAttr = field.GetCustomAttribute<TextAttribute>();
 			if (textAttr == null)
 				continue;
 
-			var text = ((TextAttribute)textAttr).text;
+			var text = textAttr.text;
 			var token = (Token) field.GetValue(null);
 			keywordToText.Add(token, text);
 			textToKeyword.Add(text, token);

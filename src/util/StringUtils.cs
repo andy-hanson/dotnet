@@ -6,6 +6,13 @@ static class StringUtils {
 
 	internal static string slice(this string s, uint low, uint high) =>
 		s.Substring(signed(low), signed(high - low));
+	internal static string slice(this string s, uint low) =>
+		slice(s, low, unsigned(s.Length));
+
+	internal static string withoutStart(this string s, string start) {
+		assert(s.StartsWith(start));
+		return s.slice(unsigned(start.Length));
+	}
 
 	internal static string showChar(char ch) {
 		switch (ch) {

@@ -32,6 +32,7 @@ struct Dict<K, V> where K : IEquatable<K> {
 	}
 
 	public Dictionary<K, V>.Enumerator GetEnumerator() => inner.GetEnumerator();
+	public Dictionary<K, V>.ValueCollection values => inner.Values;
 
 	internal bool has(K k) => inner.ContainsKey(k);
 

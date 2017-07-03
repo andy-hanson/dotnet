@@ -1,19 +1,26 @@
 using System;
 
 using static Utils;
+using static EstreeUtils;
 
 // https://github.com/estree/estree
 namespace Estree {
-	abstract class Node {
+	interface INode {
+		Loc loc { get; }
+	}
+
+	abstract class Node : INode {
 		internal readonly Loc loc;
+		Loc INode.loc => loc;
 		public sealed override bool Equals(object o) => throw new NotSupportedException();
 		public sealed override int GetHashCode() => throw new NotSupportedException();
 		protected Node(Loc loc) { this.loc = loc; }
 	}
 
-	interface BlockStatementOrExpression {}
-	interface Expression : BlockStatementOrExpression, DeclarationOrExpression {}
-	interface Pattern {}
+	interface BlockStatementOrExpression : INode {}
+	interface ExpressionOrSuper : INode {}
+	interface Expression : INode, ExpressionOrSuper, BlockStatementOrExpression, DeclarationOrExpression {}
+	interface Pattern : INode {}
 
 	sealed class Identifier : Node, Expression, Pattern {
 		internal readonly Sym name;
@@ -55,6 +62,13 @@ namespace Estree {
 		}
 	}
 
+	sealed class ArrowFunctionExpression : Function, Expression {
+		internal readonly BlockStatementOrExpression body;
+		internal ArrowFunctionExpression(Loc loc, Arr<Pattern> @params, BlockStatementOrExpression body) : base(loc, @params) {
+			this.body = body;
+		}
+	}
+
 	interface Statement {}
 
 	sealed class ThrowStatement : Node, Statement {
@@ -87,9 +101,12 @@ namespace Estree {
 
 	sealed class ExpressionStatement : Node, Statement {
 		internal readonly Expression expression;
-		internal ExpressionStatement(Loc loc, Expression expression) : base(loc) {
+		ExpressionStatement(Loc loc, Expression expression) : base(loc) {
 			this.expression = expression;
 		}
+
+		internal static ExpressionStatement of(Expression expression) =>
+			new ExpressionStatement(expression.loc, expression);
 	}
 
 	sealed class BlockStatement : Node, Statement, BlockStatementOrExpression {
@@ -154,10 +171,10 @@ namespace Estree {
 	}
 
 	sealed class MemberExpression : Node, Expression, Pattern {
-		internal readonly Expression @object;
+		internal readonly ExpressionOrSuper @object;
 		internal readonly Expression property;
 		internal readonly bool computed;
-		MemberExpression(Loc loc, Expression @object, Expression property, bool computed) : base(loc) {
+		MemberExpression(Loc loc, ExpressionOrSuper @object, Expression property, bool computed) : base(loc) {
 			this.@object = @object;
 			this.property = property;
 			this.computed = computed;
@@ -180,13 +197,6 @@ namespace Estree {
 		internal static MemberExpression simple(Loc loc, Sym a, Sym b, Sym c) =>
 			simple(loc, simple(loc, a, b), c);
 
-		static bool isSafeMemberName(string s) {
-			foreach (var ch in s) {
-				if (!CharUtils.isDigit(ch) && !CharUtils.isLetter(ch))
-					return false;
-			}
-			return true;
-		}
 	}
 
 	sealed class ConditionalExpression : Node, Expression {
@@ -201,17 +211,17 @@ namespace Estree {
 	}
 
 	abstract class CallOrNewExpression : Node, Expression {
-		internal readonly Expression callee;
+		internal readonly ExpressionOrSuper callee;
 		internal readonly Arr<Expression> arguments;
-		protected CallOrNewExpression(Loc loc, Expression callee, Arr<Expression> arguments) : base(loc) {
+		protected CallOrNewExpression(Loc loc, ExpressionOrSuper callee, Arr<Expression> arguments) : base(loc) {
 			this.callee = callee;
 			this.arguments = arguments;
 		}
 	}
 
 	sealed class CallExpression : CallOrNewExpression {
-		internal CallExpression(Loc loc, Expression callee, Arr<Expression> arguments) : base(loc, callee, arguments) {}
-		internal static CallExpression of(Loc loc, Expression callee, params Expression[] arguments) =>
+		internal CallExpression(Loc loc, ExpressionOrSuper callee, Arr<Expression> arguments) : base(loc, callee, arguments) {}
+		internal static CallExpression of(Loc loc, ExpressionOrSuper callee, params Expression[] arguments) =>
 			new CallExpression(loc, callee, new Arr<Expression>(arguments));
 	}
 
@@ -262,17 +272,30 @@ namespace Estree {
 	}
 
 	sealed class MethodDefinition : Node {
-		internal readonly Identifier key; // If kind == "constructor", must be "constructor"
+		internal readonly Expression key; // If kind == "constructor", must be "constructor"
 		internal readonly FunctionExpression value;
 		internal readonly string kind; // "constructor" | "method" | "get" | "set"
 		internal readonly bool computed;
 		internal readonly bool @static;
-		internal MethodDefinition(Loc loc, Identifier key, FunctionExpression value, string kind, bool @static) : base(loc) {
+		MethodDefinition(Loc loc, Expression key, FunctionExpression value, string kind, bool computed, bool @static) : base(loc) {
 			this.key = key;
 			this.value = value;
 			this.kind = kind;
-			this.computed = false;
+			this.computed = computed;
 			this.@static = @static;
+		}
+
+		internal static MethodDefinition method(Loc loc, Sym name, Arr<Pattern> @params, BlockStatement body, bool @static) {
+			var nameStr = name.str;
+			var computed = !isSafeMemberName(nameStr);
+			var key = computed ? new Literal(loc, new Model.Expr.Literal.LiteralValue.Str(nameStr)) : (Expression)new Identifier(loc, name);
+			return new MethodDefinition(loc, key, new FunctionExpression(loc, @params, body), "method", computed, @static);
+		}
+
+		internal static readonly Sym symConstructor = Sym.of("constructor");
+		internal static MethodDefinition constructor(Loc loc, Arr<Pattern> @params, Arr<Statement> body) {
+			var fn = new FunctionExpression(loc, @params, new BlockStatement(loc, body));
+			return new MethodDefinition(loc, new Identifier(loc, symConstructor), fn, "constructor", computed: false, @static: false);
 		}
 	}
 
@@ -316,6 +339,10 @@ namespace Estree {
 			new UnaryExpression(loc, "!", prefix: true, argument: argument);
 	}
 
+	sealed class Super : Node, ExpressionOrSuper {
+		internal Super(Loc loc) : base(loc) {}
+	}
+
 	/*sealed class ImportDeclaration : ModuleDeclaration {
 		internal readonly Arr<ImportDeclarationSpecifier> specifiers;
 		internal readonly Literal source;
@@ -347,4 +374,14 @@ namespace Estree {
 			this.declaration = declaration;
 		}
 	}*/
+}
+
+static class EstreeUtils {
+	internal static bool isSafeMemberName(string s) {
+		foreach (var ch in s) {
+			if (!CharUtils.isDigit(ch) && !CharUtils.isLetter(ch))
+				return false;
+		}
+		return true;
+	}
 }

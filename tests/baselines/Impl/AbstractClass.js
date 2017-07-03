@@ -1,5 +1,5 @@
-function AbstractClass(){}
-AbstractClass.getN = function (a) {
-	return a.n();
+module.exports = class AbstractClass {
+	static getN(a) {
+		return a.n();
+	}
 };
-module.exports = AbstractClass;

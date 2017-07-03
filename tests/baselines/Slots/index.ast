@@ -1,8 +1,8 @@
 Module(
-  loc: 0-82,
+  loc: 0-103,
   imports: [],
   klass: Klass(
-    loc: 0-82,
+    loc: 0-103,
     head: Slots(
       loc: 0-18,
       slots: [Slot(
@@ -15,46 +15,54 @@ Module(
     supers: [],
     methods: [
       Method(
-        loc: 18-64,
+        loc: 18-85,
         isStatic: true,
         returnTy: Access(
-          loc: 22-25,
-          name: "Int"),
+          loc: 22-26,
+          name: "Void"),
         name: "main",
-        parameters: [Parameter(
-          loc: 31-36,
-          ty: Access(
-            loc: 31-34,
-            name: "Int"),
-          name: "x")],
+        parameters: [],
         body: Let(
-          loc: 43-52,
+          loc: 39-48,
           assigned: Single(
-            loc: 39-42,
+            loc: 35-38,
             name: "obj"),
           value: New(
-            loc: 45-52,
-            args: [Access(
-              loc: 49-50,
-              name: "x")]),
-          then: Call(
-            loc: 60-62,
-            target: GetProperty(
-              loc: 55-60,
-              target: Access(
-                loc: 52-55,
-                name: "obj"),
-              propertyName: "getX"),
-            args: []))),
+            loc: 41-48,
+            args: [Literal(
+              loc: 45-46,
+              value: 1)]),
+          then: Let(
+            loc: 53-67,
+            assigned: Single(
+              loc: 48-52,
+              name: "gotX"),
+            value: Call(
+              loc: 63-65,
+              target: GetProperty(
+                loc: 58-63,
+                target: Access(
+                  loc: 55-58,
+                  name: "obj"),
+                propertyName: "getX"),
+              args: []),
+            then: Assert(
+              loc: 67-85,
+              asserted: OperatorCall(
+                loc: 74-85,
+                oper: "==",
+                right: Literal(
+                  loc: 82-83,
+                  value: 1)))))),
       Method(
-        loc: 64-82,
+        loc: 85-103,
         isStatic: false,
         returnTy: Access(
-          loc: 68-71,
+          loc: 89-92,
           name: "Int"),
         name: "getX",
         parameters: [],
         body: Access(
-          loc: 80-81,
+          loc: 101-102,
           name: "x"))
     ]))

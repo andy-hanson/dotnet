@@ -15,15 +15,12 @@ static class Tests {
 		// We need to implement its abstract class.
 		var cls = t.emittedRoot;
 		var impl = TestUtils.implementType(cls, new AbstractClassImpl());
-		object csres;
 		try {
-			csres = cls.GetMethod("main").Invoke(null, new object[] { impl });
+			cls.GetMethod("main").Invoke(null, new object[] { impl });
 		} catch (TargetInvocationException e) {
 			ExceptionDispatchInfo.Capture(e.InnerException).Throw();
 			throw unreachable();
 		}
-		var expected = Builtins.String.of("s");
-		assertEqual(expected, (Builtins.String) csres);
 
 		t.jsTestRunner.runTestSpecial(t.testPath);
 	}

@@ -1,45 +1,58 @@
 Module(
-  loc: 0-97,
+  loc: 0-143,
   imports: [],
   klass: Klass(
-    loc: 0-97,
+    loc: 0-143,
     head: Static(
       loc: 0-8),
     supers: [],
     methods: [Method(
-      loc: 8-97,
+      loc: 8-143,
       isStatic: true,
       returnTy: Access(
-        loc: 12-18,
-        name: "String"),
+        loc: 12-16,
+        name: "Void"),
       name: "main",
       parameters: [],
-      body: Try(
-        loc: 27-97,
-        do_: Seq(
-          loc: 39-60,
-          first: Assert(
-            loc: 39-55,
-            asserted: Literal(
-              loc: 46-51,
-              value: false)),
-          then: Literal(
-            loc: 55-57,
-            value: "")),
-        catch_: Catch(
-          loc: 60-97,
-          exceptionTy: Access(
-            loc: 66-75,
-            name: "Exception"),
-          exceptionName: "e",
-          then: Call(
-            loc: 94-96,
-            target: GetProperty(
-              loc: 82-94,
-              target: Access(
-                loc: 81-82,
-                name: "e"),
-              propertyName: "description"),
-            args: [])),
-        else_: null,
-        finally_: null))]))
+      body: Let(
+        loc: 27-111,
+        assigned: Single(
+          loc: 25-26,
+          name: "x"),
+        value: Try(
+          loc: 29-111,
+          do_: Seq(
+            loc: 41-73,
+            first: Assert(
+              loc: 41-57,
+              asserted: Literal(
+                loc: 48-53,
+                value: false)),
+            then: Literal(
+              loc: 57-70,
+              value: "unreachable")),
+          catch_: Catch(
+            loc: 73-111,
+            exceptionTy: Access(
+              loc: 79-88,
+              name: "Exception"),
+            exceptionName: "e",
+            then: Call(
+              loc: 107-109,
+              target: GetProperty(
+                loc: 95-107,
+                target: Access(
+                  loc: 94-95,
+                  name: "e"),
+                propertyName: "description"),
+              args: [])),
+          else_: null,
+          finally_: null),
+        then: Assert(
+          loc: 111-143,
+          asserted: OperatorCall(
+            loc: 118-143,
+            oper: "==",
+            right: Literal(
+              loc: 123-142,
+              value: "Assertion failed.")))))]))

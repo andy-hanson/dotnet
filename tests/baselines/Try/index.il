@@ -9,7 +9,7 @@ fun main
 	endAssert:
 	load static field Void.instance
 	pop
-	const ""
+	const "unreachable"
 	call static String.of
 	set local tryResult
 	catch Builtins+Exception
@@ -20,5 +20,17 @@ fun main
 	set local tryResult
 	end try
 	get local tryResult
+	declare local x
+	set local x
+	get local x
+	const "Assertion failed."
+	call static String.of
+	call instance String._eq
+	get instance field Bool.value
+	goto if true: endAssert
+	new AssertionException
+	throw
+	endAssert:
+	load static field Void.instance
 	return
 

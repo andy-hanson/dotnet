@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Reflection;
 
 using static FileUtils;
@@ -43,19 +44,16 @@ class TestCompile {
 		if (allBaselines.length == allTests.length) return;
 
 		var extraBaselines = Set.setDifference(allBaselines, allTests.toSet());
-
-		throw new TestFailureException($"Baselines have no associated tests: {string.Join(", ", extraBaselines)}");
+		if (extraBaselines.Any())
+			throw new TestFailureException($"Baselines have no associated tests: {string.Join(", ", extraBaselines)}");
 	}
 
 	static Dict<string, MethodInfo> getTestMethods() {
 		var flags = BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly;
 		return new Arr<MethodInfo>(typeof(Tests).GetMethods(flags)).mapDefinedToDict(method => {
 			assert(method.IsStatic);
-			var testForAttribute = method.GetCustomAttribute(typeof(TestForAttribute));
-			if (testForAttribute == null)
-				return Op<(string, MethodInfo)>.None;
-			var testFor = (TestForAttribute)testForAttribute;
-			return Op.Some((testFor.testPath, method));
+			var testFor = method.GetCustomAttribute<TestForAttribute>();
+			return testFor != null ? Op.Some((testFor.testPath, method)) : Op<(string, MethodInfo)>.None;
 		});
 	}
 

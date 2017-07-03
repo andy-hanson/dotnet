@@ -11,12 +11,9 @@ sealed class TestAttribute : Attribute {}
 
 static class Program {
 	static void Main() {
-		//JsTestRunner.create().runTest(Path.fromParts("Impl"));
-
 		var tc = new TestCompile(updateBaselines: true);
-		tc.runTestNamed("Impl");
-
-		//doTestIl();
+		tc.runAllCompilerTests();
+		//tc.runTestNamed("");
 	}
 
 	static void doTestIl() {

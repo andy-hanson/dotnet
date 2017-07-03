@@ -137,6 +137,19 @@ class JsWriter : EmitTextWriter {
 		}
 	}
 
+	void writeExprOrSuper(Estree.ExpressionOrSuper e) {
+		switch (e) {
+			case Estree.Super s:
+				writeRaw("super");
+				break;
+			case Estree.Expression ex:
+				writeExpr(ex);
+				break;
+			default:
+				throw unreachable();
+		}
+	}
+
 	void writeExpr(Estree.Expression e) {
 		switch (e) {
 			case Estree.Identifier i:
@@ -163,6 +176,9 @@ class JsWriter : EmitTextWriter {
 				break;
 			case Estree.FunctionExpression f:
 				writeFunctionDeclarationOrExpression(f, Op<Estree.Identifier>.None);
+				break;
+			case Estree.ArrowFunctionExpression ar:
+				writeArrowFunction(ar);
 				break;
 			case Estree.ClassExpression c:
 				writeClass(c);
@@ -232,14 +248,14 @@ class JsWriter : EmitTextWriter {
 	}
 
 	void writeMemberExpression(Estree.MemberExpression m) {
-		writeExpr(m.@object);
+		writeExprOrSuper(m.@object);
 		if (m.computed) {
 			writeRaw('[');
 			writeExpr(m.property);
 			writeRaw(']');
 		} else {
 			writeRaw('.');
-			writeId((Estree.Identifier) m.property);
+			writeId((Estree.Identifier)m.property);
 		}
 	}
 
@@ -292,12 +308,18 @@ class JsWriter : EmitTextWriter {
 				throw unreachable();
 		}
 
-		writeId(m.key);
+		if (m.computed) {
+			writeRaw('[');
+			writeExpr(m.key);
+			writeRaw(']');
+		} else
+			writeId((Estree.Identifier)m.key);
+
 		writeFunctionOrMethodCommon(m.value);
 	}
 
 	void writeCallOrNew(Estree.CallOrNewExpression c) {
-		writeExpr(c.callee);
+		writeExprOrSuper(c.callee);
 		writeRaw('(');
 		writeCommaSeparatedList(c.arguments, writeExpr);
 		writeRaw(')');
@@ -371,6 +393,16 @@ class JsWriter : EmitTextWriter {
 		writeRaw("function ");
 		if (id.get(out var i)) writeId(i);
 		writeFunctionOrMethodCommon(f);
+	}
+
+	void writeArrowFunction(Estree.ArrowFunctionExpression ar) {
+		writeRaw('('); // Enclose in () for IIFE
+
+		writeParameters(ar.@params);
+		writeRaw(" => ");
+		writeBlockStatementOrExpression(ar.body);
+
+		writeRaw(')');
 	}
 
 	void writeReturn(Estree.ReturnStatement r) {

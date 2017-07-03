@@ -108,7 +108,7 @@ namespace Model {
 			get {
 				// TODO: handle builtins with supertypes
 				// (TODO: Super has location information, may have to abstract over that)
-				if (dotNetType.BaseType != typeof(ValueType)) throw TODO();
+				if (dotNetType.BaseType != typeof(Object)) throw TODO();
 				foreach (var iface in dotNetType.GetInterfaces()) {
 					var gen = iface.GetGenericTypeDefinition();
 					if (gen != typeof(ToData<>) && gen != typeof(DeepEqual<>))
@@ -124,8 +124,12 @@ namespace Model {
 
 		static readonly Dictionary<Sym, BuiltinClass> byName = new Dictionary<Sym, BuiltinClass>();
 
+		internal static IEnumerable<BuiltinClass> all() =>
+			byName.Values;
+
 		static BuiltinClass() {
-			Builtins.register();
+			foreach (var klass in Builtins.allTypes)
+				fromDotNetType(klass);
 		}
 
 		static Dict<Sym, Sym> operatorEscapes = Dict.of(
@@ -255,7 +259,7 @@ namespace Model {
 		public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(head), head, nameof(membersMap), Dat.dict(membersMap));
 
 		internal abstract class Head : M, ToData<Head> {
-			readonly Loc loc;
+			internal readonly Loc loc;
 			Head(Loc loc) { this.loc = loc; }
 
 			public abstract bool deepEqual(Head head);
@@ -323,7 +327,7 @@ namespace Model {
 
 	sealed class Super : M, ToData<Super>, Identifiable<Super.Id> {
 		internal readonly Loc loc;
-		[ParentPointer] internal readonly Klass klass;
+		[ParentPointer] internal readonly Klass containingClass;
 		[UpPointer] internal readonly Ty superClass;
 		//internal readonly Arr<Impl> impls;
 		Late<Arr<Impl>> _impls;
@@ -331,16 +335,16 @@ namespace Model {
 
 		internal Super(Loc loc, Klass klass, Ty superClass) {
 			this.loc = loc;
-			this.klass = klass;
+			this.containingClass = klass;
 			this.superClass = superClass;
 		}
 
 		public bool deepEqual(Super s) =>
-			klass.equalsId<Klass, ClassLike.Id>(s.klass) &&
+			containingClass.equalsId<Klass, ClassLike.Id>(s.containingClass) &&
 			superClass.equalsId<Ty, ClassLike.Id>(s.superClass) &&
 			impls.deepEqual(s.impls);
 		public Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(superClass), superClass.getId(), nameof(impls), Dat.arr(impls));
-		public Id getId() => new Id(klass.getId(), superClass.getId());
+		public Id getId() => new Id(containingClass.getId(), superClass.getId());
 
 		internal struct Id : ToData<Id> {
 			internal readonly ClassLike.Id classId;
@@ -441,7 +445,7 @@ namespace Model {
 			Sym Identifiable<Sym>.getId() => name;
 		}
 
-		internal sealed class BuiltinMethod : Method, ToData<BuiltinMethod> {
+		internal sealed class BuiltinMethod : Method, IEquatable<BuiltinMethod>, ToData<BuiltinMethod> {
 			internal readonly MethodInfo methodInfo;
 
 			internal BuiltinMethod(BuiltinClass klass, MethodInfo methodInfo)
@@ -452,6 +456,7 @@ namespace Model {
 			internal override bool isAbstract => methodInfo.IsAbstract;
 			internal override bool isStatic => methodInfo.IsStatic;
 
+			bool IEquatable<BuiltinMethod>.Equals(BuiltinMethod other) => object.ReferenceEquals(this, other);
 			public override bool deepEqual(Method m) => m is BuiltinMethod b && deepEqual(b);
 			public bool deepEqual(BuiltinMethod m) =>
 				loc.deepEqual(m.loc) && name.deepEqual(m.name) && isStatic == m.isStatic && returnTy.equalsId<Ty, ClassLike.Id>(m.returnTy) && parameters.deepEqual(m.parameters);
