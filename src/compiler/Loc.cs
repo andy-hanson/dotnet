@@ -32,7 +32,7 @@ struct Pos : ToData<Pos> {
 	public Dat toDat() => Dat.num(index);
 }
 
-struct Loc : ToData<Loc>, ToCsonSpecial {
+struct Loc : ToData<Loc>, Test.ToCsonSpecial {
 	internal readonly Pos start;
 	internal readonly Pos end;
 
@@ -50,7 +50,7 @@ struct Loc : ToData<Loc>, ToCsonSpecial {
 	public bool deepEqual(Loc l) => start == l.start && end == l.end;
 	public Dat toDat() => Dat.of(this, nameof(start), start, nameof(end), end);
 
-	void ToCsonSpecial.toCsonSpecial(CsonWriter c) {
+	void Test.ToCsonSpecial.toCsonSpecial(Test.CsonWriter c) {
 		c.writeUint(start.index);
 		c.writeRaw('-');
 		c.writeUint(end.index);

@@ -156,7 +156,11 @@ namespace Ast {
 
 	abstract class Member : Node, ToData<Member> {
 		internal readonly Sym name;
-		Member(Loc loc, Sym name) : base(loc) { this.name = name; }
+		internal readonly Model.Effect effect;
+		Member(Loc loc, Sym name, Model.Effect effect) : base(loc) {
+			this.name = name;
+			this.effect = effect;
+		}
 
 		public override bool deepEqual(Node n) => n is Member m && deepEqual(m);
 		public abstract bool deepEqual(Member m);
@@ -166,7 +170,7 @@ namespace Ast {
 			internal readonly Ty returnTy;
 			internal readonly Arr<Parameter> parameters;
 			internal readonly Expr body;
-			internal Method(Loc loc, bool isStatic, Ty returnTy, Sym name, Arr<Parameter> parameters, Expr body) : base(loc, name) {
+			internal Method(Loc loc, bool isStatic, Ty returnTy, Sym name, Arr<Parameter> parameters, Model.Effect effect, Expr body) : base(loc, name, effect) {
 				this.isStatic = isStatic;
 				this.returnTy = returnTy;
 				this.parameters = parameters;
@@ -193,7 +197,7 @@ namespace Ast {
 		internal sealed class AbstractMethod : Member, ToData<AbstractMethod> {
 			internal readonly Ty returnTy;
 			internal readonly Arr<Parameter> parameters;
-			internal AbstractMethod(Loc loc, Ty returnTy, Sym name, Arr<Parameter> parameters) : base(loc, name) {
+			internal AbstractMethod(Loc loc, Ty returnTy, Sym name, Arr<Parameter> parameters, Model.Effect effect) : base(loc, name, effect) {
 				this.returnTy = returnTy;
 				this.parameters = parameters;
 			}
@@ -210,19 +214,19 @@ namespace Ast {
 				nameof(name), name,
 				nameof(parameters), Dat.arr(parameters));
 		}
+	}
 
-		internal sealed class Parameter : Node, ToData<Parameter> {
-			internal readonly Ty ty;
-			internal readonly Sym name;
-			internal Parameter(Loc loc, Ty ty, Sym name) : base(loc) {
-				this.ty = ty;
-				this.name = name;
-			}
-
-			public override bool deepEqual(Node n) => n is Parameter p && deepEqual(p);
-			public bool deepEqual(Parameter p) => locEq(p) && ty.deepEqual(p.ty) && name.deepEqual(p.name);
-			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(ty), ty, nameof(name), name);
+	internal sealed class Parameter : Node, ToData<Parameter> {
+		internal readonly Ty ty;
+		internal readonly Sym name;
+		internal Parameter(Loc loc, Ty ty, Sym name) : base(loc) {
+			this.ty = ty;
+			this.name = name;
 		}
+
+		public override bool deepEqual(Node n) => n is Parameter p && deepEqual(p);
+		public bool deepEqual(Parameter p) => locEq(p) && ty.deepEqual(p.ty) && name.deepEqual(p.name);
+		public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(ty), ty, nameof(name), name);
 	}
 
 	abstract class Ty : Node, ToData<Ty> {
@@ -381,8 +385,8 @@ namespace Ast {
 		}
 
 		internal sealed class Literal : Expr, ToData<Literal> {
-			internal readonly Model.Expr.Literal.LiteralValue value;
-			internal Literal(Loc loc, Model.Expr.Literal.LiteralValue value) : base(loc) { this.value = value; }
+			internal readonly LiteralValue value;
+			internal Literal(Loc loc, LiteralValue value) : base(loc) { this.value = value; }
 
 			public override bool deepEqual(Node n) => n is Literal l && deepEqual(l);
 			public bool deepEqual(Literal l) => locEq(l) && value.deepEqual(l.value);

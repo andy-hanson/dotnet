@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Runtime.ExceptionServices;
 
 using Lsp;
-using static Utils;
 
 [AttributeUsage(AttributeTargets.Method)]
 sealed class TestAttribute : Attribute {}
@@ -13,21 +11,14 @@ sealed class TestAttribute : Attribute {}
 
 static class Program {
 	static void Main() {
-		var tc = new TestCompile(updateBaselines: true);
+		var tc = new Test.TestCompile(updateBaselines: true);
 		tc.runAllCompilerTests();
 		//tc.runTestNamed("");
 	}
 
 	static void doTestIl() {
 		var t = testIl();
-		object res;
-		try {
-			res = t.GetMethod("Test").Invoke(null, null);
-		} catch (TargetInvocationException e) {
-			ExceptionDispatchInfo.Capture(e.InnerException).Throw();
-			throw unreachable();
-		}
-		Console.WriteLine(res);
+		Console.WriteLine(t.invokeStatic("Test"));
 	}
 
 	static Type testIl() {

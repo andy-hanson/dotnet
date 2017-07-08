@@ -45,8 +45,12 @@ internal enum Token {
 	Fun,
 	[Text("generic")]
 	Generic,
+	[Text("get")]
+	Get,
 	[Text("if")]
 	If,
+	[Text("io")]
+	Io,
 	[Text("import")]
 	Import,
 	[Text("in")]
@@ -59,6 +63,8 @@ internal enum Token {
 	Pass,
 	[Text("self")]
 	Self,
+	[Text("set")]
+	Set,
 	[Text("slots")]
 	Slots,
 	[Text("static")]

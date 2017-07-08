@@ -36,13 +36,7 @@ struct Dict<K, V> where K : IEquatable<K> {
 
 	internal bool has(K k) => inner.ContainsKey(k);
 
-	internal V this[K k] {
-		get {
-			var has = get(k, out var v);
-			assert(has);
-			return v;
-		}
-	}
+	internal V this[K k] => inner[k];
 
 	internal bool get(K k, out V v) => inner.TryGetValue(k, out v);
 
@@ -64,16 +58,8 @@ static class Dict {
 		return true;
 	}
 
-	internal static bool TryAdd<K, V>(this Dictionary<K, V> dict, K key, V value) {
-		if (dict.ContainsKey(key)) {
-			return false;
-		}
-
-		dict[key] = value;
-		return true;
-	}
-
-	internal static Dictionary<K, V> builder<K, V>() => new Dictionary<K, V>();
+	internal static Builder<K, V> builder<K, V>() where K : IEquatable<K> =>
+		new Builder<K, V>(dummy: false);
 
 	internal static Dict<K, V> of<K, V>(params (K, V)[] pairs) where K : IEquatable<K> {
 		var b = new Dictionary<K, V>();
@@ -100,17 +86,44 @@ static class Dict {
 		return new Dict<K, V>(b);
 	}
 
-	internal static Dict<K, V2> mapValues<K, V1, V2>(this IDictionary<K, V1> d, Func<V1, V2> mapper) where K : IEquatable<K> =>
-		new Dict<K, V2>(d.mapValuesToDictionary(mapper));
+	internal struct Builder<K, V> where K : IEquatable<K> {
+		Dictionary<K, V> inner;
+
+		internal Builder(bool dummy) { inner = new Dictionary<K, V>(); }
+
+		internal Dict<K, V> finish() => new Dict<K, V>(inner);
+
+		internal V this[K k] => inner[k];
+
+		internal bool get(K key, out V value) => inner.TryGetValue(key, out value);
+
+		internal void add(K key, V value) =>
+			inner.Add(key, value);
+
+		internal void change(K key, V newValue) {
+			assert(inner.ContainsKey(key));
+			inner[key] = newValue;
+		}
+
+		internal Dict<K, V2> mapValues<V2>(Func<V, V2> mapper) {
+			var b = builder<K, V2>();
+			foreach (var (k, v) in inner)
+				b.add(k, mapper(v));
+			return b.finish();
+		}
+
+		internal bool tryAdd(K key, V value) {
+			if (inner.ContainsKey(key)) {
+				return false;
+			}
+
+			inner[key] = value;
+			return true;
+		}
+	}
 }
 
 static class DictionaryUtils {
-	internal static Dictionary<K, V2> mapValuesToDictionary<K, V1, V2>(this IDictionary<K, V1> dict, Func<V1, V2> mapper) {
-		var b = new Dictionary<K, V2>();
-		foreach (var (k, v) in dict)
-			b[k] = mapper(v);
-		return b;
-	}
 
 	internal static V getOrUpdate<K, V>(this IDictionary<K, V> dict, K key, Func<V> getValue) {
 		if (dict.TryGetValue(key, out var value))

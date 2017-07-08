@@ -1,5 +1,5 @@
-var _ = require("nzlib");
-var AbstractClass = require("./AbstractClass");
+const _ = require("nzlib");
+const AbstractClass = require("./AbstractClass");
 module.exports = class Impl extends AbstractClass {
 	constructor(x) {
 		super();
@@ -9,8 +9,8 @@ module.exports = class Impl extends AbstractClass {
 		return this.x;
 	}
 	static main(){
-		var instance = new Impl(1);
-		var gotN = AbstractClass.getN(instance);
+		const instance = new Impl(1);
+		const gotN = AbstractClass.getN(instance);
 		if (!(gotN === 1)) throw new _.AssertionException();
 	}
 };

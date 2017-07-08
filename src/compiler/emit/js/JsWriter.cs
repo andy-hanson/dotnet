@@ -338,19 +338,19 @@ class JsWriter : EmitTextWriter {
 
 	void writeLiteral(Estree.Literal l) {
 		switch (l.value) {
-			case Model.Expr.Literal.LiteralValue.Bool b:
+			case LiteralValue.Bool b:
 				writeRaw(b.value ? "true" : "false");
 				break;
-			case Model.Expr.Literal.LiteralValue.Int i:
+			case LiteralValue.Int i:
 				writeRaw(i.value.ToString());
 				break;
-			case Model.Expr.Literal.LiteralValue.Float f:
+			case LiteralValue.Float f:
 				writeRaw(f.value.ToString());
 				break;
-			case Model.Expr.Literal.LiteralValue.Str s:
+			case LiteralValue.String s:
 				writeQuotedString(s.value, writeRaw);
 				break;
-			case Model.Expr.Literal.LiteralValue.Pass p:
+			case LiteralValue.Pass p:
 				writeRaw("void 0");
 				break;
 		}

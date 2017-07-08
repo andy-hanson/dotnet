@@ -1,7 +1,7 @@
 using static Utils;
 
 namespace Model {
-	abstract class Expr : M, ToData<Expr> {
+	abstract class Expr : ModelElement, ToData<Expr> {
 		internal readonly Loc loc;
 		internal abstract Ty ty { get; }
 		Expr(Loc loc) {
@@ -14,15 +14,15 @@ namespace Model {
 		protected bool locEq(Expr e) => loc.deepEqual(e.loc);
 
 		internal sealed class AccessParameter : Expr, ToData<AccessParameter> {
-			[UpPointer] internal readonly Method.Parameter param;
-			internal AccessParameter(Loc loc, Method.Parameter param) : base(loc) {
+			[UpPointer] internal readonly Parameter param;
+			internal AccessParameter(Loc loc, Parameter param) : base(loc) {
 				this.param = param;
 			}
 
 			internal override Ty ty => param.ty;
 
 			public override bool deepEqual(Expr e) => e is AccessParameter a && deepEqual(a);
-			public bool deepEqual(AccessParameter a) => locEq(a) && a.param.equalsId<Method.Parameter, Sym>(param);
+			public bool deepEqual(AccessParameter a) => locEq(a) && a.param.equalsId<Parameter, Sym>(param);
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(param), param);
 		}
 
@@ -77,62 +77,6 @@ namespace Model {
 			internal readonly LiteralValue value;
 			internal Literal(Loc loc, LiteralValue value) : base(loc) { this.value = value; }
 			internal override Ty ty => value.ty;
-
-			internal abstract class LiteralValue : ToData<LiteralValue> {
-				internal abstract Ty ty { get; }
-				LiteralValue() {}
-				public abstract bool deepEqual(LiteralValue l);
-				public abstract Dat toDat();
-
-				internal sealed class Pass : LiteralValue, ToData<Pass> {
-					private Pass() {}
-					internal static readonly Pass instance = new Pass();
-					internal override Ty ty => BuiltinClass.Void;
-					public override bool deepEqual(LiteralValue l) => l == instance;
-					public bool deepEqual(Pass p) => true;
-					public override Dat toDat() => Dat.of(this);
-				}
-
-				internal sealed class Bool : LiteralValue, ToData<Bool> {
-					internal readonly bool value;
-					internal Bool(bool value) { this.value = value; }
-					internal override Ty ty => BuiltinClass.Bool;
-
-					public override bool deepEqual(LiteralValue l) => l is Bool b && deepEqual(b);
-					public bool deepEqual(Bool b) => value == b.value;
-					public override Dat toDat() => Dat.boolean(value);
-				}
-
-				internal sealed class Int : LiteralValue {
-					internal readonly int value;
-					internal Int(int value) { this.value = value; }
-					internal override Ty ty => BuiltinClass.Int;
-
-					public override bool deepEqual(LiteralValue l) => l is Int i && deepEqual(i);
-					public bool deepEqual(Int i) => value == i.value;
-					public override Dat toDat() => Dat.inum(value);
-				}
-
-				internal sealed class Float : LiteralValue {
-					internal readonly double value;
-					internal Float(double value) { this.value = value; }
-					internal override Ty ty => BuiltinClass.Float;
-
-					public override bool deepEqual(LiteralValue l) => l is Float f && deepEqual(f);
-					public bool deepEqual(Float f) => value == f.value;
-					public override Dat toDat() => Dat.floatDat(value);
-				}
-
-				internal sealed class Str : LiteralValue {
-					internal readonly string value;
-					internal Str(string value) { this.value = value; }
-					internal override Ty ty => BuiltinClass.String;
-
-					public override bool deepEqual(LiteralValue l) => l is Str s && deepEqual(s);
-					public bool deepEqual(Str s) => value == s.value;
-					public override Dat toDat() => Dat.str(value);
-				}
-			}
 
 			public override bool deepEqual(Expr e) => e is Literal l && deepEqual(l);
 			public bool deepEqual(Literal l) => locEq(l) && value.deepEqual(l.value);

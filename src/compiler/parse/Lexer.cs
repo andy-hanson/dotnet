@@ -390,6 +390,8 @@ abstract class Lexer : Reader {
 		doTimes(this.indent, () => expectCharacter('\t'));
 	}
 
+	protected bool tryTakeSpace() => tryTake(' ');
+
 	protected void takeSpace() => expectCharacter(' ');
 	protected void takeLparen() => expectCharacter('(');
 	protected void takeRparen() => expectCharacter(')');

@@ -11,12 +11,12 @@ using static Utils;
 Note: We *lazily* compile modules. But we must compile all of a module's imports before we compile it.
 */
 sealed class ILEmitter {
-	readonly AssemblyName assemblyName = new AssemblyName("noze");
+	readonly AssemblyName assemblyName = new AssemblyName(nameof(ILEmitter));
 	readonly AssemblyBuilder assemblyBuilder;
 	readonly ModuleBuilder moduleBuilder;
 	readonly EmitterMapsBuilder maps = new EmitterMapsBuilder();
 
-	readonly Dictionary<Model.Module, string> logs;
+	readonly /*nullable*/ Dictionary<Model.Module, string> logs;
 	bool shouldLog => logs != null;
 
 	internal ILEmitter(bool shouldLog) {
@@ -47,7 +47,7 @@ sealed class ILEmitter {
 	}
 
 	Type doCompileModule(Model.Module module) {
-		var lw = shouldLog ? Op.Some(new LogWriter()) : Op<LogWriter>.None;
+		var logger = logs != null ? new LogWriter() : null;
 
 		var klass = module.klass;
 
@@ -63,10 +63,10 @@ sealed class ILEmitter {
 
 		maps.beginTypeBuilding(klass, typeBuilder.GetTypeInfo());
 
-		fillHead(typeBuilder, klass, lw);
-		fillMethodsAndSupers(typeBuilder, klass, lw);
+		fillHead(typeBuilder, klass, logger);
+		fillMethodsAndSupers(typeBuilder, klass, logger);
 
-		if (lw.get(out var l)) logs[module] = l.finish();
+		if (logs != null) logs[module] = logger.finish();
 
 		var type = typeBuilder.CreateTypeInfo();
 		maps.finishTypeBuilding(klass, type);
@@ -86,7 +86,7 @@ sealed class ILEmitter {
 		}
 	}
 
-	void fillHead(TypeBuilder tb, Klass klass, Op<LogWriter> lw) {
+	void fillHead(TypeBuilder tb, Klass klass, LogWriter logger) {
 		switch (klass.head) {
 			case Klass.Head.Static s:
 				// Nothing to do for a static class.
@@ -99,16 +99,12 @@ sealed class ILEmitter {
 			case Klass.Head.Slots slots:
 				var fields = slots.slots.map<FieldInfo>(slot => {
 					var field = tb.DefineField(slot.name.str, maps.toType(slot.ty), FieldAttributes.Public);
-					maps.slotToField.Add(slot, field);
+					maps.slotToField.add(slot, field);
 					return field;
 				});
-				var logger = Op<Logger>.None;
-				if (lw.get(out var l)) {
-					l.beginConstructor();
-					logger = Op<Logger>.Some(l);
-				}
+				logger?.beginConstructor();
 				generateConstructor(tb, klass, fields, logger);
-				if (lw.get(out var l2)) l.endConstructor();
+				logger?.endConstructor();
 				return;
 
 			default:
@@ -116,7 +112,7 @@ sealed class ILEmitter {
 		}
 	}
 
-	void generateConstructor(TypeBuilder tb, Klass klass, Arr<FieldInfo> fields, Op<Logger> logger) {
+	void generateConstructor(TypeBuilder tb, Klass klass, Arr<FieldInfo> fields, /*nullable*/ Logger logger) {
 		//Constructor can't call any other methods, so we generate it eagerly.
 		var parameterTypes = fields.mapToArray(f => f.FieldType);
 		var ctr = tb.DefineConstructor(MethodAttributes.Private, CallingConventions.Standard, parameterTypes);
@@ -129,23 +125,19 @@ sealed class ILEmitter {
 		}
 		il.ret();
 
-		maps.classToConstructor[klass] = ctr;
+		maps.classToConstructor.add(klass, ctr);
 	}
 
-	void fillMethodsAndSupers(TypeBuilder tb, Klass klass, Op<LogWriter> lw) {
+	void fillMethodsAndSupers(TypeBuilder tb, Klass klass, /*nullable*/ LogWriter logger) {
 		foreach (var method in klass.methods)
-			maps.methodInfos.Add(method, defineMethod(tb, method, methodAttributes(method)));
+			maps.methodInfos.add(method, defineMethod(tb, method, methodAttributes(method)));
 
 		foreach (var super in klass.supers) {
 			foreach (var impl in super.impls) {
 				var mb = defineMethod(tb, impl.implemented, implAttributes);
-				var logger = Op<Logger>.None;
-				if (lw.get(out var l)) {
-					l.beginImpl(impl);
-					logger = Op.Some<Logger>(l);
-				}
+				logger?.beginImpl(impl);
 				ExprEmitter.emitMethodBody(maps, mb, impl.body, logger);
-				if (lw.get(out var l2)) l.endImpl();
+				logger?.endImpl();
 			}
 		}
 
@@ -153,13 +145,9 @@ sealed class ILEmitter {
 			switch (method) {
 				case Method.MethodWithBody mwb:
 					var mb = (MethodBuilder)maps.methodInfos[mwb];
-					var logger = Op<Logger>.None;
-					if (lw.get(out var l)) {
-						l.beginMethod(mwb);
-						logger = Op.Some<Logger>(l);
-					}
+					logger?.beginMethod(mwb);
 					ExprEmitter.emitMethodBody(maps, mb, mwb.body, logger);
-					if (lw.get(out var l2)) l2.endMethod();
+					logger?.endMethod();
 					break;
 				case Method.AbstractMethod a:
 					break;
@@ -229,9 +217,9 @@ sealed class ILEmitter {
 	sealed class EmitterMapsBuilder : EmitterMaps {
 		// This will not be filled for a BuiltinMethod
 		readonly Dictionary<Klass, TypeBuilding> typeInfos = new Dictionary<Klass, TypeBuilding>();
-		internal readonly Dictionary<Method, MethodInfo> methodInfos = new Dictionary<Method, MethodInfo>();
-		internal readonly Dictionary<Klass, ConstructorInfo> classToConstructor = new Dictionary<Klass, ConstructorInfo>();
-		internal readonly Dictionary<Slot, FieldInfo> slotToField = new Dictionary<Slot, FieldInfo>();
+		internal readonly Dict.Builder<Method, MethodInfo> methodInfos = Dict.builder<Method, MethodInfo>();
+		internal readonly Dict.Builder<Klass, ConstructorInfo> classToConstructor = Dict.builder<Klass, ConstructorInfo>();
+		internal readonly Dict.Builder<Slot, FieldInfo> slotToField = Dict.builder<Slot, FieldInfo>();
 
 		struct TypeBuilding {
 			internal readonly TypeInfo info;
@@ -282,7 +270,7 @@ sealed class ILEmitter {
 		readonly Dictionary<Pattern.Single, ILWriter.Local> localToIl = new Dictionary<Pattern.Single, ILWriter.Local>();
 		ExprEmitter(EmitterMaps maps, ILWriter il) { this.maps = maps; this.il = il; }
 
-		internal static void emitMethodBody(EmitterMaps maps, MethodBuilder mb, Expr body, Op<Logger> logger) {
+		internal static void emitMethodBody(EmitterMaps maps, MethodBuilder mb, Expr body, /*nullable*/ Logger logger) {
 			var iw = new ILWriter(mb, logger);
 			new ExprEmitter(maps, iw).emitAny(body);
 			iw.ret();
@@ -373,22 +361,22 @@ sealed class ILEmitter {
 		static readonly FieldInfo fieldVoidInstance = typeof(Builtins.Void).GetField(nameof(Builtins.Void.instance));
 		void emitLiteral(Expr.Literal li) {
 			switch (li.value) {
-				case Expr.Literal.LiteralValue.Bool vb:
+				case LiteralValue.Bool vb:
 					il.loadStaticField(vb.value ? fieldBoolTrue : fieldBoolFalse);
 					return;
-				case Expr.Literal.LiteralValue.Int vi:
+				case LiteralValue.Int vi:
 					il.constInt(vi.value);
 					il.callStaticMethod(staticMethodIntOf);
 					return;
-				case Expr.Literal.LiteralValue.Float vf:
+				case LiteralValue.Float vf:
 					il.constDouble(vf.value);
 					il.callStaticMethod(staticMethodFloatOf);
 					return;
-				case Expr.Literal.LiteralValue.Str vs:
+				case LiteralValue.String vs:
 					il.constString(vs.value);
 					il.callStaticMethod(staticMethodStrOf);
 					return;
-				case Expr.Literal.LiteralValue.Pass p:
+				case LiteralValue.Pass p:
 					emitVoid();
 					return;
 				default:
@@ -489,7 +477,7 @@ sealed class ILEmitter {
 			var exceptionType = typeof(Builtins.AssertionException);
 			var ctr = exceptionType.GetConstructor(new Type[] {});
 			il.callConstructor(ctr);
-			il.@throw();
+			il.doThrow();
 
 			il.markLabel(end);
 

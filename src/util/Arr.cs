@@ -118,9 +118,9 @@ struct Arr<T> {
 		for (uint i = 0; i < length; i++) {
 			var res = mapper(this[i]);
 			if (res.get(out var r))
-				b.Add(r.Item1, r.Item2);
+				b.add(r.Item1, r.Item2);
 		}
-		return new Dict<K, V>(b);
+		return b.finish();
 	}
 
 	internal Arr<T> rcons(T next) {

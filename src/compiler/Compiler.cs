@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 
 using Model;
 using static Utils;
@@ -36,7 +35,7 @@ sealed class Compiler {
 	readonly DocumentProvider documentProvider;
 	readonly Op<CompiledProgram> oldProgram;
 	// Keys are logical paths.
-	readonly Dictionary<Path, ModuleState> modules = new Dictionary<Path, ModuleState>();
+	readonly Dict.Builder<Path, ModuleState> modules = Dict.builder<Path, ModuleState>();
 
 	Compiler(DocumentProvider documentProvider, Op<CompiledProgram> oldProgram) { this.documentProvider = documentProvider; this.oldProgram = oldProgram; }
 
@@ -53,7 +52,7 @@ sealed class Compiler {
 	isReused: true if this is the same module from the old program.
 	*/
 	(Module, bool isReused) compileSingle(Op<PathLoc> from, Path logicalPath) {
-		if (modules.TryGetValue(logicalPath, out var alreadyCompiled)) {
+		if (modules.get(logicalPath, out var alreadyCompiled)) {
 			switch (alreadyCompiled.kind) {
 				case ModuleState.Kind.Compiling:
 					//TODO: attach an error to the Module.
@@ -71,9 +70,9 @@ sealed class Compiler {
 			}
 		} else {
 			//Must make a mark in modules *before* compiling dependencies!
-			modules.Add(logicalPath, ModuleState.compiling);
+			modules.add(logicalPath, ModuleState.compiling);
 			var (module, isReused) = doCompileSingle(from, logicalPath);
-			modules[logicalPath] = ModuleState.compiled(module, isReused);
+			modules.change(logicalPath, ModuleState.compiled(module, isReused));
 			return (module, isReused);
 		}
 	}
@@ -85,7 +84,7 @@ sealed class Compiler {
 		}
 
 		if (documentInfo.parseResult.isRight) {
-			Console.WriteLine(CsonWriter.write(documentInfo.parseResult.right));
+			Console.WriteLine(Test.CsonWriter.write(documentInfo.parseResult.right));
 			throw TODO("Bad Parse");
 		}
 

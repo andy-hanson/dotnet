@@ -4,6 +4,24 @@ using System;
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Field)]
 sealed class HidAttribute : Attribute {}
 
+[AttributeUsage(AttributeTargets.Method)]
+abstract class HasEffectAttribute : Attribute {
+	internal abstract Model.Effect effect { get; }
+}
+
+sealed class PureAttribute : HasEffectAttribute {
+	internal override Model.Effect effect => Model.Effect.Pure;
+}
+sealed class GetAttribute : HasEffectAttribute {
+	internal override Model.Effect effect => Model.Effect.Get;
+}
+sealed class SetAttribute : HasEffectAttribute {
+	internal override Model.Effect effect => Model.Effect.Set;
+}
+sealed class IoAttribute : HasEffectAttribute {
+	internal override Model.Effect effect => Model.Effect.Io;
+}
+
 [AttributeUsage(AttributeTargets.Class)]
 sealed class HidSuperClassAttribute : Attribute {}
 
@@ -48,13 +66,13 @@ public static class Builtins {
 		bool DeepEqual<Bool>.deepEqual(Bool b) => value == b.value;
 		Dat ToData<Bool>.toDat() => Dat.boolean(value);
 
-		[JsTranslate(nameof(JsBuiltins.eq))]
+		[Pure, JsTranslate(nameof(JsBuiltins.eq))]
 		public Bool _eq(Bool other) => of(value == other.value);
 	}
 
 	[JsPrimitive]
 	public sealed class Int : ToData<Int> {
-		[JsTranslate(nameof(JsBuiltins.parseInt))]
+		[Pure, JsTranslate(nameof(JsBuiltins.parseInt))]
 		public static Int parse(String s) =>
 			of(int.Parse(s.value)); //TODO: exceptions
 
@@ -68,25 +86,25 @@ public static class Builtins {
 		bool DeepEqual<Int>.deepEqual(Int i) => value == i.value;
 		Dat ToData<Int>.toDat() => Dat.inum(value);
 
-		[JsTranslate(nameof(JsBuiltins.eq))]
+		[Pure, JsTranslate(nameof(JsBuiltins.eq))]
 		public Bool _eq(Int other) => Bool.of(value == other.value);
 
-		[JsTranslate(nameof(JsBuiltins.add))]
+		[Pure, JsTranslate(nameof(JsBuiltins.add))]
 		public Int _add(Int other) => of(checked(value + other.value));
 
-		[JsTranslate(nameof(JsBuiltins.sub))]
+		[Pure, JsTranslate(nameof(JsBuiltins.sub))]
 		public Int _sub(Int other) => of(checked(value - other.value));
 
-		[JsTranslate(nameof(JsBuiltins.mul))]
+		[Pure, JsTranslate(nameof(JsBuiltins.mul))]
 		public Int _mul(Int other) => of(checked(value * other.value));
 
-		[JsTranslate(nameof(JsBuiltins.divInt))]
+		[Pure, JsTranslate(nameof(JsBuiltins.divInt))]
 		public Int _div(Int other) => of(checked(value / other.value));
 	}
 
 	[JsPrimitive]
 	public sealed class Float : ToData<Float> {
-		[JsTranslate(nameof(JsBuiltins.parseFloat))]
+		[Pure, JsTranslate(nameof(JsBuiltins.parseFloat))]
 		public static Float parse(String s) =>
 			of(double.Parse(s.value)); //TODO: exceptions
 
@@ -101,16 +119,16 @@ public static class Builtins {
 		bool DeepEqual<Float>.deepEqual(Float f) => value == f.value;
 		Dat ToData<Float>.toDat() => Dat.floatDat(value);
 
-		[JsTranslate(nameof(JsBuiltins.add))]
+		[Pure, JsTranslate(nameof(JsBuiltins.add))]
 		public Float _add(Float other) => of(checked(value + other.value));
 
-		[JsTranslate(nameof(JsBuiltins.sub))]
+		[Pure, JsTranslate(nameof(JsBuiltins.sub))]
 		public Float _sub(Float other) => of(checked(value - other.value));
 
-		[JsTranslate(nameof(JsBuiltins.mul))]
+		[Pure, JsTranslate(nameof(JsBuiltins.mul))]
 		public Float _mul(Float other) => of(checked(value * other.value));
 
-		[JsTranslate(nameof(JsBuiltins.divFloat))]
+		[Pure, JsTranslate(nameof(JsBuiltins.divFloat))]
 		public Float _div(Float other) => of(checked(value / other.value));
 	}
 
@@ -125,17 +143,17 @@ public static class Builtins {
 		bool DeepEqual<String>.deepEqual(String s) => value == s.value;
 		Dat ToData<String>.toDat() => Dat.str(value);
 
-		[JsTranslate(nameof(JsBuiltins.eq))]
+		[Pure, JsTranslate(nameof(JsBuiltins.eq))]
 		public Bool _eq(String other) => Bool.of(value == other.value);
 
-		[JsTranslate(nameof(JsBuiltins.add))]
+		[Pure, JsTranslate(nameof(JsBuiltins.add))]
 		public String _add(String other) => of(value + other.value);
 	}
 
 	[HidSuperClass]
 	public abstract class Exception : System.Exception {
 		protected Exception() : base() {}
-		public abstract String description();
+		[Pure] public abstract String description();
 	}
 
 	public sealed class AssertionException : Exception {

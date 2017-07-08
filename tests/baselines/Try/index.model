@@ -16,7 +16,7 @@ Klass(
           name: "x"),
         value: Try(
           loc: 29-111,
-          do_: Seq(
+          _do: Seq(
             loc: 41-73,
             action: Assert(
               loc: 41-57,
@@ -26,7 +26,7 @@ Klass(
             then: Literal(
               loc: 57-70,
               value: "unreachable")),
-          catch_: Catch(
+          _catch: Catch(
             loc: 73-111,
             exceptionTy: "Exception",
             caught: Single(
@@ -39,7 +39,7 @@ Klass(
                 klassId: "Exception",
                 name: "description"),
               args: [])),
-          finally_: null),
+          _finally: null),
         then: Assert(
           loc: 111-143,
           asserted: InstanceMethodCall(

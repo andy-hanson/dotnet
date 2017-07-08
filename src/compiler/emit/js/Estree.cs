@@ -28,8 +28,8 @@ namespace Estree {
 	}
 
 	sealed class Literal : Node, Expression {
-		internal readonly Model.Expr.Literal.LiteralValue value;
-		internal Literal(Loc loc, Model.Expr.Literal.LiteralValue value) : base(loc) { this.value = value; }
+		internal readonly LiteralValue value;
+		internal Literal(Loc loc, LiteralValue value) : base(loc) { this.value = value; }
 	}
 
 	sealed class Program : Node {
@@ -198,7 +198,7 @@ namespace Estree {
 			var nameStr = name.str;
 			if (isSafeMemberName(nameStr))
 				return notComputed(loc, lhs, new Identifier(loc, name));
-			var property = new Literal(loc, new Model.Expr.Literal.LiteralValue.Str(nameStr));
+			var property = new Literal(loc, LiteralValue.String.of(nameStr));
 			return new MemberExpression(loc, lhs, property, computed: true);
 		}
 
@@ -300,7 +300,7 @@ namespace Estree {
 		internal static MethodDefinition method(Loc loc, Sym name, Arr<Pattern> @params, BlockStatement body, bool @static) {
 			var nameStr = name.str;
 			var computed = !isSafeMemberName(nameStr);
-			var key = computed ? new Literal(loc, new Model.Expr.Literal.LiteralValue.Str(nameStr)) : (Expression)new Identifier(loc, name);
+			var key = computed ? new Literal(loc, LiteralValue.String.of(nameStr)) : (Expression)new Identifier(loc, name);
 			return new MethodDefinition(loc, key, new FunctionExpression(loc, @params, body), Kind.Method, computed, @static);
 		}
 

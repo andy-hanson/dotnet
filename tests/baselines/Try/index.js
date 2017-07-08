@@ -1,7 +1,7 @@
-var _ = require("nzlib");
+const _ = require("nzlib");
 module.exports = class Try {
 	static main(){
-		var x = (() => {
+		const x = (() => {
 			try {
 				if (!(false)) throw new _.AssertionException();
 				return "unreachable";

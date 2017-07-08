@@ -199,9 +199,9 @@ sealed class Parser : Lexer {
 	}
 
 	Ast.Member.AbstractMethod parseAbstractMethod(Pos start) {
-		var (returnTy, name, parameters) = parseMethodHead();
+		var (returnTy, name, parameters, effect) = parseMethodHead();
 		takeNewline();
-		return new Ast.Member.AbstractMethod(locFrom(start), returnTy, name, parameters);
+		return new Ast.Member.AbstractMethod(locFrom(start), returnTy, name, parameters, effect);
 	}
 
 	Op<Sym> parseImplParameter() {
@@ -212,44 +212,64 @@ sealed class Parser : Lexer {
 		return Op.Some(takeName());
 	}
 
-	(Ast.Ty, Sym, Arr<Ast.Member.Parameter>) parseMethodHead() {
+	(Ast.Ty, Sym, Arr<Ast.Parameter>, Model.Effect) parseMethodHead() {
 		takeSpace();
 		var returnTy = parseTy();
 		takeSpace();
 		var name = takeName();
 		takeLparen();
-		Arr<Ast.Member.Parameter> parameters;
+		Arr<Ast.Parameter> parameters;
 		if (tryTakeRparen())
-			parameters = Arr.empty<Ast.Member.Parameter>();
+			parameters = Arr.empty<Ast.Parameter>();
 		else {
 			var first = parseJustParameter();
 			parameters = buildUntilNullWithFirst(first, parseParameter);
 		}
 
-		return (returnTy, name, parameters);
+		var effect = parseEffect();
+
+		return (returnTy, name, parameters, effect);
+	}
+
+	Model.Effect parseEffect() {
+		if (!tryTakeSpace())
+			return Model.Effect.Pure;
+
+		var start = pos;
+		var kw = this.takeKeyword();
+		switch (kw) {
+			case Token.Get:
+				return Model.Effect.Get;
+			case Token.Set:
+				return Model.Effect.Set;
+			case Token.Io:
+				return Model.Effect.Io;
+			default:
+				throw unexpected(start, "'get', 'set', or 'io'", kw);
+		}
 	}
 
 	Ast.Member.Method parseMethodWithBody(Pos start, bool isStatic) {
-		var (returnTy, name, parameters) = parseMethodHead();
+		var (returnTy, name, parameters, effect) = parseMethodHead();
 		takeIndent();
 		var body = parseBlock();
-		return new Ast.Member.Method(locFrom(start), isStatic, returnTy, name, parameters, body);
+		return new Ast.Member.Method(locFrom(start), isStatic, returnTy, name, parameters, effect, body);
 	}
 
-	Op<Ast.Member.Method.Parameter> parseParameter() {
+	Op<Ast.Parameter> parseParameter() {
 		if (tryTakeRparen())
-			return Op<Ast.Member.Parameter>.None;
+			return Op<Ast.Parameter>.None;
 		takeComma();
 		takeSpace();
 		return Op.Some(parseJustParameter());
 	}
 
-	Ast.Member.Parameter parseJustParameter() {
+	Ast.Parameter parseJustParameter() {
 		var start = pos;
 		var ty = parseTy();
 		takeSpace();
 		var name = takeName();
-		return new Ast.Member.Parameter(locFrom(start), ty, name);
+		return new Ast.Parameter(locFrom(start), ty, name);
 	}
 
 	Ast.Ty parseTy() {
@@ -484,16 +504,16 @@ sealed class Parser : Lexer {
 	Ast.Expr singleTokenExpr(Loc loc, Token token) {
 		switch (token) {
 			case Token.IntLiteral:
-				return new Ast.Expr.Literal(loc, new Model.Expr.Literal.LiteralValue.Int(int.Parse(tokenValue)));
+				return new Ast.Expr.Literal(loc, LiteralValue.Int.of(int.Parse(tokenValue)));
 			case Token.FloatLiteral:
-				return new Ast.Expr.Literal(loc, new Model.Expr.Literal.LiteralValue.Float(double.Parse(tokenValue)));
+				return new Ast.Expr.Literal(loc, LiteralValue.Float.of(double.Parse(tokenValue)));
 			case Token.StringLiteral:
-				return new Ast.Expr.Literal(loc, new Model.Expr.Literal.LiteralValue.Str(tokenValue));
+				return new Ast.Expr.Literal(loc, LiteralValue.String.of(tokenValue));
 			case Token.Pass:
-				return new Ast.Expr.Literal(loc, Model.Expr.Literal.LiteralValue.Pass.instance);
+				return new Ast.Expr.Literal(loc, LiteralValue.Pass.instance);
 			case Token.True:
 			case Token.False:
-				return new Ast.Expr.Literal(loc, new Model.Expr.Literal.LiteralValue.Bool(token == Token.True));
+				return new Ast.Expr.Literal(loc, LiteralValue.Bool.of(token == Token.True));
 			case Token.Self:
 				return new Ast.Expr.Self(loc);
 			default:

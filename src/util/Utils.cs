@@ -53,6 +53,7 @@ static class Utils {
 		if (!condition)
 			throw fail(message());
 	}
+
 	internal static void assert(bool condition, string message = "Assertion failed.") {
 		if (!condition)
 			throw fail(message);
@@ -60,15 +61,13 @@ static class Utils {
 
 	internal static void doTimes(uint times, Action action) {
 		assert(times >= 0);
-		for (var i = times; i != 0; i--) {
+		for (var i = times; i != 0; i--)
 			action();
-		}
 	}
 
 	internal static void doTimes(uint times, Action<uint> action) {
 		assert(times >= 0);
-		for (var i = times; i != 0; i--) {
+		for (var i = times; i != 0; i--)
 			action(i);
-		}
 	}
 }

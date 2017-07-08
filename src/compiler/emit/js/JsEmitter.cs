@@ -42,7 +42,7 @@ sealed class JsEmitter {
 	}
 
 	static Estree.Statement importStatement(Sym importedName, string importedPath) {
-		var required = new Estree.Literal(Loc.zero, new Expr.Literal.LiteralValue.Str(importedPath));
+		var required = new Estree.Literal(Loc.zero, LiteralValue.String.of(importedPath));
 		var require = Estree.CallExpression.of(Loc.zero, requireId, required);
 		return Estree.VariableDeclaration.simple(Loc.zero, importedName, require);
 	}
@@ -121,7 +121,7 @@ sealed class JsEmitter {
 	Estree.MethodDefinition emitMethodOrImpl(Loc loc, Method method, Expr body, bool isStatic) =>
 		Estree.MethodDefinition.method(loc, method.name, method.parameters.map(emitParameter), exprToBlockStatement(body), isStatic);
 
-	static Estree.Pattern emitParameter(Method.Parameter p) => id(p.loc, p.name);
+	static Estree.Pattern emitParameter(Parameter p) => id(p.loc, p.name);
 
 	Estree.BlockStatement exprToBlockStatement(Expr expr) {
 		var parts = Arr.builder<Estree.Statement>();
@@ -156,7 +156,7 @@ sealed class JsEmitter {
 					parts.add(tryToStatement(t));
 					return;
 				case Expr.Literal l:
-					if (l.value is Expr.Literal.LiteralValue.Pass)
+					if (l.value is LiteralValue.Pass)
 						return;
 					goto default;
 				default:
