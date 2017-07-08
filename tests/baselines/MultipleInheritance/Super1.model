@@ -1,0 +1,30 @@
+Klass(
+  loc: 0-56,
+  head: Abstract(
+    loc: 0-10),
+  membersMap: Dict<Sym, Member>(
+    s1: AbstractMethod(
+      loc: 10-29,
+      returnTy: "Int",
+      name: "s1",
+      parameters: []),
+    s1Def: MethodWithBody(
+      loc: 29-56,
+      isStatic: false,
+      returnTy: "Int",
+      name: "s1Def",
+      parameters: [],
+      body: InstanceMethodCall(
+        loc: 46-56,
+        target: MyInstanceMethodCall(
+          loc: 46-48,
+          method: Id(
+            klassId: "Super1",
+            name: "s1"),
+          args: []),
+        method: Id(
+          klassId: "Int",
+          name: "*"),
+        args: [Literal(
+          loc: 53-55,
+          value: 10)]))))

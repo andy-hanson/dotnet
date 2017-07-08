@@ -4,20 +4,24 @@ constructor
 	set instance field x
 	return
 
-fun main
+Void main() [PrivateScope, Public, Static]
+
+Int getX() [PrivateScope, Public, Final]
+
+main
 	const 1
-	call static Int.of
+	call non-virtual Int.of
 	new Slots
 	declare local obj
 	set local obj
 	get local obj
-	call instance Slots.getX
+	call non-virtual Slots.getX
 	declare local gotX
 	set local gotX
 	get local gotX
 	const 1
-	call static Int.of
-	call instance Int._eq
+	call non-virtual Int.of
+	call non-virtual Int._eq
 	get instance field Bool.value
 	goto if true: endAssert
 	new AssertionException
@@ -26,7 +30,7 @@ fun main
 	load static field Void.instance
 	return
 
-def getX
+getX
 	this
 	get instance field Slots.x
 	return

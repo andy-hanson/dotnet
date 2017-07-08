@@ -21,7 +21,9 @@ Klass(
       body: Assert(
         loc: 63-83,
         asserted: InstanceMethodCall(
+          loc: 70-83,
           target: InstanceMethodCall(
+            loc: 71-73,
             target: AccessParameter(
               loc: 70-71,
               param: Parameter(

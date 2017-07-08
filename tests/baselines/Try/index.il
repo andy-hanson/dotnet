@@ -1,4 +1,6 @@
-fun main
+Void main() [PrivateScope, Public, Static]
+
+main
 	declare local tryResult
 	begin try
 	load static field Bool.boolFalse
@@ -10,13 +12,13 @@ fun main
 	load static field Void.instance
 	pop
 	const "unreachable"
-	call static String.of
+	call non-virtual String.of
 	set local tryResult
 	catch Builtins+Exception
 	declare local e
 	set local e
 	get local e
-	call instance Exception.description
+	call virtual Exception.description
 	set local tryResult
 	end try
 	get local tryResult
@@ -24,8 +26,8 @@ fun main
 	set local x
 	get local x
 	const "Assertion failed."
-	call static String.of
-	call instance String._eq
+	call non-virtual String.of
+	call non-virtual String._eq
 	get instance field Bool.value
 	goto if true: endAssert
 	new AssertionException

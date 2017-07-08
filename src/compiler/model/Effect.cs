@@ -1,4 +1,3 @@
-
 namespace Model {
 	/** Ordering is important; strictest level comes first, each new level contains the previous one. */
 	internal enum Effect {

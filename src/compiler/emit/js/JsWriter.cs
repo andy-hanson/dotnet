@@ -295,6 +295,9 @@ class JsWriter : EmitTextWriter {
 		if (m.@static)
 			writeRaw("static ");
 
+		if (m.value.async)
+			writeRaw("async ");
+
 		switch (m.kind) {
 			case Estree.MethodDefinition.Kind.Get:
 			case Estree.MethodDefinition.Kind.Set:
@@ -390,12 +393,17 @@ class JsWriter : EmitTextWriter {
 	}
 
 	void writeFunctionDeclarationOrExpression(Estree.FunctionDeclarationOrExpression f, Op<Estree.Identifier> id) {
+		if (f.async)
+			writeRaw("async ");
 		writeRaw("function ");
 		if (id.get(out var i)) writeId(i);
 		writeFunctionOrMethodCommon(f);
 	}
 
 	void writeArrowFunction(Estree.ArrowFunctionExpression ar) {
+		if (ar.async)
+			writeRaw("async ");
+
 		writeRaw('('); // Enclose in () for IIFE
 
 		writeParameters(ar.@params);

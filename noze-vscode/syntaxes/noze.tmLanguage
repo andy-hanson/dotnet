@@ -16,7 +16,7 @@
         <key>name</key>
         <string>keyword</string>
         <key>match</key>
-        <string>^\s*(abstract|fun|def|var|val)\s+([A-Z][a-zA-Z]*)\s+([a-zA-Z]*)</string>
+        <string>^\s*(abstract|fun|def|var|val)\s+([A-Z][a-zA-Z0-9\-]*)\s+([a-zA-Z0-9\-]*)</string>
         <key>captures</key>
         <dict>
           <key>2</key>
@@ -35,7 +35,7 @@
         <key>name</key>
         <string>keyword</string>
         <key>match</key>
-        <string>^\s*impl\s+([A-Z][a-zA-Z]*)\.([a-zA-Z]*)</string>
+        <string>^\s*impl\s+([A-Z][a-zA-Z0-9\-]*)\.([a-zA-Z0-9\-]*)</string>
         <key>captures</key>
         <dict>
           <key>1</key>
@@ -54,19 +54,25 @@
         <key>name</key>
         <string>support.type</string>
         <key>match</key>
-        <string>\b[A-Z][a-zA-Z]*\b</string>
+        <string>\b[A-Z][a-zA-Z0-9\-]*\b</string>
+      </dict>
+      <dict>
+        <key>name</key>
+        <string>keyword</string>
+        <key>match</key>
+        <string>\b(_|abstract|assert|catch|def|do|else|enum|false|finally|for|fun|generic|get|if|io|is|impl|import|in|new|pass|self|set|slots|static|true|try|val|var|when|\&lt;|\&gt;|\&lt;\=|\&gt;\=|\+|\-|\*|\/)\b</string>
+      </dict>
+      <dict>
+        <key>name</key>
+        <string/>
+        <key>match</key>
+        <string>\b[a-z][a-zA-Z0-9\-]*\b</string>
       </dict>
       <dict>
         <key>name</key>
         <string>comment</string>
         <key>match</key>
         <string>\.|\,|=|\\</string>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>keyword</string>
-        <key>match</key>
-        <string>\b(_|abstract|assert|catch|def|do|else|enum|false|finally|for|fun|generic|if|is|impl|import|in|new|pass|self|slots|static|true|try|val|var|when|\&lt;|\&gt;|\&lt;\=|\&gt;\=|\+|\-|\*|\/)\b</string>
       </dict>
       <dict>
         <key>name</key>

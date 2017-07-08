@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using Model;
 using static Utils;
 
-class MethodChecker {
+class ExprChecker {
 	internal static Expr checkMethod(BaseScope baseScope, bool isStatic, Ty returnTy, Arr<Parameter> parameters, Effect effect, Ast.Expr body) =>
-		new MethodChecker(baseScope, isStatic, parameters, effect).checkSubtype(returnTy, body);
+		new ExprChecker(baseScope, isStatic, parameters, effect).checkSubtype(returnTy, body);
 
 	readonly BaseScope baseScope;
 	Klass currentClass => baseScope.self;
@@ -15,7 +15,7 @@ class MethodChecker {
 	readonly Effect effect;
 	readonly Stack<Pattern.Single> locals = new Stack<Pattern.Single>();
 
-	MethodChecker(BaseScope baseScope, bool isStatic, Arr<Parameter> parameters, Effect effect) {
+	ExprChecker(BaseScope baseScope, bool isStatic, Arr<Parameter> parameters, Effect effect) {
 		this.baseScope = baseScope;
 		this.isStatic = isStatic;
 		this.parameters = parameters;
@@ -104,8 +104,7 @@ class MethodChecker {
 				return callMethod(ref expected, gp.loc, gp.target, gp.propertyName, call.args);
 
 			case Ast.Expr.Access ac:
-				//Self-call.
-				throw TODO();
+				return callOwnMethod(ref expected, ac.loc, ac.name, call.args);
 
 			default:
 				// Diagnostic -- can't call anything else.
@@ -125,8 +124,9 @@ class MethodChecker {
 	}
 
 	Expr checkGetProperty(ref Expected expected, Ast.Expr.GetProperty g) {
-		getProperty(g.loc, g.target, g.propertyName, out var target, out var member);
-		var slot = (Slot)member; //TODO
+		var target = checkInfer(g.target);
+		var member = getMember(g.loc, target.ty, g.propertyName);
+		var slot = (Slot)member; //TODO: error handling
 		return handle(ref expected, new Expr.GetSlot(g.loc, target, slot));
 	}
 
@@ -193,25 +193,43 @@ class MethodChecker {
 	}
 
 	Expr callMethod(ref Expected expected, Loc loc, Ast.Expr targetAst, Sym methodName, Arr<Ast.Expr> argAsts) {
-		getProperty(loc, targetAst, methodName, out var target, out var member);
+		var target = checkInfer(targetAst);
+		var member = getMember(loc, target.ty, methodName);
 		var method = (Method)member; //TODO: error handling
-		if (method.isStatic) throw TODO();
+		if (method.isStatic) throw TODO(); //error
 		var args = checkCall(loc, method, argAsts);
 		return handle(ref expected, new Expr.InstanceMethodCall(loc, target, method, args));
 	}
 
-	void getProperty(Loc loc, Ast.Expr targetAst, Sym propertyName, out Expr target, out Member member) {
-		target = checkInfer(targetAst);
-		member = getMember(loc, target.ty, propertyName);
+	Expr callOwnMethod(ref Expected expected, Loc loc, Sym methodName, Arr<Ast.Expr> argAsts) {
+		var member = getMember(loc, currentClass, methodName);
+		var method = (Method)member; //TODO: error handling
+		if (method.isStatic) throw TODO(); //OK to call own static method! Use Expr.StaticMethodCall on current class
+		var args = checkCall(loc, method, argAsts);
+		return handle(ref expected, new Expr.MyInstanceMethodCall(loc, method, args));
 	}
 
 	static Member getMember(Loc loc, Ty ty, Sym memberName) {
-		var klass = (ClassLike)ty; //TODO: error handling
-		if (!klass.membersMap.get(memberName, out var member)) {
-			unused(loc);
-			throw TODO();
+		if (tryGetMember(ty, memberName, out var member))
+			return member;
+
+		unused(loc);
+		throw TODO(); //error
+	}
+
+	static bool tryGetMember(Ty ty, Sym memberName, out Member member) {
+		var klass = (ClassLike)ty; //TODO
+		if (klass.membersMap.get(memberName, out member)) {
+			return true;
 		}
-		return member;
+
+		foreach (var super in klass.supers) {
+			var superClass = (ClassLike) super.superClass; //TODO
+			if (tryGetMember(super.superClass, memberName, out member))
+				return true;
+		}
+
+		return false;
 	}
 
 	Arr<Expr> checkCall(Loc callLoc, Method method, Arr<Ast.Expr> argAsts) {
@@ -222,6 +240,7 @@ class MethodChecker {
 			unused(callLoc);
 			throw TODO();
 		}
+
 		return method.parameters.zip(argAsts, (parameter, argAst) => checkSubtype(parameter.ty, argAst));
 	}
 
@@ -279,7 +298,7 @@ class MethodChecker {
 		/** Note: This may be called on SubTypeOf. */
 		internal Ty inferredType => expectedTy.force;
 
-		internal Expr handle(Expr e, MethodChecker c) {
+		internal Expr handle(Expr e, ExprChecker c) {
 			switch (kind) {
 				case Kind.SubTypeOf:
 					//Ty must be a subtype of this.

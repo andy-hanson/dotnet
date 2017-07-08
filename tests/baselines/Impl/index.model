@@ -37,6 +37,7 @@ Klass(
           then: Assert(
             loc: 138-155,
             asserted: InstanceMethodCall(
+              loc: 145-155,
               target: AccessLocal(
                 local: "gotN"),
               method: Id(

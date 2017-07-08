@@ -1,0 +1,6 @@
+abstract
+
+abstract Int s1()
+
+def Int s1Def()
+	s1() * 10

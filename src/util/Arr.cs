@@ -95,12 +95,26 @@ struct Arr<T> {
 
 	internal Arr<U> mapWithFirst<U>(Op<U> first, Func<T, uint, U> mapper) =>
 		first.get(out var f) ? mapWithFirst(f, mapper) : map(mapper);
-	internal Arr<U> mapWithFirst<U>(U first, Func<T, uint, U> mapper) {
+
+	internal Arr<U> mapWithFirst<U>(U first, Func<T, uint, U> mapper) =>
+		new Arr<U>(mapToArrayWithFirst(first, mapper));
+
+	internal U[] mapToArrayWithFirst<U>(U first, Func<T, uint, U> mapper) {
 		var b = new U[length + 1];
 		b[0] = first;
 		for (uint i = 0; i < length; i++)
 			b[i + 1] = mapper(this[i], i);
-		return new Arr<U>(b);
+		return b;
+	}
+
+	internal U[] mapToArrayWithFirst<U>(Op<U> first, Func<T, U> mapper) =>
+		first.get(out var f) ? mapToArrayWithFirst<U>(f, mapper) : mapToArray<U>(mapper);
+	internal U[] mapToArrayWithFirst<U>(U first, Func<T, U> mapper) {
+		var b = new U[length + 1];
+		b[0] = first;
+		for (uint i = 0; i < length; i++)
+			b[i + 1] = mapper(this[i]);
+		return b;
 	}
 
 	internal Arr<U> mapDefined<U>(Func<T, Op<U>> mapper) {

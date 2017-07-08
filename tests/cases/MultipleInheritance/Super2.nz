@@ -1,0 +1,6 @@
+abstract
+
+abstract Int s2()
+
+def Int s2Def()
+	s2() * 10

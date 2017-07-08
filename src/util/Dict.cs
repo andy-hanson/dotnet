@@ -87,7 +87,7 @@ static class Dict {
 	}
 
 	internal struct Builder<K, V> where K : IEquatable<K> {
-		Dictionary<K, V> inner;
+		readonly Dictionary<K, V> inner;
 
 		internal Builder(bool dummy) { inner = new Dictionary<K, V>(); }
 
@@ -124,7 +124,6 @@ static class Dict {
 }
 
 static class DictionaryUtils {
-
 	internal static V getOrUpdate<K, V>(this IDictionary<K, V> dict, K key, Func<V> getValue) {
 		if (dict.TryGetValue(key, out var value))
 			return value;

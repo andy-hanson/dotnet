@@ -29,6 +29,7 @@ Klass(
             loc: 48-52,
             name: "gotX"),
           value: InstanceMethodCall(
+            loc: 58-63,
             target: AccessLocal(
               local: "obj"),
             method: Id(
@@ -38,6 +39,7 @@ Klass(
           then: Assert(
             loc: 67-85,
             asserted: InstanceMethodCall(
+              loc: 74-85,
               target: AccessLocal(
                 local: "gotX"),
               method: Id(

@@ -27,6 +27,9 @@ namespace Test {
 
 		[TestFor(nameof(Try))]
 		static void Try(TestData t) => runCsJsTests(t);
+
+		[TestFor(nameof(MultipleInheritance))]
+		static void MultipleInheritance(TestData t) => runCsJsTests(t);
 	}
 
 	// Must be public since it's used dynamically

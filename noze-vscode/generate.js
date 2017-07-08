@@ -51,19 +51,20 @@ const keywords = [
 ]
 
 const patterns = [
-	match("keyword", /^\s*(abstract|fun|def|var|val)\s+([A-Z][a-zA-Z]*)\s+([a-zA-Z]*)/, {
+	match("keyword", /^\s*(abstract|fun|def|var|val)\s+([A-Z][a-zA-Z0-9\-]*)\s+([a-zA-Z0-9\-]*)/, {
 		2: "support.type",
 		3: "string.quoted",
 	}),
-	match("keyword", /^\s*impl\s+([A-Z][a-zA-Z]*)\.([a-zA-Z]*)/, {
+	match("keyword", /^\s*impl\s+([A-Z][a-zA-Z0-9\-]*)\.([a-zA-Z0-9\-]*)/, {
 		1: "support.type",
 		2: "string.quoted",
 	}),
 
-	match("support.type", /\b[A-Z][a-zA-Z]*\b/),
+	match("support.type", /\b[A-Z][a-zA-Z0-9\-]*\b/),
+	match("keyword", new RegExp(`\\b(${keywords.join("|")})\\b`)),
+	match("", /\b[a-z][a-zA-Z0-9\-]*\b/),
 	match("comment", /\.|\,|=|\\/),
 
-	match("keyword", new RegExp(`\\b(${keywords.join("|")})\\b`)),
 
 	section("string.quoted", /"/, /"/, {
 		patterns: [

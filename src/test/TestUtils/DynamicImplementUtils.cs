@@ -18,10 +18,10 @@ namespace Test {
 		//Stores a reference to 'o' and redirects all calls to it.
 		//'o' must match the signatures of the abstract methods on the type we're implementing.
 		internal static object implementType(Type typeToImplement, object o) {
-			assert(typeToImplement.IsAbstract);
+			assert(typeToImplement.IsInterface);
 
 			const TypeAttributes attr = TypeAttributes.Public | TypeAttributes.Sealed;
-			var implementer = moduleBuilder.DefineType($"{typeToImplement.Name}_implementer", attr, typeToImplement);
+			var implementer = moduleBuilder.DefineType($"{typeToImplement.Name}_implementer", attr, parent: null, interfaces: new Type[] { typeToImplement });
 
 			var fieldType = o.GetType();
 			assert(fieldType.IsSealed);
@@ -74,7 +74,7 @@ namespace Test {
 
 			il.getThis();
 			il.getField(field);
-			il.callInstanceMethod(implementationMethod, isVirtual: false);
+			il.callNonVirtual(implementationMethod);
 			il.ret();
 		}
 	}

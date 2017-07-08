@@ -1,0 +1,31 @@
+Module(
+  loc: 0-56,
+  imports: [],
+  klass: Klass(
+    loc: 0-56,
+    head: Abstract(
+      loc: 0-10),
+    supers: [],
+    methods: [
+      AbstractMethod(
+        loc: 10-29,
+        returnTy: Access(
+          loc: 19-22,
+          name: "Int"),
+        name: "s1",
+        parameters: []),
+      Method(
+        loc: 29-56,
+        isStatic: false,
+        returnTy: Access(
+          loc: 33-36,
+          name: "Int"),
+        name: "s1Def",
+        parameters: [],
+        body: OperatorCall(
+          loc: 46-56,
+          oper: "*",
+          right: Literal(
+            loc: 53-55,
+            value: 10)))
+    ]))

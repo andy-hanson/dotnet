@@ -201,8 +201,38 @@ namespace Model {
 			internal override Ty ty => method.returnTy;
 
 			public override bool deepEqual(Expr e) => e is InstanceMethodCall m && deepEqual(m);
-			public bool deepEqual(InstanceMethodCall m) => target.deepEqual(m.target) && method.equalsId<Method, Method.Id>(m.method) && args.deepEqual(m.args);
-			public override Dat toDat() => Dat.of(this, nameof(target), target, nameof(method), method.getId(), nameof(args), Dat.arr(args));
+			public bool deepEqual(InstanceMethodCall m) =>
+				locEq(m) &&
+				target.deepEqual(m.target) &&
+				method.equalsId<Method, Method.Id>(m.method) &&
+				args.deepEqual(m.args);
+			public override Dat toDat() => Dat.of(this,
+				nameof(loc), loc,
+				nameof(target), target,
+				nameof(method), method.getId(),
+				nameof(args), Dat.arr(args));
+		}
+
+		internal sealed class MyInstanceMethodCall : Expr, ToData<MyInstanceMethodCall> {
+			[UpPointer] internal readonly Method method;
+			internal readonly Arr<Expr> args;
+			internal MyInstanceMethodCall(Loc loc, Method method, Arr<Expr> args) : base(loc) {
+				assert(!method.isStatic);
+				this.method = method;
+				this.args = args;
+			}
+
+			internal override Ty ty => method.returnTy;
+
+			public override bool deepEqual(Expr e) => e is MyInstanceMethodCall m && deepEqual(m);
+			public bool deepEqual(MyInstanceMethodCall m) =>
+				locEq(m) &&
+				method.equalsId<Method, Method.Id>(m.method) &&
+				args.deepEqual(m.args);
+			public override Dat toDat() => Dat.of(this,
+				nameof(loc), loc,
+				nameof(method), method.getId(),
+				nameof(args), Dat.arr(args));
 		}
 
 		internal sealed class New : Expr, ToData<New> {

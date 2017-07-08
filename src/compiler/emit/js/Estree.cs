@@ -38,33 +38,35 @@ namespace Estree {
 	}
 
 	abstract class Function : Node {
+		internal readonly bool async;
 		internal readonly Arr<Pattern> @params;
-		protected Function(Loc loc, Arr<Pattern> @params) : base(loc) {
+		protected Function(Loc loc, bool async, Arr<Pattern> @params) : base(loc) {
+			this.async = async;
 			this.@params = @params;
 		}
 	}
 
 	abstract class FunctionDeclarationOrExpression : Function {
 		internal readonly BlockStatement body;
-		protected FunctionDeclarationOrExpression(Loc loc, Arr<Pattern> @params, BlockStatement body) : base(loc, @params) {
+		protected FunctionDeclarationOrExpression(Loc loc, bool async, Arr<Pattern> @params, BlockStatement body) : base(loc, async, @params) {
 			this.body = body;
 		}
 	}
 
 	sealed class FunctionExpression : FunctionDeclarationOrExpression, Expression {
-		internal FunctionExpression(Loc loc, Arr<Pattern> @params, BlockStatement body) : base(loc, @params, body) {}
+		internal FunctionExpression(Loc loc, bool async, Arr<Pattern> @params, BlockStatement body) : base(loc, async, @params, body) {}
 	}
 
 	sealed class FunctionDeclaration : FunctionDeclarationOrExpression, Declaration {
 		internal readonly Identifier id;
-		internal FunctionDeclaration(Loc loc, Identifier id, Arr<Pattern> @params, BlockStatement body) : base(loc, @params, body) {
+		internal FunctionDeclaration(Loc loc, bool async, Identifier id, Arr<Pattern> @params, BlockStatement body) : base(loc, async, @params, body) {
 			this.id = id;
 		}
 	}
 
 	sealed class ArrowFunctionExpression : Function, Expression {
 		internal readonly BlockStatementOrExpression body;
-		internal ArrowFunctionExpression(Loc loc, Arr<Pattern> @params, BlockStatementOrExpression body) : base(loc, @params) {
+		internal ArrowFunctionExpression(Loc loc, bool async, Arr<Pattern> @params, BlockStatementOrExpression body) : base(loc, async, @params) {
 			this.body = body;
 		}
 	}
@@ -207,6 +209,9 @@ namespace Estree {
 
 		internal static MemberExpression simple(Loc loc, Sym a, Sym b, Sym c) =>
 			simple(loc, simple(loc, a, b), c);
+
+		internal static MemberExpression ofThis(Loc loc, Sym name) =>
+			simple(loc, new ThisExpression(loc), name);
 	}
 
 	sealed class ConditionalExpression : Node, Expression {
@@ -297,16 +302,16 @@ namespace Estree {
 			this.@static = @static;
 		}
 
-		internal static MethodDefinition method(Loc loc, Sym name, Arr<Pattern> @params, BlockStatement body, bool @static) {
+		internal static MethodDefinition method(Loc loc, bool async, Sym name, Arr<Pattern> @params, BlockStatement body, bool @static) {
 			var nameStr = name.str;
 			var computed = !isSafeMemberName(nameStr);
 			var key = computed ? new Literal(loc, LiteralValue.String.of(nameStr)) : (Expression)new Identifier(loc, name);
-			return new MethodDefinition(loc, key, new FunctionExpression(loc, @params, body), Kind.Method, computed, @static);
+			return new MethodDefinition(loc, key, new FunctionExpression(loc, async, @params, body), Kind.Method, computed, @static);
 		}
 
 		internal static readonly Sym symConstructor = Sym.of(nameof(constructor));
 		internal static MethodDefinition constructor(Loc loc, Arr<Pattern> @params, Arr<Statement> body) {
-			var fn = new FunctionExpression(loc, @params, new BlockStatement(loc, body));
+			var fn = new FunctionExpression(loc, /*async*/ false, @params, new BlockStatement(loc, body));
 			return new MethodDefinition(loc, new Identifier(loc, symConstructor), fn, Kind.Constructor, computed: false, @static: false);
 		}
 
@@ -357,6 +362,13 @@ namespace Estree {
 		internal Super(Loc loc) : base(loc) {}
 	}
 
+	sealed class AwaitExpression : Node, Expression {
+		internal readonly Expression argument;
+		internal AwaitExpression(Loc loc, Expression argument) : base(loc) {
+			this.argument = argument;
+		}
+	}
+
 	/*sealed class ImportDeclaration : ModuleDeclaration {
 		internal readonly Arr<ImportDeclarationSpecifier> specifiers;
 		internal readonly Literal source;
@@ -388,14 +400,4 @@ namespace Estree {
 			this.declaration = declaration;
 		}
 	}*/
-}
-
-static class EstreeUtils {
-	internal static bool isSafeMemberName(string s) {
-		foreach (var ch in s) {
-			if (!CharUtils.isDigit(ch) && !CharUtils.isLetter(ch))
-				return false;
-		}
-		return true;
-	}
 }

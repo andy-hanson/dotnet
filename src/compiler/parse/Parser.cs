@@ -90,17 +90,15 @@ sealed class Parser : Lexer {
 	}
 
 	(Arr<Ast.Super>, Pos, Token) parseSupers() {
-		var start = pos;
-		var next = takeKeyword();
-		if (next != Token.Is) {
-			return (Arr.empty<Ast.Super>(), start, next);
-		}
+		var supers = Arr.builder<Ast.Super>();
+		while (true) {
+			var start = pos;
+			var next = takeKeywordOrEof();
+			if (next != Token.Is)
+				return (supers.finish(), start, next);
 
-		var super = parseSuper(start);
-		var nextStart = pos;
-		next = takeKeywordOrEof();
-		//TODO: support multiple supers
-		return (Arr.of(super), nextStart, next);
+			supers.add(parseSuper(start));
+		}
 	}
 
 	Ast.Super parseSuper(Pos start) {

@@ -40,6 +40,7 @@
 		<Rule Id="SA1314" Action="None" /> <!-- Don't name every type parameter 'T' -->
 		<Rule Id="SA1136" Action="None" /> <!-- Allow single-line enum -->
 		<Rule Id="SA1507" Action="None" /> <!-- No idea how to fix this -->
+		<Rule Id="SA1133" Action="None" /> <!-- Allow multiple attributes together -->
 
 		<!--
 		TODO: I currently need a few '_' for parameter names to avoid syntax highlight issues

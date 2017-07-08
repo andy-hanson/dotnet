@@ -1,5 +1,9 @@
-fun getN
+Int n() [PrivateScope, Public, Virtual, Abstract]
+
+Int getN(AbstractClass) [PrivateScope, Public, Static]
+
+getN
 	get parameter 0
-	call instance AbstractClass.n
+	call virtual AbstractClass.n
 	return
 

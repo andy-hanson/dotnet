@@ -1,0 +1,16 @@
+import .Super1 .Super2
+
+slots
+	val Int x
+is Super1
+	s1()
+		x
+is Super2
+	s2()
+		x + 1
+
+fun Void main()
+	x = new 1
+	assert x.s1Def() == 10
+	assert x.s2Def() == 20
+

@@ -1,0 +1,86 @@
+Module(
+  loc: 0-162,
+  imports: [
+    Relative(
+      loc: 7-14,
+      path: RelPath(
+        nParents: 1,
+        relToParent: ["Super1"])),
+    Relative(
+      loc: 15-22,
+      path: RelPath(
+        nParents: 1,
+        relToParent: ["Super2"]))
+  ],
+  klass: Klass(
+    loc: 24-162,
+    head: Slots(
+      loc: 24-41,
+      slots: [Slot(
+        loc: 31-40,
+        mutable: false,
+        ty: Access(
+          loc: 35-38,
+          name: "Int"),
+        name: "x")]),
+    supers: [
+      Super(
+        loc: 41-61,
+        name: "Super1",
+        impls: [Impl(
+          loc: 52-61,
+          name: "s1",
+          parameters: [],
+          body: Access(
+            loc: 59-60,
+            name: "x"))]),
+      Super(
+        loc: 61-86,
+        name: "Super2",
+        impls: [Impl(
+          loc: 72-86,
+          name: "s2",
+          parameters: [],
+          body: OperatorCall(
+            loc: 79-86,
+            oper: "+",
+            right: Literal(
+              loc: 83-84,
+              value: 1)))])
+    ],
+    methods: [Method(
+      loc: 86-162,
+      isStatic: true,
+      returnTy: Access(
+        loc: 90-94,
+        name: "Void"),
+      name: "main",
+      parameters: [],
+      body: Let(
+        loc: 105-114,
+        assigned: Single(
+          loc: 103-104,
+          name: "x"),
+        value: New(
+          loc: 107-114,
+          args: [Literal(
+            loc: 111-112,
+            value: 1)]),
+        then: Seq(
+          loc: 114-162,
+          first: Assert(
+            loc: 114-138,
+            asserted: OperatorCall(
+              loc: 121-138,
+              oper: "==",
+              right: Literal(
+                loc: 134-136,
+                value: 10))),
+          then: Assert(
+            loc: 138-162,
+            asserted: OperatorCall(
+              loc: 145-162,
+              oper: "==",
+              right: Literal(
+                loc: 158-160,
+                value: 20))))))]))

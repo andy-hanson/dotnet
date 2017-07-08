@@ -61,13 +61,6 @@ struct ILWriter {
 		il.Emit(OpCodes.Ldsfld, field);
 	}
 
-	internal void callStaticMethod(MethodInfo method) {
-		logger?.log($"call static {method.DeclaringType.Name}.{method.Name}");
-		assert(method.IsStatic);
-		// Last arg only matters if this is varargs.
-		il.EmitCall(OpCodes.Call, method, null);
-	}
-
 	internal void callConstructor(ConstructorInfo ctr) {
 		logger?.log($"new {ctr.DeclaringType.Name}");
 		il.Emit(OpCodes.Newobj, ctr);
@@ -83,8 +76,8 @@ struct ILWriter {
 	}
 
 	internal void getThis() {
+		// This will work for either a regular instance method or for a static method with a synthetic 'this' argument
 		logger?.log("this");
-		assert(!isStatic);
 		il.Emit(OpCodes.Ldarg_0);
 	}
 
@@ -134,11 +127,21 @@ struct ILWriter {
 		}
 	}
 
-	internal void callInstanceMethod(MethodInfo method, bool isVirtual) {
-		logger?.log($"call instance {method.DeclaringType.Name}.{method.Name}");
-		if (isVirtual) assert(method.IsVirtual); // Note that we *can* call a virtual method statically.
-		var opcode = isVirtual ? OpCodes.Callvirt : OpCodes.Call;
-		il.Emit(opcode, method);
+	internal void call(MethodInfo method, bool isVirtual) {
+		if (isVirtual)
+			callVirtual(method);
+		else
+			callNonVirtual(method);
+	}
+
+	internal void callNonVirtual(MethodInfo method) {
+		logger?.log($"call non-virtual {method.DeclaringType.Name}.{method.Name}");
+		il.Emit(OpCodes.Call, method);
+	}
+
+	internal void callVirtual(MethodInfo method) {
+		logger?.log($"call virtual {method.DeclaringType.Name}.{method.Name}");
+		il.Emit(OpCodes.Callvirt, method);
 	}
 
 	internal Local declareLocal(Type type, Sym name) {

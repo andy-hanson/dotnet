@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 
+using static EstreeUtils;
 using Model;
 using static Utils;
 
@@ -27,6 +28,7 @@ static class JsBuiltins {
 		}
 	}
 
+	/** Treat as private. */
 	internal struct StaticCtx {
 		internal bool usedNzlib;
 		internal readonly Loc loc;
@@ -70,19 +72,6 @@ static class JsBuiltins {
 		specialStaticMethods = new Dict<Method.BuiltinMethod, StaticTranslator>(statics);
 	}
 
-	internal static Estree.Expression emitInstanceMethodCall(ref bool usedNzlib, Method invokedMethod, Loc loc, Estree.Expression target, Arr<Estree.Expression> args) {
-		var ctx = new InstanceCtx(loc, target, args);
-		if (invokedMethod is Method.BuiltinMethod b && specialInstanceMethods.get(b, out var translator)) {
-			var result = translator(ref ctx);
-			if (ctx.usedNzlib)
-				usedNzlib = true;
-			return result;
-		} else {
-			var member = Estree.MemberExpression.simple(ctx.loc, ctx.target, invokedMethod.name);
-			return new Estree.CallExpression(ctx.loc, member, ctx.args);
-		}
-	}
-
 	internal static Estree.Expression emitStaticMethodCall(ref bool usedNzlib, Method invokedMethod, Loc loc, Arr<Estree.Expression> args) {
 		var ctx = new StaticCtx(loc, args);
 		if (invokedMethod is Method.BuiltinMethod b && specialStaticMethods.get(b, out var translator)) {
@@ -92,8 +81,29 @@ static class JsBuiltins {
 			return result;
 		} else {
 			var access = Estree.MemberExpression.simple(loc, invokedMethod.klass.name, invokedMethod.name);
-			return new Estree.CallExpression(loc, access, args);
+			return callPossiblyAsync(loc, isAsync(invokedMethod), access, args);
 		}
+	}
+
+	internal static Estree.Expression emitInstanceMethodCall(ref bool usedNzlib, Method invokedMethod, Loc loc, Estree.Expression target, Arr<Estree.Expression> args) {
+		var ctx = new InstanceCtx(loc, target, args);
+		if (invokedMethod is Method.BuiltinMethod b && specialInstanceMethods.get(b, out var translator)) {
+			var result = translator(ref ctx);
+			if (ctx.usedNzlib)
+				usedNzlib = true;
+			return result;
+		} else {
+			var member = Estree.MemberExpression.simple(loc, target, invokedMethod.name);
+			return callPossiblyAsync(loc, isAsync(invokedMethod), member, args);
+		}
+	}
+
+	internal static Estree.Expression emitMyInstanceMethodCall(ref bool usedNzlib, Method invokedMethod, Loc loc, Arr<Estree.Expression> args) {
+		if (invokedMethod is Method.BuiltinMethod)
+			throw TODO();
+
+		var member = Estree.MemberExpression.ofThis(loc, invokedMethod.name);
+		return callPossiblyAsync(loc, isAsync(invokedMethod), member, args);
 	}
 
 	internal static Estree.Expression eq(ref InstanceCtx c) =>

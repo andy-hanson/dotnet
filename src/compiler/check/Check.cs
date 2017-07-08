@@ -84,7 +84,7 @@ class Checker {
 						throw TODO(); // Parameter names don't match
 				});
 
-				var body = MethodChecker.checkMethod(baseScope, false, implemented.returnTy, implemented.parameters, implemented.effect, implAst.body);
+				var body = ExprChecker.checkMethod(baseScope, false, implemented.returnTy, implemented.parameters, implemented.effect, implAst.body);
 				return new Impl(super, implAst.loc, implemented, body);
 			});
 
@@ -96,7 +96,7 @@ class Checker {
 			switch (memberAst) {
 				case Ast.Member.Method methodAst:
 					var method = (Method.MethodWithBody)member;
-					method.body = MethodChecker.checkMethod(baseScope, method.isStatic, method.returnTy, method.parameters, method.effect, methodAst.body);
+					method.body = ExprChecker.checkMethod(baseScope, method.isStatic, method.returnTy, method.parameters, method.effect, methodAst.body);
 					break;
 				case Ast.Member.AbstractMethod _:
 					break;
