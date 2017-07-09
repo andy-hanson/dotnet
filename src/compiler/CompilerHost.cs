@@ -44,7 +44,7 @@ struct DocumentInfo : ToData<DocumentInfo> {
 		text == d.text &&
 		parseResult.deepEq(d.parseResult) &&
 		version == d.version;
-	public Dat toDat() => Dat.of(this, nameof(text), Dat.str(text), nameof(parseResult), Dat.either(parseResult), nameof(version), Dat.num(version));
+	public Dat toDat() => Dat.of(this, nameof(text), Dat.str(text), nameof(parseResult), Dat.either(parseResult), nameof(version), Dat.nat(version));
 }
 
 interface DocumentProvider {

@@ -15,7 +15,7 @@ abstract class Writer {
 	internal void writeBool(bool b) => writeRaw(b ? "true" : "false");
 	internal void writeInt(int i) => writeRaw(i.ToString());
 	internal void writeUint(uint u) => writeRaw(u.ToString());
-	internal void writeFloat(double f) => writeRaw(f.ToString());
+	internal void writeReal(double f) => writeRaw(f.ToString());
 
 	protected abstract void writeEmptyDict<T>();
 	protected abstract void writeDictStart<T>();

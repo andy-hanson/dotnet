@@ -5,13 +5,13 @@ Klass(
   membersMap: Dict<Sym, Member>(
     n: AbstractMethod(
       loc: 10-28,
-      returnTy: "Int",
+      returnTy: "Nat",
       name: "n",
       parameters: []),
     getN: MethodWithBody(
       loc: 28-65,
       isStatic: true,
-      returnTy: "Int",
+      returnTy: "Nat",
       name: "getN",
       parameters: [Parameter(
         loc: 41-56,

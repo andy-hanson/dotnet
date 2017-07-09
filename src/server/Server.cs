@@ -164,7 +164,7 @@ namespace Lsp.Server {
 		}
 
 		public bool deepEqual(ResponseWrapper<T> r) => jsonrpc == r.jsonrpc && id == r.id && result.deepEqual(r.result);
-		public Dat toDat() => Dat.of(this, nameof(jsonrpc), Dat.str(jsonrpc), nameof(id), Dat.num(id), nameof(result), result);
+		public Dat toDat() => Dat.of(this, nameof(jsonrpc), Dat.str(jsonrpc), nameof(id), Dat.nat(id), nameof(result), result);
 	}
 
 	interface Logger {

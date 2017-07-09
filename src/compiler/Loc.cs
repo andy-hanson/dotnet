@@ -29,7 +29,7 @@ struct Pos : ToData<Pos> {
 	public static uint operator -(Pos a, Pos b) =>
 		checked(a.index - b.index);
 	public bool deepEqual(Pos pos) => index == pos.index;
-	public Dat toDat() => Dat.num(index);
+	public Dat toDat() => Dat.nat(index);
 }
 
 struct Loc : ToData<Loc>, Test.ToCsonSpecial {
@@ -69,7 +69,7 @@ struct LineAndColumn : ToData<LineAndColumn> {
 	public override bool Equals(object o) => throw new NotSupportedException();
 	public override int GetHashCode() => throw new NotSupportedException();
 	public bool deepEqual(LineAndColumn l) => line == l.line && column == l.column;
-	public Dat toDat() => Dat.of(this, nameof(line), Dat.num(line), nameof(column), Dat.num(column));
+	public Dat toDat() => Dat.of(this, nameof(line), Dat.nat(line), nameof(column), Dat.nat(column));
 }
 
 struct LineAndColumnLoc : ToData<LineAndColumnLoc> {

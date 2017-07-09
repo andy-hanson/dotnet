@@ -60,7 +60,7 @@
         <key>name</key>
         <string>keyword</string>
         <key>match</key>
-        <string>\b(_|abstract|assert|catch|def|do|else|enum|false|finally|for|fun|generic|get|if|io|is|impl|import|in|new|pass|recur|self|set|slots|static|true|try|val|var|when|\&lt;|\&gt;|\&lt;\=|\&gt;\=|\+|\-|\*|\/)\b</string>
+        <string>\b(_|abstract|assert|catch|def|do|else|enum|false|finally|for|fun|generic|get|if|io|is|impl|import|in|new|pass|recur|self|set|slots|static|true|try|val|var|when|\&lt;|\&gt;|\&lt;\=|\&gt;\=|\+|\-|\*|\/)[^a-zA-Z0-9-]</string>
       </dict>
       <dict>
         <key>name</key>

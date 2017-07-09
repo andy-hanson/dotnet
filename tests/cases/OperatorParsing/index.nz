@@ -8,5 +8,5 @@ fun Void main()
 	z = double: x + 1
 	assert z == 20
 
-fun Int double(Int x)
+fun Nat double(Nat x)
 	x * 2

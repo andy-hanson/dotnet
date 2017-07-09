@@ -14,7 +14,7 @@ Module(
         mutable: false,
         ty: Access(
           loc: 34-37,
-          name: "Int"),
+          name: "Nat"),
         name: "x")]),
     supers: [Super(
       loc: 40-67,

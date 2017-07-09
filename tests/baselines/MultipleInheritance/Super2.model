@@ -5,13 +5,13 @@ Klass(
   membersMap: Dict<Sym, Member>(
     s2: AbstractMethod(
       loc: 10-29,
-      returnTy: "Int",
+      returnTy: "Nat",
       name: "s2",
       parameters: []),
     s2Def: MethodWithBody(
       loc: 29-56,
       isStatic: false,
-      returnTy: "Int",
+      returnTy: "Nat",
       name: "s2Def",
       parameters: [],
       body: InstanceMethodCall(
@@ -23,7 +23,7 @@ Klass(
             name: "s2"),
           args: []),
         method: Id(
-          klassId: "Int",
+          klassId: "Nat",
           name: "*"),
         args: [Literal(
           loc: 53-55,

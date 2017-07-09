@@ -42,6 +42,9 @@ namespace Test {
 
 		[TestFor(nameof(OperatorParsing))]
 		static void OperatorParsing(TestData t) => runCsJsTests(t);
+
+		[TestFor(nameof(Literals))]
+		static void Literals(TestData t) => runCsJsTests(t);
 	}
 
 	// Must be public since it's used dynamically

@@ -301,8 +301,8 @@ namespace Lsp {
 			trace == other.trace;
 		public Dat toDat() => Dat.of(this,
 			nameof(rqId),
-			Dat.num(rqId),
-			nameof(processId), Dat.num(processId),
+			Dat.nat(rqId),
+			nameof(processId), Dat.nat(processId),
 			nameof(rootPath), Dat.op(rootPath),
 			nameof(rootUri), Dat.op(rootUri),
 			nameof(trace), Dat.str(trace));
@@ -318,7 +318,7 @@ namespace Lsp {
 		internal Position(uint line, uint character) { this.line = line; this.character = character; }
 
 		public bool deepEqual(Position p) => line == p.line && character == p.character;
-		public Dat toDat() => Dat.of(this, nameof(line), Dat.num(line), nameof(character), Dat.num(character));
+		public Dat toDat() => Dat.of(this, nameof(line), Dat.nat(line), nameof(character), Dat.nat(character));
 	}
 
 	// 2 words
@@ -401,7 +401,7 @@ namespace Lsp {
 		}
 
 		public bool deepEqual(DocumentHighlight d) => range.deepEqual(d.range) && kind == d.kind;
-		public Dat toDat() => Dat.of(this, nameof(range), range, nameof(kind), Dat.num((uint)kind));
+		public Dat toDat() => Dat.of(this, nameof(range), range, nameof(kind), Dat.nat((uint)kind));
 	}
 
 	struct TextDocumentPositionParams : ToData<TextDocumentPositionParams> {
@@ -501,7 +501,7 @@ namespace Lsp {
 
 		public bool deepEqual(InitResponse i) => throw new NotSupportedException();
 		public Dat toDat() => Dat.of(this,
-			nameof(textDocumentSync), Dat.num(textDocumentSync),
+			nameof(textDocumentSync), Dat.nat(textDocumentSync),
 			nameof(hoverProvider), Dat.boolean(hoverProvider),
 			nameof(completionProvider), completionProvider,
 			nameof(signatureHelpProvider), signatureHelpProvider,

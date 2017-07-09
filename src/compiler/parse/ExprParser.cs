@@ -283,10 +283,12 @@ abstract class ExprParser : Lexer {
 
 	Ast.Expr singleTokenExpr(Loc loc, Token token) {
 		switch (token) {
+			case Token.NatLiteral:
+				return new Ast.Expr.Literal(loc, LiteralValue.Nat.of(uint.Parse(tokenValue)));
 			case Token.IntLiteral:
 				return new Ast.Expr.Literal(loc, LiteralValue.Int.of(int.Parse(tokenValue)));
-			case Token.FloatLiteral:
-				return new Ast.Expr.Literal(loc, LiteralValue.Float.of(double.Parse(tokenValue)));
+			case Token.RealLiteral:
+				return new Ast.Expr.Literal(loc, LiteralValue.Real.of(double.Parse(tokenValue)));
 			case Token.StringLiteral:
 				return new Ast.Expr.Literal(loc, LiteralValue.String.of(tokenValue));
 			case Token.Pass:

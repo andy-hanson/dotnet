@@ -53,18 +53,23 @@ struct ILWriter {
 		il.Emit(OpCodes.Ret);
 	}
 
+	internal void constUint(uint u) {
+		logger?.log($"const uint {u}");
+		il.Emit(OpCodes.Ldc_I4, u);
+	}
+
 	internal void constInt(int i) {
-		logger?.log($"const {i}");
+		logger?.log($"const int {i}");
 		il.Emit(OpCodes.Ldc_I4, i);
 	}
 
 	internal void constDouble(double d) {
-		logger?.log($"const {d}");
+		logger?.log($"const double {d}");
 		il.Emit(OpCodes.Ldc_R8, d);
 	}
 
 	internal void constString(string s) {
-		logger?.log($"const \"{s}\"");
+		logger?.log($"const string \"{s}\"");
 		il.Emit(OpCodes.Ldstr, s);
 	}
 

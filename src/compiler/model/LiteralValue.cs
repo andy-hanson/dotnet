@@ -29,28 +29,40 @@ abstract class LiteralValue : ToData<LiteralValue> {
 		public override Dat toDat() => Dat.boolean(value);
 	}
 
+	internal sealed class Nat : LiteralValue  {
+		internal readonly uint value;
+		Nat(uint value) { this.value = value; }
+		internal static Nat of(uint value) => new Nat(value); // TODO: cache common values
+
+		internal override Ty ty => BuiltinClass.Nat;
+
+		public override bool deepEqual(LiteralValue l) => l is Nat && deepEqual(l);
+		public bool deepEqual(Nat n) => value == n.value;
+		public override Dat toDat() => Dat.nat(value);
+	}
+
 	internal sealed class Int : LiteralValue {
 		internal readonly int value;
 		Int(int value) { this.value = value; }
-		internal static Int of(int value) => new Int(value); //TODO: cache common values
+		internal static Int of(int value) => new Int(value); // TODO: cache common values
 
 		internal override Ty ty => BuiltinClass.Int;
 
 		public override bool deepEqual(LiteralValue l) => l is Int i && deepEqual(i);
 		public bool deepEqual(Int i) => value == i.value;
-		public override Dat toDat() => Dat.inum(value);
+		public override Dat toDat() => Dat.@int(value);
 	}
 
-	internal sealed class Float : LiteralValue {
+	internal sealed class Real : LiteralValue {
 		internal readonly double value;
-		Float(double value) { this.value = value; }
-		internal static Float of(double value) => new Float(value);
+		Real(double value) { this.value = value; }
+		internal static Real of(double value) => new Real(value);
 
-		internal override Ty ty => BuiltinClass.Float;
+		internal override Ty ty => BuiltinClass.Real;
 
-		public override bool deepEqual(LiteralValue l) => l is Float f && deepEqual(f);
-		public bool deepEqual(Float f) => value == f.value;
-		public override Dat toDat() => Dat.floatDat(value);
+		public override bool deepEqual(LiteralValue l) => l is Real f && deepEqual(f);
+		public bool deepEqual(Real f) => value == f.value;
+		public override Dat toDat() => Dat.realDat(value);
 	}
 
 	internal sealed class String : LiteralValue {

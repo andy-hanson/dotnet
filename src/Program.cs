@@ -19,7 +19,7 @@ static class Program {
 
 		using (var tc = new Test.TestCompile(updateBaselines: true)) {
 			tc.runAllCompilerTests();
-			//tc.runTestNamed("Recur");
+			//tc.runTestNamed("Literals");
 		}
 	}
 

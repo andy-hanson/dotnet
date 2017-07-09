@@ -10,7 +10,7 @@ Module(
         mutable: false,
         ty: Access(
           loc: 11-14,
-          name: "Int"),
+          name: "Nat"),
         name: "x")]),
     supers: [],
     methods: [
@@ -59,7 +59,7 @@ Module(
         isStatic: false,
         returnTy: Access(
           loc: 89-92,
-          name: "Int"),
+          name: "Nat"),
         name: "getX",
         parameters: [],
         body: Access(

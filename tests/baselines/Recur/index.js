@@ -9,6 +9,6 @@ module.exports = class Recur {
 	static f(i) {
 		if (i === 0)
 			return 0;
-		else return Recur.f(i - 1);
+		else return Recur.f(_.toNat(i - 1));
 	}
 };

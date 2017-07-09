@@ -1,14 +1,14 @@
 Void main() [PrivateScope, Public, Static]
 
-Int f(Int) [PrivateScope, Public, Static]
+Nat f(Nat) [PrivateScope, Public, Static]
 
 main
-	const 10
-	call non-virtual Int.of
+	const uint 10
+	call non-virtual Nat.of
 	call non-virtual Recur.f
-	const 0
-	call non-virtual Int.of
-	call non-virtual Int._eq
+	const uint 0
+	call non-virtual Nat.of
+	call non-virtual Nat._eq
 	get instance field Bool.value
 	goto if true: endAssert
 	new AssertionException
@@ -19,19 +19,20 @@ main
 
 f
 	get parameter 0
-	const 0
-	call non-virtual Int.of
-	call non-virtual Int._eq
+	const uint 0
+	call non-virtual Nat.of
+	call non-virtual Nat._eq
 	get instance field Bool.value
 	goto if false: else
-	const 0
-	call non-virtual Int.of
+	const uint 0
+	call non-virtual Nat.of
 	goto endWhen
 	else:
 	get parameter 0
-	const 1
-	call non-virtual Int.of
-	call non-virtual Int._sub
+	const uint 1
+	call non-virtual Nat.of
+	call non-virtual Nat._sub
+	call non-virtual Int.toNat
 	tail call non-virtual Recur.f
 	endWhen:
 	return

@@ -6,7 +6,7 @@ constructor
 
 Void main() [PrivateScope, Public, Static]
 
-Int n() [PrivateScope, Public, Final, Virtual]
+Nat n() [PrivateScope, Public, Final, Virtual]
 
 n
 	this
@@ -14,8 +14,8 @@ n
 	return
 
 main
-	const 1
-	call non-virtual Int.of
+	const uint 1
+	call non-virtual Nat.of
 	new Impl
 	declare local instance
 	set local instance
@@ -24,9 +24,9 @@ main
 	declare local gotN
 	set local gotN
 	get local gotN
-	const 1
-	call non-virtual Int.of
-	call non-virtual Int._eq
+	const uint 1
+	call non-virtual Nat.of
+	call non-virtual Nat._eq
 	get instance field Bool.value
 	goto if true: endAssert
 	new AssertionException

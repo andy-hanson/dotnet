@@ -6,11 +6,11 @@ constructor
 
 Void main() [PrivateScope, Public, Static]
 
-Int getX() [PrivateScope, Public, Final]
+Nat getX() [PrivateScope, Public, Final]
 
 main
-	const 1
-	call non-virtual Int.of
+	const uint 1
+	call non-virtual Nat.of
 	new Slots
 	declare local obj
 	set local obj
@@ -19,9 +19,9 @@ main
 	declare local gotX
 	set local gotX
 	get local gotX
-	const 1
-	call non-virtual Int.of
-	call non-virtual Int._eq
+	const uint 1
+	call non-virtual Nat.of
+	call non-virtual Nat._eq
 	get instance field Bool.value
 	goto if true: endAssert
 	new AssertionException

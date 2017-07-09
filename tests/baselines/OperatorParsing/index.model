@@ -22,13 +22,13 @@ Klass(
               loc: 29-30,
               value: 1),
             method: Id(
-              klassId: "Int",
+              klassId: "Nat",
               name: "+"),
             args: [Literal(
               loc: 33-34,
               value: 2)]),
           method: Id(
-            klassId: "Int",
+            klassId: "Nat",
             name: "*"),
           args: [Literal(
             loc: 37-38,
@@ -42,7 +42,7 @@ Klass(
               target: AccessLocal(
                 local: "x"),
               method: Id(
-                klassId: "Int",
+                klassId: "Nat",
                 name: "=="),
               args: [Literal(
                 loc: 52-53,
@@ -61,7 +61,7 @@ Klass(
                 args: [AccessLocal(
                   local: "x")]),
               method: Id(
-                klassId: "Int",
+                klassId: "Nat",
                 name: "+"),
               args: [Literal(
                 loc: 70-71,
@@ -75,7 +75,7 @@ Klass(
                   target: AccessLocal(
                     local: "y"),
                   method: Id(
-                    klassId: "Int",
+                    klassId: "Nat",
                     name: "=="),
                   args: [Literal(
                     loc: 85-87,
@@ -94,7 +94,7 @@ Klass(
                     target: AccessLocal(
                       local: "x"),
                     method: Id(
-                      klassId: "Int",
+                      klassId: "Nat",
                       name: "+"),
                     args: [Literal(
                       loc: 105-106,
@@ -106,7 +106,7 @@ Klass(
                     target: AccessLocal(
                       local: "z"),
                     method: Id(
-                      klassId: "Int",
+                      klassId: "Nat",
                       name: "=="),
                     args: [Literal(
                       loc: 120-122,
@@ -114,11 +114,11 @@ Klass(
     double: MethodWithBody(
       loc: 124-153,
       isStatic: true,
-      returnTy: "Int",
+      returnTy: "Nat",
       name: "double",
       parameters: [Parameter(
         loc: 139-144,
-        ty: "Int",
+        ty: "Nat",
         name: "x",
         index: 0)],
       body: InstanceMethodCall(
@@ -127,11 +127,11 @@ Klass(
           loc: 147-148,
           param: Parameter(
             loc: 139-144,
-            ty: "Int",
+            ty: "Nat",
             name: "x",
             index: 0)),
         method: Id(
-          klassId: "Int",
+          klassId: "Nat",
           name: "*"),
         args: [Literal(
           loc: 151-152,

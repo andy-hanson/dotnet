@@ -101,5 +101,5 @@ struct OpUint : ToData<OpUint> {
 	public bool deepEqual(OpUint u) => value == u.value;
 
 	public Dat toDat() =>
-		Dat.op(map(Dat.num));
+		Dat.op(map(Dat.nat));
 }

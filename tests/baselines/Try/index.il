@@ -11,7 +11,7 @@ main
 	endAssert:
 	load static field Void.instance
 	pop
-	const "unreachable"
+	const string "unreachable"
 	call non-virtual String.of
 	set local tryResult
 	catch Builtins+Exception
@@ -25,7 +25,7 @@ main
 	declare local x
 	set local x
 	get local x
-	const "Assertion failed."
+	const string "Assertion failed."
 	call non-virtual String.of
 	call non-virtual String._eq
 	get instance field Bool.value

@@ -54,11 +54,11 @@ public abstract class Dat : ToData<Dat> {
 
 	internal static Dat op<T>(Op<T> op) where T : ToData<T> => new OpDat<T>(op);
 	internal static Dat op(Op<string> op) => new OpDat<Dat>(op.map(str));
-	internal static Dat op(OpUint op) => new OpDat<Dat>(op.map(num));
+	internal static Dat op(OpUint op) => new OpDat<Dat>(op.map(nat));
 	internal static Dat boolean(bool b) => new BoolDat(b);
-	internal static Dat inum(int i) => new IntDat(i);
-	internal static Dat num(uint u) => new UintDat(u);
-	internal static Dat floatDat(double f) => new FloatDat(f);
+	internal static Dat @int(int i) => new IntDat(i);
+	internal static Dat nat(uint u) => new UintDat(u);
+	internal static Dat realDat(double f) => new RealDat(f);
 	internal static Dat str(string s) => new StrDat(s);
 	internal static Dat arr<T>(Arr<T> a) where T : ToData<T> => new ArrDat<T>(a);
 	internal static Dat arr(Arr<char> a) => new ArrDat<Dat>(a.map(ch => str(ch.ToString())));
@@ -99,11 +99,11 @@ public abstract class Dat : ToData<Dat> {
 		internal override void write(Writer w) => w.writeUint(value);
 	}
 
-	internal class FloatDat : Dat {
+	internal class RealDat : Dat {
 		readonly double value;
-		internal FloatDat(double value) { this.value = value; }
+		internal RealDat(double value) { this.value = value; }
 		public override Type type => typeof(float);
-		internal override void write(Writer w) => w.writeFloat(value);
+		internal override void write(Writer w) => w.writeReal(value);
 	}
 
 	internal class StrDat : Dat {

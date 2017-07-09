@@ -1,5 +1,5 @@
 Klass(
-  loc: 0-105,
+  loc: 0-114,
   head: Static(
     loc: 0-8),
   membersMap: Dict<Sym, Member>(
@@ -21,23 +21,23 @@ Klass(
               loc: 35-37,
               value: 10)]),
           method: Id(
-            klassId: "Int",
+            klassId: "Nat",
             name: "=="),
           args: [Literal(
             loc: 42-43,
             value: 0)]))),
     f: MethodWithBody(
-      loc: 45-105,
+      loc: 45-114,
       isStatic: true,
-      returnTy: "Int",
+      returnTy: "Nat",
       name: "f",
       parameters: [Parameter(
         loc: 55-60,
-        ty: "Int",
+        ty: "Nat",
         name: "i",
         index: 0)],
       body: WhenTest(
-        loc: 63-105,
+        loc: 63-114,
         cases: [Case(
           loc: 70-84,
           test: InstanceMethodCall(
@@ -46,11 +46,11 @@ Klass(
               loc: 70-71,
               param: Parameter(
                 loc: 55-60,
-                ty: "Int",
+                ty: "Nat",
                 name: "i",
                 index: 0)),
             method: Id(
-              klassId: "Int",
+              klassId: "Nat",
               name: "=="),
             args: [Literal(
               loc: 75-76,
@@ -59,19 +59,25 @@ Klass(
             loc: 80-81,
             value: 0))],
         elseResult: Recur(
-          loc: 92-105,
+          loc: 92-114,
           args: [InstanceMethodCall(
-            loc: 99-105,
-            target: AccessParameter(
-              loc: 99-100,
-              param: Parameter(
-                loc: 55-60,
-                ty: "Int",
-                name: "i",
-                index: 0)),
+            loc: 98-111,
+            target: InstanceMethodCall(
+              loc: 99-105,
+              target: AccessParameter(
+                loc: 99-100,
+                param: Parameter(
+                  loc: 55-60,
+                  ty: "Nat",
+                  name: "i",
+                  index: 0)),
+              method: Id(
+                klassId: "Nat",
+                name: "-"),
+              args: [Literal(
+                loc: 103-104,
+                value: 1)]),
             method: Id(
               klassId: "Int",
-              name: "-"),
-            args: [Literal(
-              loc: 103-104,
-              value: 1)])])))))
+              name: "toNat"),
+            args: [])])))))

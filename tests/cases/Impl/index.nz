@@ -1,7 +1,7 @@
 import .AbstractClass
 
 slots
-	val Int x
+	val Nat x
 is AbstractClass
 	n()
 		x

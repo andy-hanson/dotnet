@@ -5,7 +5,7 @@ Void main(AbstractClass) [PrivateScope, Public, Static]
 main
 	get parameter 0
 	call virtual AbstractClass.s
-	const "s"
+	const string "s"
 	call non-virtual String.of
 	call non-virtual String._eq
 	get instance field Bool.value

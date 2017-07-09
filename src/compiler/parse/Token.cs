@@ -15,9 +15,10 @@ internal enum Token {
 	Name,
 	TyName,
 	Operator,
-	StringLiteral,
-	FloatLiteral,
+	NatLiteral,
 	IntLiteral,
+	RealLiteral,
+	StringLiteral,
 	QuoteStart,
 
 	// Keywords
@@ -128,9 +129,10 @@ static class TokenU {
 			case Token.Name: return "name";
 			case Token.TyName: return "ty-name";
 			case Token.Operator: return "operator";
-			case Token.StringLiteral: return "string literal";
-			case Token.IntLiteral: return "number literal";
-			case Token.FloatLiteral: return "float literal";
+			case Token.NatLiteral: return "Nat literal";
+			case Token.IntLiteral: return "Int literal";
+			case Token.RealLiteral: return "Float literal";
+			case Token.StringLiteral: return "String literal";
 			case Token.QuoteStart: return "quote start";
 
 			case Token.Space: return "<space>";

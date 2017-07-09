@@ -6,7 +6,7 @@ Klass(
       name: "x",
       mutable: false,
       ty: BuiltinClass(
-        name: "Int"))]),
+        name: "Nat"))]),
   membersMap: Dict<Sym, Member>(
     main: MethodWithBody(
       loc: 18-85,
@@ -43,7 +43,7 @@ Klass(
               target: AccessLocal(
                 local: "gotX"),
               method: Id(
-                klassId: "Int",
+                klassId: "Nat",
                 name: "=="),
               args: [Literal(
                 loc: 82-83,
@@ -51,7 +51,7 @@ Klass(
     getX: MethodWithBody(
       loc: 85-103,
       isStatic: false,
-      returnTy: "Int",
+      returnTy: "Nat",
       name: "getX",
       parameters: [],
       body: GetMySlot(
@@ -63,4 +63,4 @@ Klass(
       name: "x",
       mutable: false,
       ty: BuiltinClass(
-        name: "Int"))))
+        name: "Nat"))))

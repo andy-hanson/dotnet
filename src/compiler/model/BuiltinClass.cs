@@ -54,8 +54,9 @@ namespace Model {
 
 		internal static readonly BuiltinClass Void = fromDotNetType(typeof(Builtins.Void));
 		internal static readonly BuiltinClass Bool = fromDotNetType(typeof(Builtins.Bool));
+		internal static readonly BuiltinClass Nat = fromDotNetType(typeof(Builtins.Nat));
 		internal static readonly BuiltinClass Int = fromDotNetType(typeof(Builtins.Int));
-		internal static readonly BuiltinClass Float = fromDotNetType(typeof(Builtins.Float));
+		internal static readonly BuiltinClass Real = fromDotNetType(typeof(Builtins.Real));
 		internal static readonly BuiltinClass String = fromDotNetType(typeof(Builtins.String));
 
 		/** Get an already-registered type by name. */

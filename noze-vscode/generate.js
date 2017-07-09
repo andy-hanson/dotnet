@@ -62,7 +62,7 @@ const patterns = [
 	}),
 
 	match("support.type", /\b[A-Z][a-zA-Z0-9\-]*\b/),
-	match("keyword", new RegExp(`\\b(${keywords.join("|")})\\b`)),
+	match("keyword", new RegExp(`\\b(${keywords.join("|")})[^a-zA-Z0-9\-]`)),
 	match("", /\b[a-z][a-zA-Z0-9\-]*\b/),
 	match("comment", /\.|\,|=|\\/),
 
@@ -79,7 +79,7 @@ const patterns = [
 	match("comment", /^\s*(todo)[^\n]*\n/, "keyword"),
 
 	match("comment", /[\(\[\]\)\{\}]/),
-	match("constant.numeric", /-?((0((b[01]+)|(o[0-8]+)|(x[\da-f]+)))|(\d+(\.\d+)?))/),
+	match("constant.numeric", /[\+\-]?((0((b[01]+)|(o[0-8]+)|(x[\da-f]+)))|(\d+(\.\d+)?))/),
 ]
 
 const content = {

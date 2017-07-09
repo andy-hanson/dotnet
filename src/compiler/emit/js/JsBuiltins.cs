@@ -11,41 +11,19 @@ Treat everything besides `emitInstanceMethodCall` and `emitStaticMethodCall` pri
 They are marked internal only so that in Builtin.cs one can write `nameof(JsBuiltins.eq)`.
 */
 static class JsBuiltins {
-	delegate Estree.Expression InstanceTranslator(ref InstanceCtx c);
-	delegate Estree.Expression StaticTranslator(ref StaticCtx c);
+	delegate Estree.Expression InstanceTranslator(Loc loc, Estree.Expression target, Arr<Estree.Expression> args);
+	delegate Estree.Expression StaticTranslator(Loc loc, Arr<Estree.Expression> args);
 
-	/** Treat as private. */
-	internal struct InstanceCtx {
-		internal bool usedNzlib;
-		internal readonly Loc loc;
-		internal readonly Estree.Expression target;
-		internal readonly Arr<Estree.Expression> args;
-		internal InstanceCtx(Loc loc, Estree.Expression target, Arr<Estree.Expression> args) {
-			usedNzlib = false;
-			this.loc = loc;
-			this.target = target;
-			this.args = args;
-		}
-	}
-
-	/** Treat as private. */
-	internal struct StaticCtx {
-		internal bool usedNzlib;
-		internal readonly Loc loc;
-		internal readonly Arr<Estree.Expression> args;
-		internal StaticCtx(Loc loc, Arr<Estree.Expression> args) {
-			usedNzlib = false;
-			this.loc = loc;
-			this.args = args;
-		}
-	}
-
-	static readonly Dict<Method.BuiltinMethod, InstanceTranslator> specialInstanceMethods;
 	static readonly Dict<Method.BuiltinMethod, StaticTranslator> specialStaticMethods;
+	static readonly Dict<Method.BuiltinMethod, InstanceTranslator> specialInstanceMethods;
+	static readonly Dict<Method.BuiltinMethod, string> nzlibStaticMethods;
+	static readonly Dict<Method.BuiltinMethod, string> nzlibInstanceMethods;
 
 	static JsBuiltins() {
-		var instance = new Dictionary<Method.BuiltinMethod, InstanceTranslator>();
-		var statics = new Dictionary<Method.BuiltinMethod, StaticTranslator>();
+		var specialStatic = Dict.builder<Method.BuiltinMethod, StaticTranslator>();
+		var specialInstance = Dict.builder<Method.BuiltinMethod, InstanceTranslator>();
+		var nzlibStatic = Dict.builder<Method.BuiltinMethod, string>();
+		var nzlibInstance = Dict.builder<Method.BuiltinMethod, string>();
 
 		foreach (var k in BuiltinClass.all()) {
 			var t = k.dotNetType;
@@ -57,45 +35,71 @@ static class JsBuiltins {
 
 			foreach (var method in methods.values) {
 				var builtin = (Method.BuiltinMethod)method;
-				var attr = builtin.methodInfo.GetCustomAttribute<JsTranslateAttribute>();
+				var attr = builtin.methodInfo.GetCustomAttribute<AnyJsTranslateAttribute>();
 				assert(attr != null); // Must add a translator for every method on a class marked JsPrimitive.
 
-				var methodName = attr.builtinMethodName;
-				if (builtin.isStatic)
-					statics[builtin] = (StaticTranslator)Delegate.CreateDelegate(typeof(StaticTranslator), typeof(JsBuiltins), methodName);
-				else
-					instance[builtin] = (InstanceTranslator)Delegate.CreateDelegate(typeof(InstanceTranslator), typeof(JsBuiltins), methodName);
+				var isStatic = builtin.isStatic;
+
+				switch (attr) {
+					case JsSpecialTranslateAttribute j:
+						var methodName = j.builtinMethodName;
+						if (isStatic)
+							specialStatic.add(builtin, (StaticTranslator)Delegate.CreateDelegate(typeof(StaticTranslator), typeof(JsBuiltins), methodName));
+						else
+							specialInstance.add(builtin, (InstanceTranslator)Delegate.CreateDelegate(typeof(InstanceTranslator), typeof(JsBuiltins), methodName));
+						break;
+					case NzlibAttribute n:
+						(isStatic ? nzlibStatic : nzlibInstance).add(builtin, n.nzlibFunctionName);
+						break;
+					case JsBinaryAttribute b:
+						var @operator = b.@operator;
+						if (isStatic)
+							specialStatic.add(builtin, (loc, args) => {
+								assert(args.length == 2);
+								return new Estree.BinaryExpression(loc, @operator, args[0], args[1]);
+							});
+						else
+							specialInstance.add(builtin, (loc, target, args) =>
+								new Estree.BinaryExpression(loc, @operator, target, args.only));
+						break;
+					default:
+						throw unreachable();
+				}
 			}
 		}
 
-		specialInstanceMethods = new Dict<Method.BuiltinMethod, InstanceTranslator>(instance);
-		specialStaticMethods = new Dict<Method.BuiltinMethod, StaticTranslator>(statics);
+		specialStaticMethods = specialStatic.finish();
+		specialInstanceMethods = specialInstance.finish();
+		nzlibStaticMethods = nzlibStatic.finish();
+		nzlibInstanceMethods = nzlibInstance.finish();
 	}
 
 	internal static Estree.Expression emitStaticMethodCall(ref bool usedNzlib, Method invokedMethod, Loc loc, Arr<Estree.Expression> args) {
-		var ctx = new StaticCtx(loc, args);
-		if (invokedMethod is Method.BuiltinMethod b && specialStaticMethods.get(b, out var translator)) {
-			var result = translator(ref ctx);
-			if (ctx.usedNzlib)
+		if (invokedMethod is Method.BuiltinMethod b) {
+			if (specialStaticMethods.get(b, out var translator))
+				return translator(loc, args);
+			else if (nzlibStaticMethods.get(b, out var name)) {
 				usedNzlib = true;
-			return result;
-		} else {
-			var access = Estree.MemberExpression.simple(loc, invokedMethod.klass.name, invokedMethod.name);
-			return callPossiblyAsync(loc, isAsync(invokedMethod), access, args);
+				return callNzlib(loc, args, name);
+			}
 		}
+
+		var access = Estree.MemberExpression.simple(loc, invokedMethod.klass.name, invokedMethod.name);
+		return callPossiblyAsync(loc, isAsync(invokedMethod), access, args);
 	}
 
 	internal static Estree.Expression emitInstanceMethodCall(ref bool usedNzlib, Method invokedMethod, Loc loc, Estree.Expression target, Arr<Estree.Expression> args) {
-		var ctx = new InstanceCtx(loc, target, args);
-		if (invokedMethod is Method.BuiltinMethod b && specialInstanceMethods.get(b, out var translator)) {
-			var result = translator(ref ctx);
-			if (ctx.usedNzlib)
+		if (invokedMethod is Method.BuiltinMethod b) {
+			if (specialInstanceMethods.get(b, out var translator))
+				return translator(loc, target, args);
+			else if (nzlibInstanceMethods.get(b, out var name)) {
 				usedNzlib = true;
-			return result;
-		} else {
-			var member = Estree.MemberExpression.simple(loc, target, invokedMethod.name);
-			return callPossiblyAsync(loc, isAsync(invokedMethod), member, args);
+				return callNzlib(loc, args.addLeft(target), name);
+			}
 		}
+
+		var member = Estree.MemberExpression.simple(loc, target, invokedMethod.name);
+		return callPossiblyAsync(loc, isAsync(invokedMethod), member, args);
 	}
 
 	internal static Estree.Expression emitMyInstanceMethodCall(ref bool usedNzlib, Method invokedMethod, Loc loc, Arr<Estree.Expression> args) {
@@ -108,38 +112,20 @@ static class JsBuiltins {
 		return callPossiblyAsync(loc, isAsync(invokedMethod), member, args);
 	}
 
-	internal static Estree.Expression eq(ref InstanceCtx c) =>
-		binary(ref c, "===");
-
-	internal static Estree.Expression add(ref InstanceCtx c) =>
-		binary(ref c, "+");
-
-	internal static Estree.Expression sub(ref InstanceCtx c) =>
-		binary(ref c, "-");
-
-	internal static Estree.Expression mul(ref InstanceCtx c) =>
-		binary(ref c, "*");
-
-	internal static Estree.Expression divInt(ref InstanceCtx c) =>
-		callNzlib(ref c, nameof(divInt));
-
-	internal static Estree.Expression divFloat(ref InstanceCtx c) =>
-		binary(ref c, "/");
-
-	internal static Estree.Expression parseInt(ref StaticCtx c) => callNzlib(ref c, nameof(parseInt));
-	internal static Estree.Expression parseFloat(ref StaticCtx c) => callNzlib(ref c, nameof(parseFloat));
-
-	internal static Estree.Expression callNzlib(ref InstanceCtx c, string name) {
-		c.usedNzlib = true;
-		return new Estree.CallExpression(c.loc, getFromLib(c.loc, Sym.of(name)), c.args.addLeft(c.target));
-	}
-	internal static Estree.Expression callNzlib(ref StaticCtx c, string name) {
-		c.usedNzlib = true;
-		return new Estree.CallExpression(c.loc, getFromLib(c.loc, Sym.of(name)), c.args);
+	static readonly Sym symToString = Sym.of("toString");
+	internal static Estree.Expression str(Loc loc, Estree.Expression target, Arr<Estree.Expression> args) {
+		assert(args.isEmpty);
+		return new Estree.CallExpression(loc, Estree.MemberExpression.simple(loc, target, symToString), Arr.empty<Estree.Expression>());
 	}
 
-	static Estree.Expression binary(ref InstanceCtx c, string @operator) =>
-		new Estree.BinaryExpression(c.loc, @operator, c.target, c.args.only);
+	internal static Estree.Expression id(Loc loc, Estree.Expression target, Arr<Estree.Expression> args) {
+		unused(loc);
+		assert(args.isEmpty);
+		return target;
+	}
+
+	static Estree.Expression callNzlib(Loc loc, Arr<Estree.Expression> args, string name) =>
+		new Estree.CallExpression(loc, getFromLib(loc, Sym.of(name)), args);
 
 	static readonly Estree.Identifier idNzlib = new Estree.Identifier(Loc.zero, Sym.of("_"));
 	internal static Estree.Expression getFromLib(Loc loc, Sym id) =>

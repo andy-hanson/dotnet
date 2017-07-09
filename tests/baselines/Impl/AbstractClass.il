@@ -1,6 +1,6 @@
-Int n() [PrivateScope, Public, Virtual, Abstract]
+Nat n() [PrivateScope, Public, Virtual, Abstract]
 
-Int getN(AbstractClass) [PrivateScope, Public, Static]
+Nat getN(AbstractClass) [PrivateScope, Public, Static]
 
 getN
 	get parameter 0

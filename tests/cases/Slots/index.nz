@@ -1,10 +1,10 @@
 slots
-	val Int x
+	val Nat x
 
 fun Void main()
 	obj = new 1
 	gotX = obj.getX()
 	assert gotX == 1
 
-def Int getX()
+def Nat getX()
 	x

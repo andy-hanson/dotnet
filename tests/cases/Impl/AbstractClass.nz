@@ -1,6 +1,6 @@
 abstract
 
-abstract Int n()
+abstract Nat n()
 
-fun Int getN(AbstractClass a)
+fun Nat getN(AbstractClass a)
 	a.n()

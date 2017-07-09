@@ -1,8 +1,8 @@
 Module(
-  loc: 0-105,
+  loc: 0-114,
   imports: [],
   klass: Klass(
-    loc: 0-105,
+    loc: 0-114,
     head: Static(
       loc: 0-8),
     supers: [],
@@ -24,20 +24,20 @@ Module(
               loc: 42-43,
               value: 0)))),
       Method(
-        loc: 45-105,
+        loc: 45-114,
         isStatic: true,
         returnTy: Access(
           loc: 49-52,
-          name: "Int"),
+          name: "Nat"),
         name: "f",
         parameters: [Parameter(
           loc: 55-60,
           ty: Access(
             loc: 55-58,
-            name: "Int"),
+            name: "Nat"),
           name: "i")],
         body: WhenTest(
-          loc: 63-105,
+          loc: 63-114,
           cases: [Case(
             loc: 70-84,
             test: OperatorCall(
@@ -50,11 +50,17 @@ Module(
               loc: 80-81,
               value: 0))],
           elseResult: Recur(
-            loc: 92-105,
-            args: [OperatorCall(
-              loc: 99-105,
-              oper: "-",
-              right: Literal(
-                loc: 103-104,
-                value: 1))])))
+            loc: 92-114,
+            args: [Call(
+              loc: 98-113,
+              target: GetProperty(
+                loc: 98-111,
+                target: OperatorCall(
+                  loc: 99-105,
+                  oper: "-",
+                  right: Literal(
+                    loc: 103-104,
+                    value: 1)),
+                propertyName: "toNat"),
+              args: [])])))
     ]))

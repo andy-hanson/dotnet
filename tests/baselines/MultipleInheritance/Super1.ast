@@ -11,7 +11,7 @@ Module(
         loc: 10-29,
         returnTy: Access(
           loc: 19-22,
-          name: "Int"),
+          name: "Nat"),
         name: "s1",
         parameters: []),
       Method(
@@ -19,7 +19,7 @@ Module(
         isStatic: false,
         returnTy: Access(
           loc: 33-36,
-          name: "Int"),
+          name: "Nat"),
         name: "s1Def",
         parameters: [],
         body: OperatorCall(

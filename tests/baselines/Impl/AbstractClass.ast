@@ -11,7 +11,7 @@ Module(
         loc: 10-28,
         returnTy: Access(
           loc: 19-22,
-          name: "Int"),
+          name: "Nat"),
         name: "n",
         parameters: []),
       Method(
@@ -19,7 +19,7 @@ Module(
         isStatic: true,
         returnTy: Access(
           loc: 32-35,
-          name: "Int"),
+          name: "Nat"),
         name: "getN",
         parameters: [Parameter(
           loc: 41-56,

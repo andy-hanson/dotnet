@@ -35,9 +35,11 @@ abstract class Reader {
 	}
 
 	protected char peek => source.at(pos.index);
+	protected char peek2 => source.at(pos.index + 1);
 
 	protected void backup() { pos = pos.decr; }
 	protected void skip() { pos = pos.incr; }
+	protected void skip2() { pos = pos.incr.incr; }
 
 	protected char readChar() {
 		var res = peek;
@@ -123,15 +125,15 @@ abstract class Lexer : Reader {
 	}
 
 	//This is called *after* having skipped the first char of the number.
-	Token takeNumber(Pos startPos) {
+	Token takeNumber(Pos startPos, bool isSigned) {
 		skipWhile(isDigit);
-		var isFloat = peek == '.';
+		var isFloat = peek == '.' && isDigit(peek2);
 		if (isFloat) {
-			skip();
-			if (!isDigit(peek)) throw exit(singleCharLoc, Err.TooMuchIndent);
+			skip2();
+			skipWhile(isDigit);
 		}
 		this.tokenValue = sliceFrom(startPos);
-		return isFloat ? Token.FloatLiteral : Token.IntLiteral;
+		return isFloat ? Token.RealLiteral : isSigned ? Token.IntLiteral : Token.NatLiteral;
 	}
 
 	Token takeNameOrKeyword(Pos startPos) {
@@ -207,7 +209,7 @@ abstract class Lexer : Reader {
 
 			case '0': case '1': case '2': case '3': case '4':
 			case '5': case '6': case '7': case '8': case '9':
-				return takeNumber(start);
+				return takeNumber(start, isSigned: false);
 
 			case 'a': case 'b': case 'c': case 'd': case 'e':
 			case 'f': case 'g': case 'h': case 'i': case 'j':
@@ -223,10 +225,6 @@ abstract class Lexer : Reader {
 			case 'U': case 'V': case 'W': case 'X': case 'Y': case 'Z':
 				return takeStringLike(Token.TyName, start, isNameChar);
 
-			case '-':
-				if (isDigit(peek)) return takeNumber(start);
-				goto case '+';
-
 			case '=':
 				if (peek == '=') {
 					skip();
@@ -235,7 +233,11 @@ abstract class Lexer : Reader {
 				}
 				return Token.Equals;
 
-			case '+': case '*': case '/': case '^': case '?': case '<': case '>':
+			case '-': case '+':
+				if (isDigit(peek)) return takeNumber(start, isSigned: true);
+				goto case '*';
+
+			case '*': case '/': case '^': case '?': case '<': case '>':
 				return takeStringLike(Token.Operator, start, isOperatorChar);
 
 			default:

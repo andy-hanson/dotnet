@@ -127,5 +127,5 @@ struct RelPath : ToData<RelPath> {
 	public override int GetHashCode() => throw new NotSupportedException();
 	public static bool operator ==(RelPath a, RelPath b) => a.deepEqual(b);
 	public static bool operator !=(RelPath a, RelPath b) => !a.deepEqual(b);
-	public Dat toDat() => Dat.of(this, nameof(nParents), Dat.num(nParents), nameof(relToParent), relToParent);
+	public Dat toDat() => Dat.of(this, nameof(nParents), Dat.nat(nParents), nameof(relToParent), relToParent);
 }

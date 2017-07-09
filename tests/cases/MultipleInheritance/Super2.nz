@@ -1,6 +1,6 @@
 abstract
 
-abstract Int s2()
+abstract Nat s2()
 
-def Int s2Def()
+def Nat s2Def()
 	s2() * 10

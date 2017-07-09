@@ -67,7 +67,7 @@ struct SourceMap : ToData<SourceMap> {
 
 	public bool deepEqual(SourceMap sm) => throw new NotSupportedException();
 	public Dat toDat() => Dat.of(this,
-		nameof(version), Dat.num(version),
+		nameof(version), Dat.nat(version),
 		nameof(file), Dat.str(file),
 		nameof(sourceRoot), Dat.str(sourceRoot),
 		nameof(sources), Dat.arr(sources),

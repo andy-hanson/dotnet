@@ -81,7 +81,7 @@ namespace Json {
 			writeDictStart();
 			writeFirstDictEntry(key1, value1.toDat());
 			if (value2.get(out var v2))
-				writeNextDictEntry(key2, Dat.num(v2));
+				writeNextDictEntry(key2, Dat.nat(v2));
 			if (value3.get(out var v3))
 				writeNextDictEntry(key3, Dat.str(v3));
 			if (value4.get(out var v4))
@@ -112,9 +112,9 @@ namespace Json {
 			writeDictStart();
 			writeFirstDictEntry(key1, Dat.arr(value1));
 			if (value2.get(out var v2))
-				writeNextDictEntry(key2, Dat.num(v2));
+				writeNextDictEntry(key2, Dat.nat(v2));
 			if (value3.get(out var v3))
-				writeNextDictEntry(key3, Dat.num(v3));
+				writeNextDictEntry(key3, Dat.nat(v3));
 			writeDictEnd();
 		}
 	}

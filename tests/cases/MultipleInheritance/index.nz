@@ -1,7 +1,7 @@
 import .Super1 .Super2
 
 slots
-	val Int x
+	val Nat x
 is Super1
 	s1()
 		x

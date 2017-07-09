@@ -374,10 +374,13 @@ class JsWriter : EmitTextWriter {
 			case LiteralValue.Bool b:
 				writeRaw(b.value ? "true" : "false");
 				break;
+			case LiteralValue.Nat n:
+				writeRaw(n.value.ToString());
+				break;
 			case LiteralValue.Int i:
 				writeRaw(i.value.ToString());
 				break;
-			case LiteralValue.Float f:
+			case LiteralValue.Real f:
 				writeRaw(f.value.ToString());
 				break;
 			case LiteralValue.String s:
@@ -386,6 +389,8 @@ class JsWriter : EmitTextWriter {
 			case LiteralValue.Pass p:
 				writeRaw("void 0");
 				break;
+			default:
+				throw unreachable();
 		}
 	}
 

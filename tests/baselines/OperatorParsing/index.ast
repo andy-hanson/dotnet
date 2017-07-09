@@ -86,13 +86,13 @@ Module(
         isStatic: true,
         returnTy: Access(
           loc: 128-131,
-          name: "Int"),
+          name: "Nat"),
         name: "double",
         parameters: [Parameter(
           loc: 139-144,
           ty: Access(
             loc: 139-142,
-            name: "Int"),
+            name: "Nat"),
           name: "x")],
         body: OperatorCall(
           loc: 147-153,

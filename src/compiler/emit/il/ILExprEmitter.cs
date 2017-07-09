@@ -107,8 +107,9 @@ sealed class ILExprEmitter {
 
 	static readonly FieldInfo fieldBoolTrue = typeof(Builtins.Bool).GetField(nameof(Builtins.Bool.boolTrue));
 	static readonly FieldInfo fieldBoolFalse = typeof(Builtins.Bool).GetField(nameof(Builtins.Bool.boolFalse));
+	static readonly MethodInfo staticMethodNatOf = typeof(Builtins.Nat).GetMethod(nameof(Builtins.Nat.of));
 	static readonly MethodInfo staticMethodIntOf = typeof(Builtins.Int).GetMethod(nameof(Builtins.Int.of));
-	static readonly MethodInfo staticMethodFloatOf = typeof(Builtins.Float).GetMethod(nameof(Builtins.Float.of));
+	static readonly MethodInfo staticMethodFloatOf = typeof(Builtins.Real).GetMethod(nameof(Builtins.Real.of));
 	static readonly MethodInfo staticMethodStrOf = typeof(Builtins.String).GetMethod(nameof(Builtins.String.of));
 	static readonly FieldInfo fieldVoidInstance = typeof(Builtins.Void).GetField(nameof(Builtins.Void.instance));
 	void emitLiteral(Expr.Literal li) {
@@ -116,11 +117,15 @@ sealed class ILExprEmitter {
 			case LiteralValue.Bool vb:
 				il.loadStaticField(vb.value ? fieldBoolTrue : fieldBoolFalse);
 				return;
+			case LiteralValue.Nat vn:
+				il.constUint(vn.value);
+				il.callNonVirtual(staticMethodNatOf);
+				return;
 			case LiteralValue.Int vi:
 				il.constInt(vi.value);
 				il.callNonVirtual(staticMethodIntOf);
 				return;
-			case LiteralValue.Float vf:
+			case LiteralValue.Real vf:
 				il.constDouble(vf.value);
 				il.callNonVirtual(staticMethodFloatOf);
 				return;

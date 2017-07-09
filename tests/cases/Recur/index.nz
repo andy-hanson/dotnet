@@ -3,9 +3,9 @@ static
 fun Void main()
 	assert (f 10) == 0
 
-fun Int f(Int i)
+fun Nat f(Nat i)
 	when
 		i == 0
 			0
 		else
-			recur: i - 1
+			recur (i - 1).toNat()
