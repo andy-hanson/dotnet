@@ -6,9 +6,6 @@ main
 	const 10
 	call non-virtual Int.of
 	call non-virtual Recur.f
-	declare local x
-	set local x
-	get local x
 	const 0
 	call non-virtual Int.of
 	call non-virtual Int._eq
@@ -35,9 +32,6 @@ f
 	const 1
 	call non-virtual Int.of
 	call non-virtual Int._sub
-	declare local m
-	set local m
-	get local m
 	tail call non-virtual Recur.f
 	endWhen:
 	return

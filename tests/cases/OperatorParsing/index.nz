@@ -1,0 +1,12 @@
+static
+
+fun Void main()
+	x = 1 + 2 * 3
+	assert x == 9
+	y = double x + 1
+	assert y == 19
+	z = double: x + 1
+	assert z == 20
+
+fun Int double(Int x)
+	x * 2

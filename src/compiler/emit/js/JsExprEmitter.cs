@@ -8,7 +8,14 @@ sealed class JsExprEmitter {
 	readonly Sym currentClassName;
 	readonly bool thisMethodIsAsync;
 
-	internal JsExprEmitter(Sym currentClassName, bool thisMethodIsAsync) {
+	internal static Estree.BlockStatement emitMethodBody(ref bool needsLib, Sym className, bool @async, Expr body) {
+		var ee = new JsExprEmitter(className, @async);
+		var res = ee.exprToBlockStatement(body);
+		if (ee.needsLib) needsLib = true;
+		return res;
+	}
+
+	JsExprEmitter(Sym currentClassName, bool thisMethodIsAsync) {
 		this.currentClassName = currentClassName;
 		this.thisMethodIsAsync = thisMethodIsAsync;
 	}
@@ -18,15 +25,11 @@ sealed class JsExprEmitter {
 		return JsBuiltins.getFromLib(loc, id);
 	}
 
-	internal Estree.BlockStatement exprToBlockStatement(Expr expr) {
-		var parts = writeExprToBlockStatement(expr);
-		return new Estree.BlockStatement(expr.loc, parts.finish());
-	}
+	Estree.BlockStatement exprToBlockStatement(Expr expr) =>
+		new Estree.BlockStatement(expr.loc, writeExprToBlockStatement(expr).finish());
 
-	Estree.BlockStatement exprToBlockStatement(Expr expr, Estree.Statement firstStatement) {
-		var parts = writeExprToBlockStatement(expr);
-		return new Estree.BlockStatement(expr.loc, parts.finishWithFirst(firstStatement));
-	}
+	Estree.BlockStatement exprToBlockStatement(Expr expr, Estree.Statement firstStatement) =>
+		new Estree.BlockStatement(expr.loc, writeExprToBlockStatement(expr).finishWithFirst(firstStatement));
 
 	Arr.Builder<Estree.Statement> writeExprToBlockStatement(Expr expr) {
 		var parts = Arr.builder<Estree.Statement>();
@@ -87,8 +90,30 @@ sealed class JsExprEmitter {
 		var idAssertionException = getFromLib(loc, Sym.of(nameof(Builtins.AssertionException)));
 		var fail = new Estree.ThrowStatement(loc,
 			new Estree.NewExpression(loc, idAssertionException, Arr.of<Estree.Expression>()));
-		var notAsserted = Estree.UnaryExpression.not(a.asserted.loc, exprToExpr(a.asserted));
+		var notAsserted = negate(exprToExpr(a.asserted));
 		return new Estree.IfStatement(loc, notAsserted, fail);
+	}
+
+	static Dict<string, string> inverseOperators = Dict.of(
+		("===", "!=="),
+		("!==", "==="),
+		("<", ">="),
+		("<=", ">"),
+		(">=", "<"),
+		(">", "<="));
+	static Estree.Expression negate(Estree.Expression e) {
+		switch (e) {
+			case Estree.BinaryExpression b:
+				if (inverseOperators.get(b.@operator, out var inverse))
+					return new Estree.BinaryExpression(b.loc, "!==", b.left, b.right);
+				goto default;
+			case Estree.UnaryExpression u:
+				if (u.@operator == "!")
+					return u.argument;
+				goto default;
+			default:
+				return Estree.UnaryExpression.not(e.loc, e);
+		}
 	}
 
 	Estree.Statement tryToStatement(Expr.Try t) {

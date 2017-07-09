@@ -15,7 +15,7 @@ module.exports = class Try {
 				return e.description();
 			}
 		})();
-		if (!(x === "Assertion failed."))
+		if (x !== "Assertion failed.")
 			throw new _.AssertionException();
 		
 	}

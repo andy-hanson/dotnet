@@ -14,7 +14,7 @@ Klass(
         name: "console",
         index: 0)],
       body: InstanceMethodCall(
-        loc: 50-61,
+        loc: 43-61,
         target: AccessParameter(
           loc: 43-50,
           param: Parameter(

@@ -39,6 +39,9 @@ namespace Test {
 
 		[TestFor(nameof(Recur))]
 		static void Recur(TestData t) => runCsJsTests(t);
+
+		[TestFor(nameof(OperatorParsing))]
+		static void OperatorParsing(TestData t) => runCsJsTests(t);
 	}
 
 	// Must be public since it's used dynamically

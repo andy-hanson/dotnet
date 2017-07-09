@@ -38,9 +38,9 @@ Module(
               name: "Exception"),
             exceptionName: "e",
             then: Call(
-              loc: 107-109,
+              loc: 94-109,
               target: GetProperty(
-                loc: 95-107,
+                loc: 94-107,
                 target: Access(
                   loc: 94-95,
                   name: "e"),

@@ -1,81 +1,60 @@
 Module(
-  loc: 0-118,
+  loc: 0-105,
   imports: [],
   klass: Klass(
-    loc: 0-118,
+    loc: 0-105,
     head: Static(
       loc: 0-8),
     supers: [],
     methods: [
       Method(
-        loc: 8-50,
+        loc: 8-45,
         isStatic: true,
         returnTy: Access(
           loc: 12-16,
           name: "Void"),
         name: "main",
         parameters: [],
-        body: Let(
-          loc: 27-35,
-          assigned: Single(
-            loc: 25-26,
-            name: "x"),
-          value: Call(
-            loc: 29-35,
-            target: Access(
-              loc: 29-30,
-              name: "f"),
-            args: [Literal(
-              loc: 31-33,
-              value: 10)]),
-          then: Assert(
-            loc: 35-50,
-            asserted: OperatorCall(
-              loc: 42-50,
-              oper: "==",
-              right: Literal(
-                loc: 47-48,
-                value: 0))))),
+        body: Assert(
+          loc: 25-45,
+          asserted: OperatorCall(
+            loc: 32-45,
+            oper: "==",
+            right: Literal(
+              loc: 42-43,
+              value: 0)))),
       Method(
-        loc: 50-118,
+        loc: 45-105,
         isStatic: true,
         returnTy: Access(
-          loc: 54-57,
+          loc: 49-52,
           name: "Int"),
         name: "f",
         parameters: [Parameter(
-          loc: 60-65,
+          loc: 55-60,
           ty: Access(
-            loc: 60-63,
+            loc: 55-58,
             name: "Int"),
           name: "i")],
         body: WhenTest(
-          loc: 68-118,
+          loc: 63-105,
           cases: [Case(
-            loc: 75-89,
+            loc: 70-84,
             test: OperatorCall(
-              loc: 75-85,
+              loc: 70-80,
               oper: "==",
               right: Literal(
-                loc: 80-81,
+                loc: 75-76,
                 value: 0)),
             result: Literal(
-              loc: 85-86,
+              loc: 80-81,
               value: 0))],
-          elseResult: Let(
-            loc: 99-110,
-            assigned: Single(
-              loc: 97-98,
-              name: "m"),
-            value: OperatorCall(
-              loc: 101-110,
+          elseResult: Recur(
+            loc: 92-105,
+            args: [OperatorCall(
+              loc: 99-105,
               oper: "-",
               right: Literal(
-                loc: 105-106,
-                value: 1)),
-            then: Recur(
-              loc: 110-118,
-              args: [Access(
-                loc: 116-117,
-                name: "m")]))))
+                loc: 103-104,
+                value: 1))])))
     ]))

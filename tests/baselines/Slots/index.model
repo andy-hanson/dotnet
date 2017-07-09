@@ -29,7 +29,7 @@ Klass(
             loc: 48-52,
             name: "gotX"),
           value: InstanceMethodCall(
-            loc: 58-63,
+            loc: 55-63,
             target: AccessLocal(
               local: "obj"),
             method: Id(

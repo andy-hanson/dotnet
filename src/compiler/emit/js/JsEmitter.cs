@@ -118,15 +118,8 @@ sealed class JsEmitter {
 
 	Estree.MethodDefinition emitMethodOrImpl(Loc loc, Sym className, Method method, Expr body, bool isStatic) {
 		var @async = isAsync(method);
-		return Estree.MethodDefinition.method(loc, @async, method.name, method.parameters.map(emitParameter), exprToBlockStatement(className, @async, body), isStatic);
+		var @params = method.parameters.map<Estree.Pattern>(p => id(p.loc, p.name));
+		var block = JsExprEmitter.emitMethodBody(ref needsLib, className, @async, body);
+		return Estree.MethodDefinition.method(loc, @async, method.name, @params, block, isStatic);
 	}
-
-	Estree.BlockStatement exprToBlockStatement(Sym className, bool @async, Expr body) {
-		var me = new JsExprEmitter(className, @async);
-		var res = me.exprToBlockStatement(body);
-		if (me.needsLib) needsLib = true;
-		return res;
-	}
-
-	static Estree.Pattern emitParameter(Parameter p) => id(p.loc, p.name);
 }

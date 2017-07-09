@@ -38,9 +38,9 @@ Module(
               loc: 48-52,
               name: "gotX"),
             value: Call(
-              loc: 63-65,
+              loc: 55-65,
               target: GetProperty(
-                loc: 58-63,
+                loc: 55-63,
                 target: Access(
                   loc: 55-58,
                   name: "obj"),

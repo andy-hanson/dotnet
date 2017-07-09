@@ -399,6 +399,7 @@ abstract class Lexer : Reader {
 	protected void takeDot() => expectCharacter('.');
 	protected bool tryTakeRparen() => tryTake(')');
 	protected bool tryTakeDot() => tryTake('.');
+	protected bool tryTakeColon() => tryTake(':');
 
 	protected void takeSpecificKeyword(Token kw) {
 		var startPos = pos;

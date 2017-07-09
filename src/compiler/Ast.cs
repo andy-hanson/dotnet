@@ -1,4 +1,5 @@
 using System;
+using static Utils;
 
 namespace Ast {
 	abstract class Node : ToData<Node> {

@@ -15,10 +15,10 @@ module.exports = class MultipleInheritance extends _.mixin(Super1, Super2) {
 	}
 	static main(){
 		const x = new MultipleInheritance(1);
-		if (!(x.s1Def() === 10))
+		if (x.s1Def() !== 10)
 			throw new _.AssertionException();
 		
-		if (!(x.s2Def() === 20))
+		if (x.s2Def() !== 20)
 			throw new _.AssertionException();
 		
 	}

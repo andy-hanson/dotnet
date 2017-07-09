@@ -19,7 +19,7 @@ Klass(
         name: "a",
         index: 0)],
       body: InstanceMethodCall(
-        loc: 60-62,
+        loc: 59-62,
         target: AccessParameter(
           loc: 59-60,
           param: Parameter(

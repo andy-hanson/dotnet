@@ -20,9 +20,9 @@ Module(
           name: "Console"),
         name: "console")],
       body: Call(
-        loc: 50-77,
+        loc: 43-77,
         target: GetProperty(
-          loc: 50-61,
+          loc: 43-61,
           target: Access(
             loc: 43-50,
             name: "console"),

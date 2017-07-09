@@ -235,12 +235,18 @@ class JsWriter : EmitTextWriter {
 		writeRaw(')');
 	}
 
+	void writeParenthesizedIf(bool parenthesize, Estree.Expression e) {
+		if (parenthesize) writeRaw('(');
+		writeExpr(e);
+		if (parenthesize) writeRaw(')');
+	}
+
 	void writeBinaryExpression(Estree.BinaryExpression e) {
-		writeExpr(e.left);
+		writeParenthesizedIf(e.left is Estree.BinaryExpression, e.left);
 		writeRaw(" ");
 		writeRaw(e.@operator);
 		writeRaw(" ");
-		writeExpr(e.right);
+		writeParenthesizedIf(e.right is Estree.BinaryExpression, e.right);
 	}
 
 	void writeAwaitExpression(Estree.AwaitExpression a) {

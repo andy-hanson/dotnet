@@ -1,58 +1,51 @@
 Klass(
-  loc: 0-118,
+  loc: 0-105,
   head: Static(
     loc: 0-8),
   membersMap: Dict<Sym, Member>(
     main: MethodWithBody(
-      loc: 8-50,
+      loc: 8-45,
       isStatic: true,
       returnTy: "Void",
       name: "main",
       parameters: [],
-      body: Let(
-        loc: 27-35,
-        assigned: Single(
-          loc: 25-26,
-          name: "x"),
-        value: StaticMethodCall(
-          method: Id(
-            klassId: "",
-            name: "f"),
-          args: [Literal(
-            loc: 31-33,
-            value: 10)]),
-        then: Assert(
-          loc: 35-50,
-          asserted: InstanceMethodCall(
-            loc: 42-50,
-            target: AccessLocal(
-              local: "x"),
+      body: Assert(
+        loc: 25-45,
+        asserted: InstanceMethodCall(
+          loc: 32-45,
+          target: StaticMethodCall(
             method: Id(
-              klassId: "Int",
-              name: "=="),
+              klassId: "",
+              name: "f"),
             args: [Literal(
-              loc: 47-48,
-              value: 0)])))),
+              loc: 35-37,
+              value: 10)]),
+          method: Id(
+            klassId: "Int",
+            name: "=="),
+          args: [Literal(
+            loc: 42-43,
+            value: 0)]))),
     f: MethodWithBody(
-      loc: 50-118,
+      loc: 45-105,
       isStatic: true,
       returnTy: "Int",
       name: "f",
       parameters: [Parameter(
-        loc: 60-65,
+        loc: 55-60,
         ty: "Int",
         name: "i",
         index: 0)],
       body: WhenTest(
-        loc: 68-118,
+        loc: 63-105,
         cases: [Case(
-          loc: 75-89,
+          loc: 70-84,
           test: InstanceMethodCall(
-            loc: 75-85,
+            loc: 70-80,
             target: AccessParameter(
-              loc: 75-76,
+              loc: 70-71,
               param: Parameter(
-                loc: 60-65,
+                loc: 55-60,
                 ty: "Int",
                 name: "i",
                 index: 0)),
@@ -60,22 +53,19 @@ Klass(
               klassId: "Int",
               name: "=="),
             args: [Literal(
-              loc: 80-81,
+              loc: 75-76,
               value: 0)]),
           result: Literal(
-            loc: 85-86,
+            loc: 80-81,
             value: 0))],
-        elseResult: Let(
-          loc: 99-110,
-          assigned: Single(
-            loc: 97-98,
-            name: "m"),
-          value: InstanceMethodCall(
-            loc: 101-110,
+        elseResult: Recur(
+          loc: 92-105,
+          args: [InstanceMethodCall(
+            loc: 99-105,
             target: AccessParameter(
-              loc: 101-102,
+              loc: 99-100,
               param: Parameter(
-                loc: 60-65,
+                loc: 55-60,
                 ty: "Int",
                 name: "i",
                 index: 0)),
@@ -83,9 +73,5 @@ Klass(
               klassId: "Int",
               name: "-"),
             args: [Literal(
-              loc: 105-106,
-              value: 1)]),
-          then: Recur(
-            loc: 110-118,
-            args: [AccessLocal(
-              local: "m")]))))))
+              loc: 103-104,
+              value: 1)])])))))

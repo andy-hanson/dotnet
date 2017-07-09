@@ -18,8 +18,8 @@ static class Program {
 		//doTestIl();
 
 		using (var tc = new Test.TestCompile(updateBaselines: true)) {
-			//tc.runAllCompilerTests();
-			tc.runTestNamed("Recur");
+			tc.runAllCompilerTests();
+			//tc.runTestNamed("Recur");
 		}
 	}
 

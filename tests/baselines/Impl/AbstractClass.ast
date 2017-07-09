@@ -28,9 +28,9 @@ Module(
             name: "AbstractClass"),
           name: "a")],
         body: Call(
-          loc: 62-64,
+          loc: 59-64,
           target: GetProperty(
-            loc: 60-62,
+            loc: 59-62,
             target: Access(
               loc: 59-60,
               name: "a"),
