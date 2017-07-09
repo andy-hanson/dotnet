@@ -5,9 +5,11 @@ using static Utils;
 
 sealed class JsExprEmitter {
 	internal bool needsLib = false;
-	readonly bool thisMethodIsAsync = false;
+	readonly Sym currentClassName;
+	readonly bool thisMethodIsAsync;
 
-	internal JsExprEmitter(bool thisMethodIsAsync) {
+	internal JsExprEmitter(Sym currentClassName, bool thisMethodIsAsync) {
+		this.currentClassName = currentClassName;
 		this.thisMethodIsAsync = thisMethodIsAsync;
 	}
 
@@ -17,19 +19,17 @@ sealed class JsExprEmitter {
 	}
 
 	internal Estree.BlockStatement exprToBlockStatement(Expr expr) {
-		var parts = Arr.builder<Estree.Statement>();
-		writeExprToBlockStatement(parts, expr);
+		var parts = writeExprToBlockStatement(expr);
 		return new Estree.BlockStatement(expr.loc, parts.finish());
 	}
 
 	Estree.BlockStatement exprToBlockStatement(Expr expr, Estree.Statement firstStatement) {
-		var parts = Arr.builder<Estree.Statement>();
-		parts.add(firstStatement);
-		writeExprToBlockStatement(parts, expr);
-		return new Estree.BlockStatement(expr.loc, parts.finish());
+		var parts = writeExprToBlockStatement(expr);
+		return new Estree.BlockStatement(expr.loc, parts.finishWithFirst(firstStatement));
 	}
 
-	void writeExprToBlockStatement(Arr.Builder<Estree.Statement> parts, Expr expr) {
+	Arr.Builder<Estree.Statement> writeExprToBlockStatement(Expr expr) {
+		var parts = Arr.builder<Estree.Statement>();
 		while (true) {
 			var loc = expr.loc;
 			switch (expr) {
@@ -39,32 +39,46 @@ sealed class JsExprEmitter {
 					expr = l.then;
 					break;
 				case Expr.Seq s:
-					parts.add(exprToStatement(s.action));
+					parts.add(exprToStatementWorker(s.action, needReturn: false));
 					expr = s.then;
 					break;
-				case Expr.Assert a:
-					parts.add(assertToStatement(a));
-					return;
-				case Expr.Try t:
-					parts.add(tryToStatement(t));
-					return;
 				case Expr.Literal l:
 					if (l.value is LiteralValue.Pass)
-						return;
+						return parts;
 					goto default;
 				default:
-					parts.add(new Estree.ReturnStatement(expr.loc, exprToExpr(expr)));
-					return;
+					parts.add(exprToStatementWorker(expr, needReturn: true));
+					return parts;
 			}
 		}
 	}
 
-	Estree.Statement exprToStatement(Expr expr) {
+	Estree.Statement exprToReturnStatementOrBlock(Expr expr) {
+		switch (expr) {
+			case Expr.Let _:
+			case Expr.Seq _:
+				return exprToBlockStatement(expr);
+			case Expr.Literal l:
+				if (l.value is LiteralValue.Pass)
+					return new Estree.BlockStatement(l.loc, Arr.empty<Estree.Statement>());
+				goto default;
+			default:
+				return exprToStatementWorker(expr, needReturn: true);
+		}
+	}
+
+	// e.g. `return f(1)` or `if (so) return 1; else return 2;`
+	Estree.Statement exprToStatementWorker(Expr expr, bool needReturn) {
 		switch (expr) {
 			case Expr.Assert a:
 				return assertToStatement(a);
+			case Expr.WhenTest w:
+				return whenToStatement(w);
+			case Expr.Try t:
+				return tryToStatement(t);
 			default:
-				return Estree.ExpressionStatement.of(exprToExpr(expr));
+				var e = exprToExpr(expr);
+				return needReturn ? Estree.ReturnStatement.of(e) : (Estree.Statement)Estree.ExpressionStatement.of(e);
 		}
 	}
 
@@ -135,6 +149,8 @@ sealed class JsExprEmitter {
 				return emitMyInstanceMethodCall(my);
 			case Expr.New n:
 				return new Estree.NewExpression(loc, id(loc, n.klass.name), n.args.map(exprToExpr));
+			case Expr.Recur r:
+				return emitRecur(r);
 			case Expr.GetSlot g:
 				return Estree.MemberExpression.simple(loc, exprToExpr(g.target), g.slot.name);
 			case Expr.GetMySlot g:
@@ -155,16 +171,21 @@ sealed class JsExprEmitter {
 	Estree.Expression emitMyInstanceMethodCall(Expr.MyInstanceMethodCall m) =>
 		JsBuiltins.emitMyInstanceMethodCall(ref needsLib, m.method, m.loc, m.args.map(exprToExpr));
 
-	Estree.Expression whenToExpr(Expr.WhenTest w) {
-		var cases = w.cases;
-
-		// Build it backwards.
-		var res = exprToExpr(w.elseResult);
-		for (var i = cases.length - 1; i != 0; i--) {
-			var kase = cases[i];
-			res = new Estree.ConditionalExpression(kase.loc,  exprToExpr(kase.test), exprToExpr(kase.result), res);
-		}
-
-		return res;
+	Estree.Expression emitRecur(Expr.Recur r) {
+		var loc = r.loc;
+		var implemented = r.recurseTo.implementedMethod;
+		var methodName = implemented.name;
+		var fn = implemented.isStatic ? Estree.MemberExpression.simple(loc, currentClassName, methodName) : Estree.MemberExpression.ofThis(loc, methodName);
+		return new Estree.CallExpression(loc, fn, r.args.map(exprToExpr));
 	}
+
+	/** if (test1) { return result1; } else if (test2) { return result2; } else { return result3; } */
+	Estree.Statement whenToStatement(Expr.WhenTest w) =>
+		w.cases.foldBackwards(exprToReturnStatementOrBlock(w.elseResult), (res, kase) =>
+			new Estree.IfStatement(kase.loc, exprToExpr(kase.test), exprToReturnStatementOrBlock(kase.result), res));
+
+	/** test1 ? result1 : test2 ? result2 : elze */
+	Estree.Expression whenToExpr(Expr.WhenTest w) =>
+		w.cases.foldBackwards(exprToExpr(w.elseResult), (res, kase) =>
+			new Estree.ConditionalExpression(kase.loc,  exprToExpr(kase.test), exprToExpr(kase.result), res));
 }

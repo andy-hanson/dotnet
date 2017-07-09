@@ -4,19 +4,21 @@ using Model;
 using static Utils;
 
 class ExprChecker {
-	internal static Expr checkMethod(BaseScope baseScope, bool isStatic, Ty returnTy, Arr<Parameter> parameters, Effect effect, Ast.Expr body) =>
-		new ExprChecker(baseScope, isStatic, parameters, effect).checkSubtype(returnTy, body);
+	internal static Expr checkMethod(BaseScope baseScope, MethodOrImpl methodOrImpl, bool isStatic, Ty returnTy, Arr<Parameter> parameters, Effect effect, Ast.Expr body) =>
+		new ExprChecker(baseScope, methodOrImpl, isStatic, parameters, effect).checkReturn(returnTy, body);
 
 	readonly BaseScope baseScope;
 	Klass currentClass => baseScope.self;
+	readonly MethodOrImpl methodOrImpl;
 	readonly bool isStatic;
 	readonly Arr<Parameter> parameters;
 	/** Declared effect for this method. Cannot call methods that have effects we haven't declared. */
 	readonly Effect effect;
 	readonly Stack<Pattern.Single> locals = new Stack<Pattern.Single>();
 
-	ExprChecker(BaseScope baseScope, bool isStatic, Arr<Parameter> parameters, Effect effect) {
+	ExprChecker(BaseScope baseScope, MethodOrImpl methodOrImpl, bool isStatic, Arr<Parameter> parameters, Effect effect) {
 		this.baseScope = baseScope;
+		this.methodOrImpl = methodOrImpl;
 		this.isStatic = isStatic;
 		this.parameters = parameters;
 		this.effect = effect;
@@ -33,19 +35,21 @@ class ExprChecker {
 		}
 	}
 
-	Expr checkVoid(Ast.Expr a) {
-		var e = Expected.SubTypeOf(BuiltinClass.Void);
-		return checkExpr(ref e, a);
-	}
+	Expr checkVoid(Ast.Expr a) => checkSubtype(BuiltinClass.Void, a);
 
 	Expr checkInfer(Ast.Expr a) {
-		var e = Expected.Infer();
-		return checkExpr(ref e, a);
+		var expected = Expected.Infer();
+		return checkExpr(ref expected, a);
+	}
+
+	Expr checkReturn(Ty ty, Ast.Expr a) {
+		var expected = Expected.Return(ty);
+		return checkExpr(ref expected, a);
 	}
 
 	Expr checkSubtype(Ty ty, Ast.Expr a) {
-		var e = Expected.SubTypeOf(ty);
-		return checkExpr(ref e, a);
+		var expected = Expected.SubTypeOf(ty);
+		return checkExpr(ref expected, a);
 	}
 
 	Expr checkExpr(ref Expected e, Ast.Expr a) {
@@ -58,6 +62,8 @@ class ExprChecker {
 				return checkOperatorCall(ref e, o);
 			case Ast.Expr.Call c:
 				return checkCallAst(ref e, c);
+			case Ast.Expr.Recur r:
+				return checkRecur(ref e, r);
 			case Ast.Expr.New n:
 				return checkNew(ref e, n);
 			case Ast.Expr.GetProperty g:
@@ -110,6 +116,16 @@ class ExprChecker {
 				// Diagnostic -- can't call anything else.
 				throw TODO();
 		}
+	}
+
+	Expr checkRecur(ref Expected expected, Ast.Expr.Recur r) {
+		if (!expected.inTailCallPosition)
+			throw TODO(); //compile error
+
+		//should match this.parameters
+		var loc = r.loc;
+		var args = this.checkCallArguments(loc, parameters, r.args);
+		return handle(ref expected, new Expr.Recur(loc, methodOrImpl, args));
 	}
 
 	Expr checkNew(ref Expected expected, Ast.Expr.New n) {
@@ -204,9 +220,9 @@ class ExprChecker {
 	Expr callOwnMethod(ref Expected expected, Loc loc, Sym methodName, Arr<Ast.Expr> argAsts) {
 		var member = getMember(loc, currentClass, methodName);
 		var method = (Method)member; //TODO: error handling
-		if (method.isStatic) throw TODO(); //OK to call own static method! Use Expr.StaticMethodCall on current class
 		var args = checkCall(loc, method, argAsts);
-		return handle(ref expected, new Expr.MyInstanceMethodCall(loc, method, args));
+		var call = method.isStatic ? new Expr.StaticMethodCall(loc, method, args) : (Expr)new Expr.MyInstanceMethodCall(loc, method, args);
+		return handle(ref expected, call);
 	}
 
 	static Member getMember(Loc loc, Ty ty, Sym memberName) {
@@ -224,7 +240,6 @@ class ExprChecker {
 		}
 
 		foreach (var super in klass.supers) {
-			var superClass = (ClassLike) super.superClass; //TODO
 			if (tryGetMember(super.superClass, memberName, out member))
 				return true;
 		}
@@ -235,13 +250,16 @@ class ExprChecker {
 	Arr<Expr> checkCall(Loc callLoc, Method method, Arr<Ast.Expr> argAsts) {
 		if (!effect.contains(method.effect))
 			throw TODO(); // Error: can't call method with greater effect
+		return checkCallArguments(callLoc, method.parameters, argAsts);
+	}
 
-		if (method.arity != argAsts.length) {
-			unused(callLoc);
+	// Used by normal calls and by 'recur' (which doesn't need an effect check)
+	Arr<Expr> checkCallArguments(Loc loc, Arr<Parameter> parameters, Arr<Ast.Expr> argAsts) {
+		if (parameters.length != argAsts.length) {
+			unused(loc);
 			throw TODO();
 		}
-
-		return method.parameters.zip(argAsts, (parameter, argAst) => checkSubtype(parameter.ty, argAst));
+		return parameters.zip(argAsts, (parameter, argAst) => checkSubtype(parameter.ty, argAst));
 	}
 
 	void addToScope(Pattern.Single local) {
@@ -284,7 +302,12 @@ class ExprChecker {
 
 	/** PASS BY REF! */
 	struct Expected {
-		enum Kind { SubTypeOf, Infer }
+		enum Kind {
+			/** Like SubTypeOf, but it's a tail call. */
+			Return,
+			SubTypeOf,
+			Infer
+		}
 		readonly Kind kind;
 		//For Void, this is always null.
 		//For SubTypeOf, this is always non-null.
@@ -292,6 +315,9 @@ class ExprChecker {
 		Op<Ty> expectedTy;
 		Expected(Kind kind, Ty ty) { this.kind = kind; this.expectedTy = Op.fromNullable(ty); }
 
+		internal bool inTailCallPosition => kind == Kind.Return;
+
+		internal static Expected Return(Ty ty) => new Expected(Kind.Return, ty);
 		internal static Expected SubTypeOf(Ty ty) => new Expected(Kind.SubTypeOf, ty);
 		internal static Expected Infer() => new Expected(Kind.Infer, null);
 
@@ -300,6 +326,7 @@ class ExprChecker {
 
 		internal Expr handle(Expr e, ExprChecker c) {
 			switch (kind) {
+				case Kind.Return:
 				case Kind.SubTypeOf:
 					//Ty must be a subtype of this.
 					return c.checkType(expectedTy.force, e);

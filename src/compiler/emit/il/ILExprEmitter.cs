@@ -8,12 +8,17 @@ using static Utils;
 sealed class ILExprEmitter {
 	readonly EmitterMaps maps;
 	readonly ILWriter il;
+	readonly MethodInfo currentMethod;
 	readonly Dict.Builder<Pattern.Single, ILWriter.Local> localToIl = Dict.builder<Pattern.Single, ILWriter.Local>();
-	ILExprEmitter(EmitterMaps maps, ILWriter il) { this.maps = maps; this.il = il; }
+	ILExprEmitter(EmitterMaps maps, ILWriter il, MethodInfo currentMethod) {
+		this.maps = maps;
+		this.il = il;
+		this.currentMethod = currentMethod;
+	}
 
 	internal static void emitMethodBody(EmitterMaps maps, MethodBuilder mb, Expr body, /*nullable*/ Logger logger) {
 		var iw = new ILWriter(mb, logger);
-		new ILExprEmitter(maps, iw).emitAny(body);
+		new ILExprEmitter(maps, iw, mb).emitAny(body);
 		iw.ret();
 	}
 
@@ -51,6 +56,9 @@ sealed class ILExprEmitter {
 				return;
 			case Expr.New n:
 				emitNew(n);
+				return;
+			case Expr.Recur r:
+				emitRecur(r);
 				return;
 			case Expr.GetSlot g:
 				emitGetSlot(g);
@@ -251,6 +259,11 @@ sealed class ILExprEmitter {
 		var ctr = this.maps.getConstructorInfo(n.klass);
 		emitArgs(n.args);
 		il.callConstructor(ctr);
+	}
+
+	void emitRecur(Expr.Recur r) {
+		emitArgs(r.args);
+		il.tailcallNonVirtual(currentMethod);
 	}
 
 	void emitArgs(Arr<Expr> args) {

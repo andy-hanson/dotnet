@@ -1,0 +1,13 @@
+static
+
+fun Void main()
+	x = f 10
+	assert x == 0
+
+fun Int f(Int i)
+	when
+		i == 0
+			0
+		else
+			m = i - 1
+			recur m

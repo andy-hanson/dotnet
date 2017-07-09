@@ -22,4 +22,9 @@ static class FileUtils {
 		Directory.CreateDirectory(path.directory().toPathString());
 		File.WriteAllText(path.toPathString(), text);
 	}
+
+	internal static bool isDirectory(Path path) {
+		var attr = File.GetAttributes(path.toPathString());
+		return (attr & FileAttributes.Directory) != 0;
+	}
 }

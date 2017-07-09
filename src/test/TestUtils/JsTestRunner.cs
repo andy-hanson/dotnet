@@ -58,7 +58,7 @@ namespace Test {
 			var proc = new Process();
 			var si = proc.StartInfo;
 			si.FileName = "node";
-			si.Arguments = "tests/js-test-runner/runFromCSharp.js";
+			si.Arguments = "--harmony_tailcalls tests/js-test-runner/runFromCSharp.js";
 			si.CreateNoWindow = true;
 
 			var syncProc = new SynchronousProcess(proc);

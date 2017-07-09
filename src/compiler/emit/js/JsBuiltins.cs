@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 
-using static EstreeUtils;
 using Model;
+using static EstreeUtils;
 using static Utils;
 
 /**
@@ -99,8 +99,10 @@ static class JsBuiltins {
 	}
 
 	internal static Estree.Expression emitMyInstanceMethodCall(ref bool usedNzlib, Method invokedMethod, Loc loc, Arr<Estree.Expression> args) {
-		if (invokedMethod is Method.BuiltinMethod)
+		if (invokedMethod is Method.BuiltinMethod) {
+			unused(usedNzlib);
 			throw TODO();
+		}
 
 		var member = Estree.MemberExpression.ofThis(loc, invokedMethod.name);
 		return callPossiblyAsync(loc, isAsync(invokedMethod), member, args);

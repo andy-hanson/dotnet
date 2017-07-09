@@ -77,17 +77,23 @@ namespace Model {
 		}
 	}
 
-	internal sealed class Impl : ModelElement, ToData<Impl> {
+	interface MethodOrImpl {
+		Method implementedMethod { get; }
+	}
+
+	internal sealed class Impl : ModelElement, MethodOrImpl, ToData<Impl> {
 		internal readonly Loc loc;
 		[ParentPointer] internal readonly Super super;
 		[UpPointer] internal readonly Method implemented;
-		internal readonly Expr body;
+		Late<Expr> _body;
+		internal Expr body { get => _body.get; set => _body.set(value); }
 
-		internal Impl(Super super, Loc loc, Method implemented, Expr body) {
+		Method MethodOrImpl.implementedMethod => implemented;
+
+		internal Impl(Super super, Loc loc, Method implemented) {
 			this.super = super;
 			this.loc = loc;
 			this.implemented = implemented;
-			this.body = body;
 		}
 
 		public bool deepEqual(Impl i) =>

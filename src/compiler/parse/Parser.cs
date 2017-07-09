@@ -347,13 +347,21 @@ sealed class Parser : Lexer {
 		return parseExprWithNext(ctx, start, startToken);
 	}
 
+	enum SpecialStart { None, New, Recur }
+
 	(Ast.Expr, Next) parseExprWithNext(Ctx ctx, Pos loopStart, Token loopNext) {
 		var exprStart = loopStart;
-		var isNew = loopNext == Token.New;
-		if (isNew) {
-			takeSpace();
-			loopStart = pos;
-			loopNext = nextToken();
+		var specialStart = SpecialStart.None;
+		switch (loopNext) {
+			case Token.New:
+			case Token.Recur:
+				specialStart = loopNext == Token.New ? SpecialStart.New : SpecialStart.Recur;
+				takeSpace();
+				loopStart = pos;
+				loopNext = nextToken();
+				break;
+			default:
+				break;
 		}
 
 		var parts = Arr.builder<Ast.Expr>();
@@ -374,7 +382,7 @@ sealed class Parser : Lexer {
 				case Token.Operator: {
 					if (parts.isEmpty)
 						throw TODO();
-					var left = finishRegular(exprStart, isNew, parts);
+					var left = finishRegular(exprStart, specialStart, parts);
 					var @operator = tokenSym;
 					takeSpace();
 					var (right, next) = parseExpr(ctx);
@@ -393,11 +401,11 @@ sealed class Parser : Lexer {
 					return (assert, next);
 				}
 
-				case Token.Try:
-				case Token.When: {
+				case Token.When:
+				case Token.Try: {
 					if (ctx != Ctx.Line && ctx != Ctx.LineExpr) throw TODO();
-					parts.add(loopNext == Token.Try ? parseTry(loopStart) : parseWhen(loopStart));
-					var expr = finishRegular(exprStart, isNew, parts);
+					parts.add(loopNext == Token.When ? parseWhen(loopStart) : parseTry(loopStart));
+					var expr = finishRegular(exprStart, specialStart, parts);
 					var next = tryTakeDedentFromDedenting() ? Next.CtxEnded : Next.NewlineAfterStatement;
 					return (expr, next);
 				}
@@ -415,7 +423,7 @@ sealed class Parser : Lexer {
 						case Token.Newline:
 						case Token.Dedent: {
 							if (ctx != Ctx.Line && ctx != Ctx.LineExpr) throw TODO();
-							var expr = finishRegular(exprStart, isNew, parts);
+							var expr = finishRegular(exprStart, specialStart, parts);
 							Next next;
 							switch (tokenAfter) {
 								case Token.Newline:
@@ -433,7 +441,7 @@ sealed class Parser : Lexer {
 						case Token.Indent: {
 							if (ctx != Ctx.SingleLineThenIndent)
 								throw TODO();
-							var expr = finishRegular(exprStart, isNew, parts);
+							var expr = finishRegular(exprStart, specialStart, parts);
 							return (expr, Next.CtxEnded);
 						}
 
@@ -447,17 +455,22 @@ sealed class Parser : Lexer {
 		}
 	}
 
-	Ast.Expr finishRegular(Pos exprStart, bool isNew, Arr.Builder<Ast.Expr> parts) {
+	Ast.Expr finishRegular(Pos exprStart, SpecialStart specialStart, Arr.Builder<Ast.Expr> parts) {
 		if (parts.curLength == 0)
 			throw exit(singleCharLoc, Err.EmptyExpression);
 
-		if (isNew) {
-			return new Ast.Expr.New(locFrom(exprStart), parts.finish());
-		} else {
-			var res = parts[0];
-			if (parts.curLength > 1)
-				res = new Ast.Expr.Call(locFrom(res.loc.start), res, parts.finishTail());
-			return res;
+		switch (specialStart) {
+			case SpecialStart.None:
+				var res = parts[0];
+				if (parts.curLength > 1)
+					res = new Ast.Expr.Call(locFrom(res.loc.start), res, parts.finishTail());
+				return res;
+			case SpecialStart.New:
+				return new Ast.Expr.New(locFrom(exprStart), parts.finish());
+			case SpecialStart.Recur:
+				return new Ast.Expr.Recur(locFrom(exprStart), parts.finish());
+			default:
+				throw unreachable();
 		}
 	}
 
@@ -519,6 +532,29 @@ sealed class Parser : Lexer {
 		}
 	}
 
+	Ast.Expr parseWhen(Pos startPos) {
+		/*
+		when
+			firstTest
+				firstResult
+			else
+				elseResult
+		*/
+		takeIndent();
+		//Must take at least one non-'else' part.
+		var firstCaseStartPos = pos;
+		var firstTest = parseExprAndEndContext(Ctx.SingleLineThenIndent);
+		var firstResult = parseBlock();
+		var firstCase = new Ast.Expr.WhenTest.Case(locFrom(firstCaseStartPos), firstTest, firstResult);
+
+		//TODO: support arbitrary number of clauses
+		takeSpecificKeyword(Token.Else);
+		takeIndent();
+		var elseResult = parseBlock();
+
+		return new Ast.Expr.WhenTest(locFrom(startPos), Arr.of(firstCase), elseResult);
+	}
+
 	Ast.Expr parseTry(Pos startPos) {
 		/*
 		try
@@ -570,29 +606,6 @@ sealed class Parser : Lexer {
 		}
 
 		return new Ast.Expr.Try(locFrom(startPos), do_, catch_, finally_);
-	}
-
-	Ast.Expr parseWhen(Pos startPos) {
-		/*
-		when
-			firstTest
-				firstResult
-			else
-				elseResult
-		*/
-		takeIndent();
-		//Must take at least one non-'else' part.
-		var firstCaseStartPos = pos;
-		var firstTest = parseExprAndEndContext(Ctx.SingleLineThenIndent);
-		var firstResult = parseBlock();
-		var firstCase = new Ast.Expr.WhenTest.Case(locFrom(firstCaseStartPos), firstTest, firstResult);
-
-		//TODO: support arbitrary number of clauses
-		takeSpecificKeyword(Token.Else);
-		takeIndent();
-		var elseResult = parseBlock();
-
-		return new Ast.Expr.WhenTest(locFrom(startPos), Arr.of(firstCase), elseResult);
 	}
 
 	static Ast.Pattern partsToPattern(Loc loc, Arr.Builder<Ast.Expr> parts) {

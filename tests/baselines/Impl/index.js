@@ -1,3 +1,4 @@
+"use strict";
 const _ = require("nzlib");
 const AbstractClass = require("./AbstractClass");
 module.exports = class Impl extends AbstractClass {
@@ -11,6 +12,8 @@ module.exports = class Impl extends AbstractClass {
 	static main(){
 		const instance = new Impl(1);
 		const gotN = AbstractClass.getN(instance);
-		if (!(gotN === 1)) throw new _.AssertionException();
+		if (!(gotN === 1))
+			throw new _.AssertionException();
+		
 	}
 };

@@ -5,7 +5,7 @@ using static Utils;
 
 namespace Model {
 	// `fun` or `def` or `impl`, or a builtin method.
-	abstract class Method : Member, ToData<Method>, Identifiable<Method.Id>, IEquatable<Method> {
+	abstract class Method : Member, MethodOrImpl, ToData<Method>, Identifiable<Method.Id>, IEquatable<Method> {
 		internal struct Id : ToData<Id> {
 			internal readonly ClassLike.Id klassId;
 			internal readonly Sym name;
@@ -13,6 +13,8 @@ namespace Model {
 			public bool deepEqual(Id m) => klassId.deepEqual(m.klassId) && name.deepEqual(m.name);
 			public Dat toDat() => Dat.of(this, nameof(klassId), klassId, nameof(name), name);
 		}
+
+		Method MethodOrImpl.implementedMethod => this;
 
 		bool IEquatable<Method>.Equals(Method m) => object.ReferenceEquals(this, m);
 		public sealed override int GetHashCode() => name.GetHashCode();
@@ -47,7 +49,7 @@ namespace Model {
 
 			internal static BuiltinMethod of(BuiltinClass klass, MethodInfo method) {
 				var returnTy = BuiltinClass.fromDotNetType(method.ReturnType);
-				var name = BuiltinClass.unescapeName(Sym.of(method.Name));
+				var name = BuiltinClass.unescapeName(method.Name);
 				var @params = method.GetParameters().map((p, index) => {
 					assert(!p.IsIn);
 					assert(!p.IsLcid);

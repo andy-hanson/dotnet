@@ -50,6 +50,9 @@ class JsWriter : EmitTextWriter {
 	//Remember to write ';' if necessary.
 	void writeStatement(Estree.Statement s) {
 		switch (s) {
+			case Estree.BlockStatement b:
+				writeBlockStatement(b);
+				break;
 			case Estree.ExpressionStatement e:
 				writeExpr(e.expression);
 				writeRaw(';');
@@ -107,10 +110,23 @@ class JsWriter : EmitTextWriter {
 	void writeIfStatement(Estree.IfStatement i) {
 		writeRaw("if (");
 		writeExpr(i.test);
-		writeRaw(") ");
-		writeStatement(i.consequent);
+		writeRaw(')');
+
+		var consequentIsBlock = false;
+		if (i.consequent is Estree.BlockStatement b) {
+			consequentIsBlock = true;
+			writeRaw(' ');
+			writeBlockStatement(b);
+		} else {
+			this.doIndent();
+			writeStatement(i.consequent);
+			this.doDedent();
+		}
+
 		if (i.alternate.get(out var alt)) {
-			writeLine();
+			if (consequentIsBlock)
+				// Didn't finish in a newline, just `} else`
+				writeRaw(' ');
 			writeRaw("else ");
 			writeStatement(alt);
 		}
@@ -195,6 +211,9 @@ class JsWriter : EmitTextWriter {
 			case Estree.BinaryExpression be:
 				writeBinaryExpression(be);
 				break;
+			case Estree.AwaitExpression a:
+				writeAwaitExpression(a);
+				break;
 			default:
 				throw unreachable();
 		}
@@ -222,6 +241,11 @@ class JsWriter : EmitTextWriter {
 		writeRaw(e.@operator);
 		writeRaw(" ");
 		writeExpr(e.right);
+	}
+
+	void writeAwaitExpression(Estree.AwaitExpression a) {
+		writeRaw("await ");
+		writeExpr(a.argument);
 	}
 
 	void writeObjectExpression(Estree.ObjectExpression o) {

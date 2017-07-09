@@ -18,6 +18,15 @@ struct Arr<T> {
 		}
 	}
 
+	internal U foldBackwards<U>(U u, Func<U, T, U> fold) {
+		var i = length;
+		do {
+			i--;
+			u = fold(u, this[i]);
+		} while (i != 0);
+		return u;
+	}
+
 	internal void Deconstruct(out T first, out T second) {
 		assert(length == 2);
 		first = head;
@@ -240,6 +249,17 @@ struct Arr<T> {
 }
 
 static class Arr {
+	internal static Arr<T> slice<T>(this T[] arr, uint low, uint high) {
+		var len = high - low;
+		var res = new T[len];
+		for (uint i = 0; i < len; i++)
+			res[i] = arr[low + i];
+		return new Arr<T>(res);
+	}
+
+	internal static Arr<T> slice<T>(this T[] arr, uint low) =>
+		slice(arr, low, unsigned(arr.Length));
+
 	internal static Arr<T> toArr<T>(this IEnumerable<T> xs) {
 		var b = builder<T>();
 		foreach (var x in xs)
@@ -328,6 +348,23 @@ static class Arr {
 
 		internal void add(T u) { b.Add(u); }
 		internal Arr<T> finish() => new Arr<T>(b.ToArray());
+
+		internal Arr<T> finishWithFirst(T first) {
+			var a = new T[b.Count + 1];
+			a[0] = first;
+			for (uint i = 0; i < b.Count; i++)
+				a[i + 1] = b[signed(i)];
+			return new Arr<T>(a);
+		}
+
+		internal Arr<T> finishWithFirstTwo(T first, T second) {
+			var a = new T[b.Count + 2];
+			a[0] = first;
+			a[1] = second;
+			for (uint i = 0; i < b.Count; i++)
+				a[i + 2] = b[signed(i)];
+			return new Arr<T>(a);
+		}
 
 		internal Arr<T> finishTail() {
 			b.RemoveAt(0);

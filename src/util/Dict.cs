@@ -89,7 +89,7 @@ static class Dict {
 	internal struct Builder<K, V> where K : IEquatable<K> {
 		readonly Dictionary<K, V> inner;
 
-		internal Builder(bool dummy) { inner = new Dictionary<K, V>(); }
+		internal Builder(bool dummy) { unused(dummy); inner = new Dictionary<K, V>(); }
 
 		internal Dict<K, V> finish() => new Dict<K, V>(inner);
 

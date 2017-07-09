@@ -1,6 +1,7 @@
 using System;
 using System.Text;
 
+using static CharUtils;
 using static ParserExitException;
 using static Utils;
 
@@ -123,18 +124,18 @@ abstract class Lexer : Reader {
 
 	//This is called *after* having skipped the first char of the number.
 	Token takeNumber(Pos startPos) {
-		skipWhile(CharUtils.isDigit);
+		skipWhile(isDigit);
 		var isFloat = peek == '.';
 		if (isFloat) {
 			skip();
-			if (!CharUtils.isDigit(peek)) throw exit(singleCharLoc, Err.TooMuchIndent);
+			if (!isDigit(peek)) throw exit(singleCharLoc, Err.TooMuchIndent);
 		}
 		this.tokenValue = sliceFrom(startPos);
 		return isFloat ? Token.FloatLiteral : Token.IntLiteral;
 	}
 
 	Token takeNameOrKeyword(Pos startPos) {
-		skipWhile(CharUtils.isNameChar);
+		skipWhile(isNameChar);
 		var s = sliceFrom(startPos);
 
 		if (TokenU.keywordFromName(s, out var kw))
@@ -220,11 +221,10 @@ abstract class Lexer : Reader {
 			case 'K': case 'L': case 'M': case 'N': case 'O':
 			case 'P': case 'Q': case 'R': case 'S': case 'T':
 			case 'U': case 'V': case 'W': case 'X': case 'Y': case 'Z':
-				return takeStringLike(Token.TyName, start, CharUtils.isNameChar);
+				return takeStringLike(Token.TyName, start, isNameChar);
 
 			case '-':
-				var next = readChar();
-				if (CharUtils.isDigit(next)) return takeNumber(start);
+				if (isDigit(peek)) return takeNumber(start);
 				goto case '+';
 
 			case '=':
@@ -408,15 +408,15 @@ abstract class Lexer : Reader {
 
 	protected string takeTyNameString() {
 		var startPos = pos;
-		expectCharacter("type name", CharUtils.isUpperCaseLetter);
-		skipWhile(CharUtils.isNameChar);
+		expectCharacter("type name", isUpperCaseLetter);
+		skipWhile(isNameChar);
 		return sliceFrom(startPos);
 	}
 
 	protected string takeNameString() {
 		var startPos = pos;
-		expectCharacter("(non-type) name", CharUtils.isLowerCaseLetter);
-		skipWhile(CharUtils.isNameChar);
+		expectCharacter("(non-type) name", isLowerCaseLetter);
+		skipWhile(isNameChar);
 		return sliceFrom(startPos);
 	}
 
@@ -433,8 +433,8 @@ abstract class Lexer : Reader {
 
 	protected Token takeKeyword() {
 		var startPos = pos;
-		expectCharacter("keyword", CharUtils.isLowerCaseLetter);
-		skipWhile(CharUtils.isNameChar);
+		expectCharacter("keyword", isLowerCaseLetter);
+		skipWhile(isNameChar);
 		var name = sliceFrom(startPos);
 		if (TokenU.keywordFromName(name, out var kw))
 			return kw;

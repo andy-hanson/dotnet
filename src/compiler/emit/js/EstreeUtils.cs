@@ -12,9 +12,9 @@ static class EstreeUtils {
 	internal static Estree.Identifier id(Loc loc, Sym name) =>
 		new Estree.Identifier(loc, name);
 
-	internal static Estree.Expression callPossiblyAsync(Loc loc, bool async, Estree.Expression target, Arr<Estree.Expression> args) {
+	internal static Estree.Expression callPossiblyAsync(Loc loc, bool @async, Estree.Expression target, Arr<Estree.Expression> args) {
 		Estree.Expression call = new Estree.CallExpression(loc, target, args);
-		return async ? new Estree.AwaitExpression(loc, call) : call;
+		return @async ? new Estree.AwaitExpression(loc, call) : call;
 	}
 
 	internal static Estree.Statement assign(Loc loc, Estree.Pattern lhs, Estree.Expression rhs) =>

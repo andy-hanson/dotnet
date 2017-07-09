@@ -327,6 +327,15 @@ namespace Ast {
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(target), target, nameof(args), Dat.arr(args));
 		}
 
+		internal sealed class Recur : Expr, ToData<Recur> {
+			internal readonly Arr<Expr> args;
+			internal Recur(Loc loc, Arr<Expr> args) : base(loc) { this.args = args; }
+
+			public override bool deepEqual(Node n) => n is Recur r && deepEqual(r);
+			public bool deepEqual(Recur r) => locEq(r) && args.deepEqual(r.args);
+			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(args), Dat.arr(args));
+		}
+
 		internal sealed class New : Expr, ToData<New> {
 			internal readonly Arr<Expr> args;
 			internal New(Loc loc, Arr<Expr> args) : base(loc) {
@@ -467,8 +476,16 @@ namespace Ast {
 				}
 
 				public override bool deepEqual(Node n) => n is Catch c && deepEqual(c);
-				public bool deepEqual(Catch c) => locEq(c) && exceptionTy.deepEqual(c.exceptionTy) && exceptionName.deepEqual(c.exceptionName) && then.deepEqual(c.then);
-				public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(exceptionTy), exceptionTy, nameof(exceptionName), exceptionName, nameof(then), then);
+				public bool deepEqual(Catch c) =>
+					locEq(c) &&
+					exceptionTy.deepEqual(c.exceptionTy) &&
+					exceptionName.deepEqual(c.exceptionName) &&
+					then.deepEqual(c.then);
+				public override Dat toDat() => Dat.of(this,
+					nameof(loc), loc,
+					nameof(exceptionTy), exceptionTy,
+					nameof(exceptionName), exceptionName,
+					nameof(then), then);
 			}
 		}
 	}

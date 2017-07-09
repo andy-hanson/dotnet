@@ -30,6 +30,15 @@ namespace Test {
 
 		[TestFor(nameof(MultipleInheritance))]
 		static void MultipleInheritance(TestData t) => runCsJsTests(t);
+
+		[TestFor(nameof(ConsoleApp))]
+		static void ConsoleApp(TestData t) {
+			var cls = t.emittedRoot;
+			cls.invokeStatic("main", new BuiltinImpls.Console());
+		}
+
+		[TestFor(nameof(Recur))]
+		static void Recur(TestData t) => runCsJsTests(t);
 	}
 
 	// Must be public since it's used dynamically

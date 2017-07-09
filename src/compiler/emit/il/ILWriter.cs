@@ -31,6 +31,18 @@ struct ILWriter {
 		this.logger = logger;
 	}
 
+	//kill
+	internal void gotoIfEqual(Label l) {
+		il.Emit(OpCodes.Beq, l.__inner);
+	}
+	internal void not() {
+		il.Emit(OpCodes.Not);
+	}
+	internal void log(Local l) {
+		il.EmitWriteLine(l.__builder);
+	}
+	internal void sub() => il.Emit(OpCodes.Sub);
+
 	internal void pop() {
 		logger?.log(nameof(pop));
 		il.Emit(OpCodes.Pop);
@@ -142,6 +154,12 @@ struct ILWriter {
 	internal void callVirtual(MethodInfo method) {
 		logger?.log($"call virtual {method.DeclaringType.Name}.{method.Name}");
 		il.Emit(OpCodes.Callvirt, method);
+	}
+
+	internal void tailcallNonVirtual(MethodInfo method) {
+		logger?.log($"tail call non-virtual {method.DeclaringType.Name}.{method.Name}");
+		il.Emit(OpCodes.Tailcall);
+		il.Emit(OpCodes.Call, method);
 	}
 
 	internal Local declareLocal(Type type, Sym name) {

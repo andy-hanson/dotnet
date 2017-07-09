@@ -8,57 +8,51 @@ using Lsp;
 sealed class TestAttribute : Attribute {}
 
 #pragma warning disable CC0068 // Allow unused methods in this file
+#pragma warning disable CC0057 // Allow unused arguments in this file
 
 static class Program {
-	static void Main() {
+	static void Main(string[] args) {
+		//args = new[] { "run", "tests/cases/ConsoleApp/index.nz" };
+		//return Cli.Cli.go(args);
+
 		//doTestIl();
 
-		var tc = new Test.TestCompile(updateBaselines: true);
-		tc.runAllCompilerTests();
-		//tc.runTestNamed("Impl");
+		using (var tc = new Test.TestCompile(updateBaselines: true)) {
+			//tc.runAllCompilerTests();
+			tc.runTestNamed("Recur");
+		}
 	}
 
 	static void doTestIl() {
-		var (iface, t) = testIl();
-		var inst = Activator.CreateInstance(t);
-		Console.WriteLine(iface.invokeStatic("stat", inst));
+		var t = testIl();
+		var res = t.invokeStatic("stat", 10);
+		Console.WriteLine($"res: {res}");
 
 		//var instance = Activator.CreateInstance(t);
 		//Console.WriteLine(t.invokeInstance(instance, "foo"));
 	}
 
-	static (Type, Type) testIl() {
+	static Type testIl() {
 		var assemblyName = new AssemblyName("TestIL");
 		var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndCollect);
 		var moduleBuilder = assemblyBuilder.DefineDynamicModule(assemblyName.Name);
 
-		var ifaceBuilder = moduleBuilder.DefineType("TestIface", TypeAttributes.Interface | TypeAttributes.Abstract);
-		var ifaceMethod = ifaceBuilder.DefineMethod("foo", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual, typeof(int), new Type[] { });
-
-		var st = ifaceBuilder.DefineMethod("stat", MethodAttributes.Static | MethodAttributes.Public, typeof(int), new Type[] { ifaceBuilder });
-		var ilst = new ILWriter(st);
-		ilst.getParameter(0);
-		ilst.callVirtual(ifaceMethod);
-		ilst.ret();
-
-		var iface = ifaceBuilder.CreateType();
-
-		var tb = moduleBuilder.DefineType("TestIL", TypeAttributes.Sealed, typeof(object), new[] { iface });
+		var tb = moduleBuilder.DefineType("TestIL", TypeAttributes.Sealed); //, typeof(object), new[] { iface });
 
 		var mb = tb.DefineMethod(
-			"foo",
-			MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final,
+			"stat",
+			MethodAttributes.Public | MethodAttributes.Static,
 			typeof(int),
-			new Type[] {});
+			new Type[] { });
 		var il = new ILWriter(mb);
 		writeIl(ref il);
-		il.ret();
 
-		return (iface, tb.CreateType());
+		return tb.CreateType();
 	}
 
-	static void writeIl(ref ILWriter w) {
-		w.constInt(1);
+	static void writeIl(ref ILWriter il) {
+		il.constInt(1);
+		il.ret();
 	}
 }
 

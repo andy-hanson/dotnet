@@ -30,6 +30,7 @@ const keywords = [
 	"in",
 	"new",
 	"pass",
+	"recur",
 	"self",
 	"set",
 	"slots",

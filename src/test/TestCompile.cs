@@ -10,7 +10,7 @@ namespace Test {
 		internal TestFailureException(string message) : base(message) {}
 	}
 
-	class TestCompile {
+	class TestCompile : IDisposable {
 		const string testsDir = "tests";
 		static readonly Path casesRootDir = Path.fromParts(testsDir, "cases");
 		static readonly Path baselinesRootDir = Path.fromParts(testsDir, "baselines");
@@ -21,6 +21,12 @@ namespace Test {
 		internal TestCompile(bool updateBaselines) {
 			this.updateBaselines = updateBaselines;
 			jsTestRunner = JsTestRunner.create();
+		}
+
+		void IDisposable.Dispose() {
+			IDisposable i = jsTestRunner;
+			i.Dispose();
+			GC.SuppressFinalize(this);
 		}
 
 		internal void runTestNamed(string name) {
@@ -65,12 +71,10 @@ namespace Test {
 
 		TestData runCompilerTest(Path testPath) {
 			var testDirectory = casesRootDir.resolve(testPath.asRel);
-			var host = DocumentProviders.CommandLine(testDirectory);
-			var (program, indexModule) = Compiler.compile(Path.empty, host, Op<CompiledProgram>.None);
+			var (program, indexModule) = Compiler.compileDir(testDirectory);
 			var baselinesDirectory = baselinesRootDir.resolve(testPath.asRel);
 
-			var emitter = new ILEmitter(shouldLog: true);
-			var emittedRoot = emitter.emitModule(indexModule);
+			var (emittedRoot, emitLogs) = ILEmitter.emitWithLogs(indexModule);
 
 			foreach (var (_, module) in program.modules) {
 				var modulePath = module.fullPath().withoutExtension(ModuleResolver.extension);
@@ -78,7 +82,7 @@ namespace Test {
 				assertBaseline(baselinesDirectory, modulePath, ".ast", Dat.either(module.document.parseResult));
 				assertBaseline(baselinesDirectory, modulePath, ".model", module.klass.toDat());
 				assertBaseline(baselinesDirectory, modulePath, ".js", JsEmitter.emitToString(module));
-				assertBaseline(baselinesDirectory, modulePath, ".il", emitter.getLogs(module));
+				assertBaseline(baselinesDirectory, modulePath, ".il", emitLogs[module]);
 			}
 
 			return new TestData(testPath, program, indexModule, emittedRoot, jsTestRunner);

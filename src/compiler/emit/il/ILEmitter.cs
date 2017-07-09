@@ -19,7 +19,7 @@ sealed class ILEmitter {
 	readonly /*nullable*/ Dictionary<Model.Module, string> logs;
 	bool shouldLog => logs != null;
 
-	internal ILEmitter(bool shouldLog) {
+	ILEmitter(bool shouldLog) {
 		assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndCollect);
 		moduleBuilder = assemblyBuilder.DefineDynamicModule(assemblyName.Name);
 		if (shouldLog) this.logs = new Dictionary<Model.Module, string>();
@@ -34,9 +34,18 @@ sealed class ILEmitter {
 		assemblyBuilder.SetCustomAttribute(caBuilder);*/
 	}
 
-	internal string getLogs(Model.Module module) => logs[module];
+	internal static Type emit(Model.Module module) {
+		var e = new ILEmitter(shouldLog: false);
+		return e.emitModule(module);
+	}
 
-	internal Type emitModule(Model.Module module) {
+	internal static (Type emittedRoot, Dict<Model.Module, string> logs) emitWithLogs(Model.Module module) {
+		var e = new ILEmitter(shouldLog: true);
+		var emittedRoot = e.emitModule(module);
+		return (emittedRoot, new Dict<Model.Module, string>(e.logs));
+	}
+
+	Type emitModule(Model.Module module) {
 		if (maps.tryGetAlreadyEmittedTypeForKlass(module.klass, out var b))
 			return b;
 

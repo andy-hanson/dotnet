@@ -61,6 +61,8 @@ internal enum Token {
 	New,
 	[Text("pass")]
 	Pass,
+	[Text("recur")]
+	Recur,
 	[Text("self")]
 	Self,
 	[Text("set")]

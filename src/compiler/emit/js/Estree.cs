@@ -30,6 +30,9 @@ namespace Estree {
 	sealed class Literal : Node, Expression {
 		internal readonly LiteralValue value;
 		internal Literal(Loc loc, LiteralValue value) : base(loc) { this.value = value; }
+
+		internal static Literal str(Loc loc, string s) =>
+			new Literal(loc, LiteralValue.String.of(s));
 	}
 
 	sealed class Program : Node {
@@ -38,35 +41,35 @@ namespace Estree {
 	}
 
 	abstract class Function : Node {
-		internal readonly bool async;
+		internal readonly bool @async;
 		internal readonly Arr<Pattern> @params;
-		protected Function(Loc loc, bool async, Arr<Pattern> @params) : base(loc) {
-			this.async = async;
+		protected Function(Loc loc, bool @async, Arr<Pattern> @params) : base(loc) {
+			this.@async = @async;
 			this.@params = @params;
 		}
 	}
 
 	abstract class FunctionDeclarationOrExpression : Function {
 		internal readonly BlockStatement body;
-		protected FunctionDeclarationOrExpression(Loc loc, bool async, Arr<Pattern> @params, BlockStatement body) : base(loc, async, @params) {
+		protected FunctionDeclarationOrExpression(Loc loc, bool @async, Arr<Pattern> @params, BlockStatement body) : base(loc, @async, @params) {
 			this.body = body;
 		}
 	}
 
 	sealed class FunctionExpression : FunctionDeclarationOrExpression, Expression {
-		internal FunctionExpression(Loc loc, bool async, Arr<Pattern> @params, BlockStatement body) : base(loc, async, @params, body) {}
+		internal FunctionExpression(Loc loc, bool @async, Arr<Pattern> @params, BlockStatement body) : base(loc, @async, @params, body) {}
 	}
 
 	sealed class FunctionDeclaration : FunctionDeclarationOrExpression, Declaration {
 		internal readonly Identifier id;
-		internal FunctionDeclaration(Loc loc, bool async, Identifier id, Arr<Pattern> @params, BlockStatement body) : base(loc, async, @params, body) {
+		internal FunctionDeclaration(Loc loc, bool @async, Identifier id, Arr<Pattern> @params, BlockStatement body) : base(loc, @async, @params, body) {
 			this.id = id;
 		}
 	}
 
 	sealed class ArrowFunctionExpression : Function, Expression {
 		internal readonly BlockStatementOrExpression body;
-		internal ArrowFunctionExpression(Loc loc, bool async, Arr<Pattern> @params, BlockStatementOrExpression body) : base(loc, async, @params) {
+		internal ArrowFunctionExpression(Loc loc, bool @async, Arr<Pattern> @params, BlockStatementOrExpression body) : base(loc, @async, @params) {
 			this.body = body;
 		}
 	}
@@ -122,23 +125,26 @@ namespace Estree {
 
 	sealed class ReturnStatement : Node, Statement {
 		internal readonly Expression argument;
-		internal ReturnStatement(Loc loc, Expression argument) : base(loc) {
+		ReturnStatement(Loc loc, Expression argument) : base(loc) {
 			this.argument = argument;
 		}
+		internal static ReturnStatement of(Expression argument) => new ReturnStatement(argument.loc, argument);
 	}
 
 	sealed class IfStatement : Node, Statement {
 		internal readonly Expression test;
 		internal readonly Statement consequent;
 		internal readonly Op<Statement> alternate;
-		internal IfStatement(Loc loc, Expression test, Statement consequent) : base(loc) {
+		IfStatement(Loc loc, Expression test, Statement consequent, Op<Statement> alternate) : base(loc) {
 			this.test = test;
 			if (this.consequent is IfStatement i && !i.alternate.has) {
 				assert(i.consequent is BlockStatement);
 			}
 			this.consequent = consequent;
-			this.alternate = Op<Statement>.None;
+			this.alternate = alternate;
 		}
+		internal IfStatement(Loc loc, Expression test, Statement consequent, Statement alternate) : this(loc, test, consequent, Op.Some(alternate)) {}
+		internal IfStatement(Loc loc, Expression test, Statement consequent) : this(loc, test, consequent, Op<Statement>.None) {}
 	}
 
 	interface DeclarationOrExpression {}
@@ -200,8 +206,7 @@ namespace Estree {
 			var nameStr = name.str;
 			if (isSafeMemberName(nameStr))
 				return notComputed(loc, lhs, new Identifier(loc, name));
-			var property = new Literal(loc, LiteralValue.String.of(nameStr));
-			return new MemberExpression(loc, lhs, property, computed: true);
+			return new MemberExpression(loc, lhs, Literal.str(loc, nameStr), computed: true);
 		}
 
 		internal static MemberExpression simple(Loc loc, Sym left, Sym name) =>
@@ -302,11 +307,11 @@ namespace Estree {
 			this.@static = @static;
 		}
 
-		internal static MethodDefinition method(Loc loc, bool async, Sym name, Arr<Pattern> @params, BlockStatement body, bool @static) {
+		internal static MethodDefinition method(Loc loc, bool @async, Sym name, Arr<Pattern> @params, BlockStatement body, bool @static) {
 			var nameStr = name.str;
 			var computed = !isSafeMemberName(nameStr);
-			var key = computed ? new Literal(loc, LiteralValue.String.of(nameStr)) : (Expression)new Identifier(loc, name);
-			return new MethodDefinition(loc, key, new FunctionExpression(loc, async, @params, body), Kind.Method, computed, @static);
+			var key = computed ? Literal.str(loc, nameStr) : (Expression)new Identifier(loc, name);
+			return new MethodDefinition(loc, key, new FunctionExpression(loc, @async, @params, body), Kind.Method, computed, @static);
 		}
 
 		internal static readonly Sym symConstructor = Sym.of(nameof(constructor));

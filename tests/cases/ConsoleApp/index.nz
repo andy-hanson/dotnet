@@ -1,0 +1,4 @@
+static
+
+fun Void main(Console console) io
+	console.write-line "Hello world!"

@@ -31,6 +31,7 @@ sealed class EmitterMapsBuilder : EmitterMaps {
 
 	MethodInfo EmitterMaps.getMethodInfo(Method method) =>
 		method is Method.BuiltinMethod b ? b.methodInfo : methodInfos[method];
+
 	ConstructorInfo EmitterMaps.getConstructorInfo(Klass klass) => classToConstructor[klass];
 	FieldInfo EmitterMaps.getFieldInfo(Slot slot) => slotToField[slot];
 

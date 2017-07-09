@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Text;
 
 using static Utils;
 
@@ -42,14 +43,14 @@ namespace Model {
 				fromDotNetType(klass);
 		}
 
-		static Dict<Sym, Sym> operatorEscapes = Dict.of(
+		static Dict<Sym, string> operatorEscapes = Dict.of(
 			("==", "_eq"),
 			("+", "_add"),
 			("-", "_sub"),
 			("*", "_mul"),
 			("/", "_div"),
-			("^", "_pow")).map((k, v) => (Sym.of(k), Sym.of(v)));
-		static Dict<Sym, Sym> operatorUnescapes = operatorEscapes.reverse();
+			("^", "_pow")).mapKeys(Sym.of);
+		static Dict<string, Sym> operatorUnescapes = operatorEscapes.reverse();
 
 		internal static readonly BuiltinClass Void = fromDotNetType(typeof(Builtins.Void));
 		internal static readonly BuiltinClass Bool = fromDotNetType(typeof(Builtins.Bool));
@@ -64,7 +65,7 @@ namespace Model {
 		internal static BuiltinClass fromDotNetType(Type dotNetType) {
 			assert(dotNetType.DeclaringType == typeof(Builtins));
 
-			var name = unescapeName(Sym.of(dotNetType.Name));
+			var name = unescapeName(dotNetType.Name);
 
 			if (byName.TryGetValue(name, out var old)) {
 				assert(old.dotNetType == dotNetType);
@@ -114,19 +115,34 @@ namespace Model {
 		public override int GetHashCode() => name.GetHashCode();
 		public override Dat toDat() => Dat.of(this, nameof(name), name);
 
-		internal static Sym escapeName(Sym name) {
+		/*internal static string escapeName(Sym name) {
 			if (operatorEscapes.get(name, out var sym))
 				return sym;
 
-			foreach (var ch in name.str)
+			var str = name.str;
+
+			foreach (var ch in str)
 				if (CharUtils.isLetter(ch))
 					unreachable();
 
-			return name;
-		}
+			return str;
+		}*/
 
-		internal static Sym unescapeName(Sym name) =>
-			operatorUnescapes.get(name, out var v) ? v : name;
+		internal static Sym unescapeName(string name) {
+			if (operatorUnescapes.get(name, out var v))
+				return v;
+
+			var sb = new StringBuilder();
+			foreach (var ch in name) {
+				if (ch == '_')
+					sb.Append('-');
+				else {
+					assert(CharUtils.isNameChar(ch));
+					sb.Append(ch);
+				}
+			}
+			return Sym.of(sb);
+		}
 
 		public override string ToString() => $"BuiltinClass({name})";
 	}

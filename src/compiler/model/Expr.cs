@@ -88,6 +88,7 @@ namespace Model {
 			internal readonly Expr elseResult;
 			[NotData] internal readonly Ty _ty; // Cached common type of all cases and elseResult.
 			internal WhenTest(Loc loc, Arr<Case> cases, Expr elseResult, Ty ty) : base(loc) {
+				assert(cases.length != 0);
 				this.cases = cases;
 				this.elseResult = elseResult;
 				this._ty = ty;
@@ -313,24 +314,19 @@ namespace Model {
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(asserted), asserted);
 		}
 
-		/*internal sealed class GetMethod : Get {
-			internal readonly NzMethod method;
-			internal readonly Expr target;
-			internal GetMethod(Loc loc, Expr target, MethodWithBody method) : base(loc, target) {
-				assert(!method.isStatic);
-				this.target = target;
-				this.method = method;
+		internal sealed class Recur : Expr, ToData<Recur> {
+			[ParentPointer] internal readonly MethodOrImpl recurseTo;
+			internal readonly Arr<Expr> args;
+			internal Recur(Loc loc, MethodOrImpl recurseTo, Arr<Expr> args) : base(loc) {
+				this.recurseTo = recurseTo;
+				this.args = args;
 			}
-			internal override Ty ty => TODO(); //Function type for the method
-		}*/
 
-		/*internal sealed class GetStaticMethod : Expr {
-			internal readonly NzMethod method;
-			internal GetStaticMethod(Loc loc, MethodWithBody method) : base(loc) {
-				assert(method.isStatic);
-				this.method = method;
-			}
-			internal override Ty ty => TODO();
-		}*/
+			internal override Ty ty => recurseTo.implementedMethod.returnTy;
+
+			public override bool deepEqual(Expr e) => e is Recur && deepEqual(e);
+			public bool deepEqual(Recur r) => locEq(r) && args.deepEqual(r.args);
+			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(args), Dat.arr(args));
+		}
 	}
 }

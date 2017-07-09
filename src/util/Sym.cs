@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Text;
+
 using static Utils;
 
 [DebuggerDisplay(":{str}")]
@@ -32,6 +34,8 @@ struct Sym : ToData<Sym>, IEquatable<Sym> {
 			return sym;
 		}
 	}
+
+	internal static Sym of(StringBuilder sb) => of(sb.ToString());
 
 	internal string str => symToString[this];
 

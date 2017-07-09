@@ -48,6 +48,18 @@ sealed class Compiler {
 		return (newProgram, rootModule);
 	}
 
+	internal static (CompiledProgram, Module root) compile(Path path, DocumentProvider documentProvider) =>
+		compile(path, documentProvider, Op<CompiledProgram>.None);
+
+	internal static (CompiledProgram, Module root) compileDir(Path dir) =>
+		compile(Path.empty, DocumentProviders.CommandLine(dir));
+
+	internal static (CompiledProgram, Module root) compileFile(Path path) {
+		var fileName = path.last.withoutEndIfEndsWith(".nz");
+		var filePath = fileName == "index" ? Path.empty : Path.fromParts(fileName);
+		return compile(filePath, DocumentProviders.CommandLine(path.directory()));
+	}
+
 	/**
 	isReused: true if this is the same module from the old program.
 	*/

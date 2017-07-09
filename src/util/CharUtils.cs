@@ -1,6 +1,6 @@
 static class CharUtils {
 	internal static bool isNameChar(char ch) =>
-		isLetter(ch) || isDigit(ch);
+		isLetter(ch) || isDigit(ch) || ch == '-';
 
 	internal static bool isDigit(char ch) =>
 		ch >= '0' && ch <= '9';

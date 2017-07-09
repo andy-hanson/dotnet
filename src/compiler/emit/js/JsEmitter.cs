@@ -15,11 +15,11 @@ sealed class JsEmitter {
 	static readonly Estree.Identifier requireId = baseId("require");
 	static readonly Estree.Statement requireNzlib = importStatement(Sym.of("_"), "nzlib");
 
+	static readonly Estree.Statement useStrict =
+		Estree.ExpressionStatement.of(Estree.Literal.str(Loc.zero, "use strict"));
+
 	Estree.Program emitToProgram(Module m) {
 		var body = Arr.builder<Estree.Statement>();
-
-		// Eagerly add lib import. If we don't need this, we'll finishTail()
-		body.add(requireNzlib);
 
 		foreach (var import in m.imports)
 			body.add(emitImport(m, import));
@@ -27,7 +27,8 @@ sealed class JsEmitter {
 		var cls = emitClass(m.klass);
 		body.add(assign(m.klass.loc, moduleExports, cls));
 
-		return new Estree.Program(Loc.zero, needsLib ? body.finish() : body.finishTail());
+		var statements = needsLib ? body.finishWithFirstTwo(useStrict, requireNzlib) : body.finishWithFirst(useStrict);
+		return new Estree.Program(Loc.zero, statements);
 	}
 
 	static Estree.Statement emitImport(Module importer, Module imported) {
@@ -38,7 +39,7 @@ sealed class JsEmitter {
 	}
 
 	static Estree.Statement importStatement(Sym importedName, string importedPath) {
-		var required = new Estree.Literal(Loc.zero, LiteralValue.String.of(importedPath));
+		var required = Estree.Literal.str(Loc.zero, importedPath);
 		var require = Estree.CallExpression.of(Loc.zero, requireId, required);
 		return Estree.VariableDeclaration.simple(Loc.zero, importedName, require);
 	}
@@ -61,16 +62,16 @@ sealed class JsEmitter {
 				throw TODO();
 		}
 
-		var superClass =  super(klass.loc, klass.supers);
+		var superClass = super(klass.loc, klass.supers);
 
 		foreach (var super in klass.supers)
 			foreach (var impl in super.impls)
-				body.add(emitMethodOrImpl(impl.loc, impl.implemented, impl.body, isStatic: false));
+				body.add(emitMethodOrImpl(impl.loc, klass.name, impl.implemented, impl.body, isStatic: false));
 
 		foreach (var method in klass.methods)
 			switch (method) {
 				case Method.MethodWithBody mb:
-					body.add(emitMethodOrImpl(method.loc, method, mb.body, method.isStatic));
+					body.add(emitMethodOrImpl(method.loc, klass.name, method, mb.body, method.isStatic));
 					break;
 				case Method.AbstractMethod a:
 					// These compile to nothing -- they are abstract.
@@ -115,13 +116,13 @@ sealed class JsEmitter {
 	static Estree.Statement superCall(Loc loc) =>
 		Estree.ExpressionStatement.of(Estree.CallExpression.of(loc, new Estree.Super(loc)));
 
-	Estree.MethodDefinition emitMethodOrImpl(Loc loc, Method method, Expr body, bool isStatic) {
-		var async = isAsync(method);
-		return Estree.MethodDefinition.method(loc, async, method.name, method.parameters.map(emitParameter), exprToBlockStatement(async, body), isStatic);
+	Estree.MethodDefinition emitMethodOrImpl(Loc loc, Sym className, Method method, Expr body, bool isStatic) {
+		var @async = isAsync(method);
+		return Estree.MethodDefinition.method(loc, @async, method.name, method.parameters.map(emitParameter), exprToBlockStatement(className, @async, body), isStatic);
 	}
 
-	Estree.BlockStatement exprToBlockStatement(bool async, Expr body) {
-		var me = new JsExprEmitter(async);
+	Estree.BlockStatement exprToBlockStatement(Sym className, bool @async, Expr body) {
+		var me = new JsExprEmitter(className, @async);
 		var res = me.exprToBlockStatement(body);
 		if (me.needsLib) needsLib = true;
 		return res;
