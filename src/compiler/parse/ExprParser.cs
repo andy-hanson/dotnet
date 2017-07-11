@@ -39,14 +39,14 @@ abstract class ExprParser : Lexer {
 
 		switch (next) {
 			case Next.NewlineAfterEquals: {
-				if (!(expr is Ast.Expr.Let l))
+				if (!(expr is Ast.Let l))
 					throw unreachable();
 				l.then = parseBlock();
 				return l;
 			}
 			case Next.NewlineAfterStatement: {
 				var rest = parseBlock();
-				return new Ast.Expr.Seq(locFrom(start), expr, rest);
+				return new Ast.Seq(locFrom(start), expr, rest);
 			}
 			/*case Next.EndNestedBlock: {
 				var start2 = pos;
@@ -110,7 +110,7 @@ abstract class ExprParser : Lexer {
 					takeSpace();
 					var (value, next) = parseExpr(Ctx.Plain);
 					if (next != Next.NewlineAfterStatement) throw exit(locFrom(loopStart), Err.BlockCantEndInLet); //TODO: special error if next = Next.NewlineAfterEquals
-					return (new Ast.Expr.Let(locFrom(loopStart), pattern, value), Next.NewlineAfterEquals);
+					return (new Ast.Let(locFrom(loopStart), pattern, value), Next.NewlineAfterEquals);
 				}
 
 				/*
@@ -129,7 +129,7 @@ abstract class ExprParser : Lexer {
 					while (true) {
 						takeSpace(); // operator must be followed by space.
 						var (right, next) = parseExpr(Ctx.NoOperator);
-						left = new Ast.Expr.OperatorCall(locFrom(exprStart), left, @operator, right);
+						left = new Ast.OperatorCall(locFrom(exprStart), left, @operator, right);
 						if (next == Next.NextOperator)
 							@operator = tokenSym;
 						else
@@ -142,7 +142,7 @@ abstract class ExprParser : Lexer {
 						throw TODO();
 					takeSpace();
 					var (asserted, next) = parseExpr(Ctx.Plain);
-					var assert = new Ast.Expr.Assert(locFrom(exprStart), asserted);
+					var assert = new Ast.Assert(locFrom(exprStart), asserted);
 					return (assert, next);
 				}
 
@@ -226,12 +226,12 @@ abstract class ExprParser : Lexer {
 			case SpecialStart.None:
 				var res = parts[0];
 				if (parts.curLength > 1)
-					res = new Ast.Expr.Call(locFrom(res.loc.start), res, parts.finishTail());
+					res = new Ast.Call(locFrom(res.loc.start), res, parts.finishTail());
 				return res;
 			case SpecialStart.New:
-				return new Ast.Expr.New(locFrom(exprStart), parts.finish());
+				return new Ast.New(locFrom(exprStart), parts.finish());
 			case SpecialStart.Recur:
-				return new Ast.Expr.Recur(locFrom(exprStart), parts.finish());
+				return new Ast.Recur(locFrom(exprStart), parts.finish());
 			default:
 				throw unreachable();
 		}
@@ -246,12 +246,12 @@ abstract class ExprParser : Lexer {
 			switch (next) {
 				case Token.Dot:
 					var name = takeName();
-					expr = new Ast.Expr.GetProperty(locFrom(start), expr, name);
+					expr = new Ast.GetProperty(locFrom(start), expr, name);
 					break;
 
 				case Token.Lparen:
 					takeRparen();
-					expr = new Ast.Expr.Call(locFrom(start), expr, Arr.empty<Ast.Expr>());
+					expr = new Ast.Call(locFrom(start), expr, Arr.empty<Ast.Expr>());
 					break;
 
 				default:
@@ -263,12 +263,12 @@ abstract class ExprParser : Lexer {
 	Ast.Expr parseSimpleExprWithoutSuffixes(Pos pos, Token token) {
 		switch (token) {
 			case Token.Name:
-				return new Ast.Expr.Access(locFrom(pos), tokenSym);
+				return new Ast.Access(locFrom(pos), tokenSym);
 			case Token.TyName: {
 				var className = tokenSym;
 				takeDot();
 				var staticMethodName = takeName();
-				return new Ast.Expr.StaticAccess(locFrom(pos), className, staticMethodName);
+				return new Ast.StaticAccess(locFrom(pos), className, staticMethodName);
 			}
 			case Token.Lparen: {
 				var (expr, next) = parseExpr(Ctx.Plain);
@@ -284,20 +284,20 @@ abstract class ExprParser : Lexer {
 	Ast.Expr singleTokenExpr(Loc loc, Token token) {
 		switch (token) {
 			case Token.NatLiteral:
-				return new Ast.Expr.Literal(loc, LiteralValue.Nat.of(uint.Parse(tokenValue)));
+				return new Ast.Literal(loc, LiteralValue.Nat.of(uint.Parse(tokenValue)));
 			case Token.IntLiteral:
-				return new Ast.Expr.Literal(loc, LiteralValue.Int.of(int.Parse(tokenValue)));
+				return new Ast.Literal(loc, LiteralValue.Int.of(int.Parse(tokenValue)));
 			case Token.RealLiteral:
-				return new Ast.Expr.Literal(loc, LiteralValue.Real.of(double.Parse(tokenValue)));
+				return new Ast.Literal(loc, LiteralValue.Real.of(double.Parse(tokenValue)));
 			case Token.StringLiteral:
-				return new Ast.Expr.Literal(loc, LiteralValue.String.of(tokenValue));
+				return new Ast.Literal(loc, LiteralValue.String.of(tokenValue));
 			case Token.Pass:
-				return new Ast.Expr.Literal(loc, LiteralValue.Pass.instance);
+				return new Ast.Literal(loc, LiteralValue.Pass.instance);
 			case Token.True:
 			case Token.False:
-				return new Ast.Expr.Literal(loc, LiteralValue.Bool.of(token == Token.True));
+				return new Ast.Literal(loc, LiteralValue.Bool.of(token == Token.True));
 			case Token.Self:
-				return new Ast.Expr.Self(loc);
+				return new Ast.Self(loc);
 			default:
 				throw TODO(); //diagnostic
 		}
@@ -316,14 +316,14 @@ abstract class ExprParser : Lexer {
 		var firstCaseStartPos = pos;
 		var firstTest = parseExprAndEndContext(Ctx.Plain, Next.Indent);
 		var firstResult = parseBlock();
-		var firstCase = new Ast.Expr.WhenTest.Case(locFrom(firstCaseStartPos), firstTest, firstResult);
+		var firstCase = new Ast.WhenTest.Case(locFrom(firstCaseStartPos), firstTest, firstResult);
 
 		//TODO: support arbitrary number of clauses
 		takeSpecificKeyword(Token.Else);
 		takeIndent();
 		var elseResult = parseBlock();
 
-		return new Ast.Expr.WhenTest(locFrom(startPos), Arr.of(firstCase), elseResult);
+		return new Ast.WhenTest(locFrom(startPos), Arr.of(firstCase), elseResult);
 	}
 
 	Ast.Expr parseTry(Pos startPos) {
@@ -343,7 +343,7 @@ abstract class ExprParser : Lexer {
 		takeIndent();
 		var do_ = parseBlock();
 
-		var catch_ = Op<Ast.Expr.Try.Catch>.None;
+		var catch_ = Op<Ast.Try.Catch>.None;
 		var finally_ = Op<Ast.Expr>.None;
 
 		var catchStart = pos;
@@ -358,7 +358,7 @@ abstract class ExprParser : Lexer {
 				var nameLoc = locFrom(nameStart);
 				takeIndent();
 				var catchBlock = parseBlock();
-				catch_ = Op.Some(new Ast.Expr.Try.Catch(locFrom(catchStart), exceptionType, nameLoc, exceptionName, catchBlock));
+				catch_ = Op.Some(new Ast.Try.Catch(locFrom(catchStart), exceptionType, nameLoc, exceptionName, catchBlock));
 
 				if (tryTakeDedent())
 					break;
@@ -376,7 +376,7 @@ abstract class ExprParser : Lexer {
 			}
 		}
 
-		return new Ast.Expr.Try(locFrom(startPos), do_, catch_, finally_);
+		return new Ast.Try(locFrom(startPos), do_, catch_, finally_);
 	}
 
 	static Ast.Pattern partsToPattern(Loc loc, Arr.Builder<Ast.Expr> parts) {
@@ -388,7 +388,7 @@ abstract class ExprParser : Lexer {
 
 		Ast.Pattern partToPattern(Ast.Expr part) {
 			switch (part) {
-				case Ast.Expr.Access a:
+				case Ast.Access a:
 					return new Ast.Pattern.Single(a.loc, a.name);
 				default:
 					throw exit(loc, Err.PrecedingEquals);

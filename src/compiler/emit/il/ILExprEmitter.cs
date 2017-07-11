@@ -30,49 +30,49 @@ sealed class ILExprEmitter {
 
 	void emitAny(Expr expr) {
 		switch (expr) {
-			case Expr.AccessParameter p:
+			case AccessParameter p:
 				emitAccessParameter(p);
 				break;
-			case Expr.AccessLocal lo:
+			case AccessLocal lo:
 				emitAccessLocal(lo);
 				return;
-			case Expr.Let l:
+			case Let l:
 				emitLet(l);
 				return;
-			case Expr.Seq s:
+			case Seq s:
 				emitSeq(s);
 				return;
-			case Expr.Literal li:
+			case Literal li:
 				emitLiteral(li);
 				return;
-			case Expr.StaticMethodCall sm:
+			case StaticMethodCall sm:
 				emitStaticMethodCall(sm);
 				return;
-			case Expr.InstanceMethodCall m:
+			case InstanceMethodCall m:
 				emitInstanceMethodCall(m);
 				return;
-			case Expr.MyInstanceMethodCall my:
+			case MyInstanceMethodCall my:
 				emitMyInstanceMethodCall(my);
 				return;
-			case Expr.New n:
+			case New n:
 				emitNew(n);
 				return;
-			case Expr.Recur r:
+			case Recur r:
 				emitRecur(r);
 				return;
-			case Expr.GetSlot g:
+			case GetSlot g:
 				emitGetSlot(g);
 				return;
-			case Expr.GetMySlot g:
+			case GetMySlot g:
 				emitGetMySlot(g);
 				return;
-			case Expr.WhenTest w:
+			case WhenTest w:
 				emitWhenTest(w);
 				return;
-			case Expr.Try t:
+			case Try t:
 				emitTry(t);
 				return;
-			case Expr.Assert a:
+			case Assert a:
 				emitAssert(a);
 				return;
 			default:
@@ -80,13 +80,13 @@ sealed class ILExprEmitter {
 		}
 	}
 
-	void emitAccessParameter(Expr.AccessParameter p) =>
+	void emitAccessParameter(AccessParameter p) =>
 		il.getParameter(p.param.index);
 
-	void emitAccessLocal(Expr.AccessLocal lo) =>
+	void emitAccessLocal(AccessLocal lo) =>
 		il.getLocal(localToIl[lo.local]);
 
-	void emitLet(Expr.Let l) {
+	void emitLet(Let l) {
 		emitAny(l.value);
 		initLocal((Pattern.Single)l.assigned); //TODO:patterns
 		emitAny(l.then);
@@ -100,7 +100,7 @@ sealed class ILExprEmitter {
 		localToIl.add(pattern, local);
 	}
 
-	void emitSeq(Expr.Seq s) {
+	void emitSeq(Seq s) {
 		emitAnyVoid(s.action);
 		emitAny(s.then);
 	}
@@ -112,7 +112,7 @@ sealed class ILExprEmitter {
 	static readonly MethodInfo staticMethodFloatOf = typeof(Builtins.Real).GetMethod(nameof(Builtins.Real.of));
 	static readonly MethodInfo staticMethodStrOf = typeof(Builtins.String).GetMethod(nameof(Builtins.String.of));
 	static readonly FieldInfo fieldVoidInstance = typeof(Builtins.Void).GetField(nameof(Builtins.Void.instance));
-	void emitLiteral(Expr.Literal li) {
+	void emitLiteral(Literal li) {
 		switch (li.value) {
 			case LiteralValue.Bool vb:
 				il.loadStaticField(vb.value ? fieldBoolTrue : fieldBoolFalse);
@@ -153,7 +153,7 @@ sealed class ILExprEmitter {
 
 	static readonly Sym symElse = Sym.of("else");
 	static readonly Sym symEndWhen = Sym.of("endWhen");
-	void emitWhenTest(Expr.WhenTest w) {
+	void emitWhenTest(WhenTest w) {
 		/*
 		test1:
 		do test1
@@ -192,7 +192,7 @@ sealed class ILExprEmitter {
 	}
 
 	static readonly Sym symTryResult = Sym.of("tryResult");
-	void emitTry(Expr.Try t) {
+	void emitTry(Try t) {
 		//var failed = il.DefineLabel();
 		var res = il.declareLocal(maps.toType(t.ty), symTryResult);
 
@@ -224,7 +224,7 @@ sealed class ILExprEmitter {
 	}
 
 	static readonly Sym symEndAssert = Sym.of("endAssert");
-	void emitAssert(Expr.Assert a) {
+	void emitAssert(Assert a) {
 		var end = il.label(symEndAssert);
 
 		emitAny(a.asserted);
@@ -241,32 +241,32 @@ sealed class ILExprEmitter {
 		emitVoid();
 	}
 
-	void emitStaticMethodCall(Expr.StaticMethodCall s) {
+	void emitStaticMethodCall(StaticMethodCall s) {
 		emitArgs(s.args);
 		il.callNonVirtual(maps.getMethodInfo(s.method));
 	}
 
-	void emitInstanceMethodCall(Expr.InstanceMethodCall m) {
+	void emitInstanceMethodCall(InstanceMethodCall m) {
 		emitAny(m.target);
 		emitArgs(m.args);
 		// This will work for either a regular instance method call or for an interface 'instance' with static 'this'.
 		il.call(maps.getMethodInfo(m.method), isVirtual: m.method.isAbstract);
 	}
 
-	void emitMyInstanceMethodCall(Expr.MyInstanceMethodCall m) {
+	void emitMyInstanceMethodCall(MyInstanceMethodCall m) {
 		il.getThis();
 		emitArgs(m.args);
 		//TODO: we still might know an exact type... so wouldn't need a virtual call...
 		il.call(maps.getMethodInfo(m.method), isVirtual: m.method.isAbstract);
 	}
 
-	void emitNew(Expr.New n) {
+	void emitNew(New n) {
 		var ctr = this.maps.getConstructorInfo(n.klass);
 		emitArgs(n.args);
 		il.callConstructor(ctr);
 	}
 
-	void emitRecur(Expr.Recur r) {
+	void emitRecur(Recur r) {
 		emitArgs(r.args);
 		il.tailcallNonVirtual(currentMethod);
 	}
@@ -276,12 +276,12 @@ sealed class ILExprEmitter {
 			emitAny(arg);
 	}
 
-	void emitGetSlot(Expr.GetSlot g) {
+	void emitGetSlot(GetSlot g) {
 		emitAny(g.target);
 		il.getField(this.maps.getFieldInfo(g.slot));
 	}
 
-	void emitGetMySlot(Expr.GetMySlot g) {
+	void emitGetMySlot(GetMySlot g) {
 		il.getThis();
 		il.getField(this.maps.getFieldInfo(g.slot));
 	}

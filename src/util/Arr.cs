@@ -6,7 +6,7 @@ using System.Text;
 using static Utils;
 
 [DebuggerDisplay("[{join(\", \")}]")]
-struct Arr<T> {
+struct Arr<T> : IEnumerable<T> {
 	readonly T[] inner;
 
 	internal T head => this[0];
@@ -41,8 +41,10 @@ struct Arr<T> {
 		return new Arr<T>(b);
 	}
 
+	IEnumerator<T> IEnumerable<T>.GetEnumerator() => new Enumerator(inner);
+	System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw new NotSupportedException();
 	public Enumerator GetEnumerator() => new Enumerator(inner);
-	internal struct Enumerator {
+	internal struct Enumerator : IEnumerator<T> {
 		readonly T[] array;
 		uint i;
 
@@ -57,6 +59,10 @@ struct Arr<T> {
 			i++;
 			return i < array.Length;
 		}
+
+		object System.Collections.IEnumerator.Current => throw new NotSupportedException();
+		void System.Collections.IEnumerator.Reset() => throw new NotSupportedException();
+		void IDisposable.Dispose() { /*pass*/ }
 	}
 
 	internal List<T> toList() =>

@@ -36,16 +36,16 @@ sealed class JsExprEmitter {
 		while (true) {
 			var loc = expr.loc;
 			switch (expr) {
-				case Expr.Let l:
+				case Let l:
 					var x = (Pattern.Single)l.assigned; // TODO: handle other patterns
 					parts.add(Estree.VariableDeclaration.simple(loc, id(x.loc, x.name), exprToExpr(l.value)));
 					expr = l.then;
 					break;
-				case Expr.Seq s:
+				case Seq s:
 					parts.add(exprToStatementWorker(s.action, needReturn: false));
 					expr = s.then;
 					break;
-				case Expr.Literal l:
+				case Literal l:
 					if (l.value is LiteralValue.Pass)
 						return parts;
 					goto default;
@@ -58,10 +58,10 @@ sealed class JsExprEmitter {
 
 	Estree.Statement exprToReturnStatementOrBlock(Expr expr) {
 		switch (expr) {
-			case Expr.Let _:
-			case Expr.Seq _:
+			case Let _:
+			case Seq _:
 				return exprToBlockStatement(expr);
-			case Expr.Literal l:
+			case Literal l:
 				if (l.value is LiteralValue.Pass)
 					return new Estree.BlockStatement(l.loc, Arr.empty<Estree.Statement>());
 				goto default;
@@ -73,11 +73,11 @@ sealed class JsExprEmitter {
 	// e.g. `return f(1)` or `if (so) return 1; else return 2;`
 	Estree.Statement exprToStatementWorker(Expr expr, bool needReturn) {
 		switch (expr) {
-			case Expr.Assert a:
+			case Assert a:
 				return assertToStatement(a);
-			case Expr.WhenTest w:
+			case WhenTest w:
 				return whenToStatement(w);
-			case Expr.Try t:
+			case Try t:
 				return tryToStatement(t);
 			default:
 				var e = exprToExpr(expr);
@@ -85,7 +85,7 @@ sealed class JsExprEmitter {
 		}
 	}
 
-	Estree.Statement assertToStatement(Expr.Assert a) {
+	Estree.Statement assertToStatement(Assert a) {
 		var loc = a.loc;
 		var idAssertionException = getFromLib(loc, Sym.of(nameof(Builtins.AssertionException)));
 		var fail = new Estree.ThrowStatement(loc,
@@ -116,14 +116,14 @@ sealed class JsExprEmitter {
 		}
 	}
 
-	Estree.Statement tryToStatement(Expr.Try t) {
+	Estree.Statement tryToStatement(Try t) {
 		var do_ = exprToBlockStatement(t._do);
 		var catch_ = t._catch.get(out var c) ? Op.Some(catchToCatch(c)) : Op<Estree.CatchClause>.None;
 		var finally_ = t._finally.get(out var f) ? Op.Some(exprToBlockStatement(f)) : Op<Estree.BlockStatement>.None;
 		return new Estree.TryStatement(t.loc, do_, catch_, finally_);
 	}
 
-	Estree.CatchClause catchToCatch(Expr.Try.Catch c) {
+	Estree.CatchClause catchToCatch(Try.Catch c) {
 		var loc = c.loc;
 		var caught = id(c.caught.loc, c.caught.name);
 
@@ -155,48 +155,48 @@ sealed class JsExprEmitter {
 	Estree.Expression exprToExpr(Expr expr) {
 		var loc = expr.loc;
 		switch (expr) {
-			case Expr.AccessParameter p:
+			case AccessParameter p:
 				return id(loc, p.param.name);
-			case Expr.AccessLocal lo:
+			case AccessLocal lo:
 				return id(loc, lo.local.name);
-			case Expr.Let l:
-			case Expr.Seq s:
-			case Expr.Assert a:
-			case Expr.Try t:
+			case Let l:
+			case Seq s:
+			case Assert a:
+			case Try t:
 				return iife(expr);
-			case Expr.Literal li:
+			case Literal li:
 				return new Estree.Literal(loc, li.value);
-			case Expr.StaticMethodCall sm:
+			case StaticMethodCall sm:
 				return emitStaticMethodCall(sm);
-			case Expr.InstanceMethodCall m:
+			case InstanceMethodCall m:
 				return emitInstanceMethodCall(m);
-			case Expr.MyInstanceMethodCall my:
+			case MyInstanceMethodCall my:
 				return emitMyInstanceMethodCall(my);
-			case Expr.New n:
+			case New n:
 				return new Estree.NewExpression(loc, id(loc, n.klass.name), n.args.map(exprToExpr));
-			case Expr.Recur r:
+			case Recur r:
 				return emitRecur(r);
-			case Expr.GetSlot g:
+			case GetSlot g:
 				return Estree.MemberExpression.simple(loc, exprToExpr(g.target), g.slot.name);
-			case Expr.GetMySlot g:
+			case GetMySlot g:
 				return Estree.MemberExpression.simple(loc, new Estree.ThisExpression(loc), g.slot.name);
-			case Expr.WhenTest w:
+			case WhenTest w:
 				return whenToExpr(w);
 			default:
 				throw TODO();
 		}
 	}
 
-	Estree.Expression emitStaticMethodCall(Expr.StaticMethodCall sm) =>
+	Estree.Expression emitStaticMethodCall(StaticMethodCall sm) =>
 		JsBuiltins.emitStaticMethodCall(ref needsLib, sm.method, sm.loc, sm.args.map(exprToExpr));
 
-	Estree.Expression emitInstanceMethodCall(Expr.InstanceMethodCall m) =>
+	Estree.Expression emitInstanceMethodCall(InstanceMethodCall m) =>
 		JsBuiltins.emitInstanceMethodCall(ref needsLib, m.method, m.loc, exprToExpr(m.target), m.args.map(exprToExpr));
 
-	Estree.Expression emitMyInstanceMethodCall(Expr.MyInstanceMethodCall m) =>
+	Estree.Expression emitMyInstanceMethodCall(MyInstanceMethodCall m) =>
 		JsBuiltins.emitMyInstanceMethodCall(ref needsLib, m.method, m.loc, m.args.map(exprToExpr));
 
-	Estree.Expression emitRecur(Expr.Recur r) {
+	Estree.Expression emitRecur(Recur r) {
 		var loc = r.loc;
 		var implemented = r.recurseTo.implementedMethod;
 		var methodName = implemented.name;
@@ -205,12 +205,12 @@ sealed class JsExprEmitter {
 	}
 
 	/** if (test1) { return result1; } else if (test2) { return result2; } else { return result3; } */
-	Estree.Statement whenToStatement(Expr.WhenTest w) =>
+	Estree.Statement whenToStatement(WhenTest w) =>
 		w.cases.foldBackwards(exprToReturnStatementOrBlock(w.elseResult), (res, kase) =>
 			new Estree.IfStatement(kase.loc, exprToExpr(kase.test), exprToReturnStatementOrBlock(kase.result), res));
 
 	/** test1 ? result1 : test2 ? result2 : elze */
-	Estree.Expression whenToExpr(Expr.WhenTest w) =>
+	Estree.Expression whenToExpr(WhenTest w) =>
 		w.cases.foldBackwards(exprToExpr(w.elseResult), (res, kase) =>
 			new Estree.ConditionalExpression(kase.loc,  exprToExpr(kase.test), exprToExpr(kase.result), res));
 }

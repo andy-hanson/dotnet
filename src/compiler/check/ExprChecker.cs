@@ -54,62 +54,62 @@ class ExprChecker {
 
 	Expr checkExpr(ref Expected e, Ast.Expr a) {
 		switch (a) {
-			case Ast.Expr.Access ac:
+			case Ast.Access ac:
 				return checkAccess(ref e, ac);
-			case Ast.Expr.StaticAccess sa:
+			case Ast.StaticAccess sa:
 				return checkStaticAccess(ref e, sa);
-			case Ast.Expr.OperatorCall o:
+			case Ast.OperatorCall o:
 				return checkOperatorCall(ref e, o);
-			case Ast.Expr.Call c:
+			case Ast.Call c:
 				return checkCallAst(ref e, c);
-			case Ast.Expr.Recur r:
+			case Ast.Recur r:
 				return checkRecur(ref e, r);
-			case Ast.Expr.New n:
+			case Ast.New n:
 				return checkNew(ref e, n);
-			case Ast.Expr.GetProperty g:
+			case Ast.GetProperty g:
 				return checkGetProperty(ref e, g);
-			case Ast.Expr.Let l:
+			case Ast.Let l:
 				return checkLet(ref e, l);
-			case Ast.Expr.Seq s:
+			case Ast.Seq s:
 				return checkSeq(ref e, s);
-			case Ast.Expr.Literal li:
+			case Ast.Literal li:
 				return checkLiteral(ref e, li);
-			case Ast.Expr.Self s:
+			case Ast.Self s:
 				return checkSelf(ref e, s);
-			case Ast.Expr.WhenTest w:
+			case Ast.WhenTest w:
 				return checkWhenTest(ref e, w);
-			case Ast.Expr.Assert ass:
+			case Ast.Assert ass:
 				return checkAssert(ref e, ass);
-			case Ast.Expr.Try t:
+			case Ast.Try t:
 				return checkTry(ref e, t);
 			default:
 				throw unreachable();
 		}
 	}
 
-	Expr checkAccess(ref Expected expected, Ast.Expr.Access a) =>
+	Expr checkAccess(ref Expected expected, Ast.Access a) =>
 		handle(ref expected, get(a.loc, a.name));
 
-	static Expr checkStaticAccess(ref Expected expected, Ast.Expr.StaticAccess s) {
+	static Expr checkStaticAccess(ref Expected expected, Ast.StaticAccess s) {
 		//Not in a call, so create a callback
 		unused(expected, s);
 		throw TODO();
 	}
 
-	Expr checkOperatorCall(ref Expected expected, Ast.Expr.OperatorCall o) =>
+	Expr checkOperatorCall(ref Expected expected, Ast.OperatorCall o) =>
 		callMethod(ref expected, o.loc, o.left, o.oper, Arr.of(o.right));
 
-	Expr checkCallAst(ref Expected expected, Ast.Expr.Call call) {
+	Expr checkCallAst(ref Expected expected, Ast.Call call) {
 		switch (call.target) {
-			case Ast.Expr.StaticAccess sa:
+			case Ast.StaticAccess sa:
 				var ty = baseScope.accessTy(call.loc, sa.className);
 				var klass = ty as ClassLike ?? throw TODO();
 				return callStaticMethod(ref expected, sa.loc, klass, sa.staticMethodName, call.args);
 
-			case Ast.Expr.GetProperty gp:
+			case Ast.GetProperty gp:
 				return callMethod(ref expected, gp.loc, gp.target, gp.propertyName, call.args);
 
-			case Ast.Expr.Access ac:
+			case Ast.Access ac:
 				return callOwnMethod(ref expected, ac.loc, ac.name, call.args);
 
 			default:
@@ -118,17 +118,17 @@ class ExprChecker {
 		}
 	}
 
-	Expr checkRecur(ref Expected expected, Ast.Expr.Recur r) {
+	Expr checkRecur(ref Expected expected, Ast.Recur r) {
 		if (!expected.inTailCallPosition)
 			throw TODO(); //compile error
 
 		//should match this.parameters
 		var loc = r.loc;
 		var args = this.checkCallArguments(loc, parameters, r.args);
-		return handle(ref expected, new Expr.Recur(loc, methodOrImpl, args));
+		return handle(ref expected, new Recur(loc, methodOrImpl, args));
 	}
 
-	Expr checkNew(ref Expected expected, Ast.Expr.New n) {
+	Expr checkNew(ref Expected expected, Ast.New n) {
 		if (!(currentClass.head is Klass.Head.Slots slots)) {
 			throw TODO(); // Error: Can't `new` an abstract/static class
 		}
@@ -136,68 +136,68 @@ class ExprChecker {
 		if (n.args.length != slots.slots.length)
 			throw TODO(); // Not enough / too many fields
 		var args = n.args.zip(slots.slots, (arg, slot) => checkSubtype(slot.ty, arg));
-		return handle(ref expected, new Expr.New(n.loc, slots, args));
+		return handle(ref expected, new New(n.loc, slots, args));
 	}
 
-	Expr checkGetProperty(ref Expected expected, Ast.Expr.GetProperty g) {
+	Expr checkGetProperty(ref Expected expected, Ast.GetProperty g) {
 		var target = checkInfer(g.target);
 		var member = getMember(g.loc, target.ty, g.propertyName);
 		var slot = (Slot)member; //TODO: error handling
-		return handle(ref expected, new Expr.GetSlot(g.loc, target, slot));
+		return handle(ref expected, new GetSlot(g.loc, target, slot));
 	}
 
-	Expr checkLet(ref Expected expected, Ast.Expr.Let l) {
+	Expr checkLet(ref Expected expected, Ast.Let l) {
 		var value = checkInfer(l.value);
 		var pattern = startCheckPattern(value.ty, l.assigned, out var nAdded);
 		var expr = checkExpr(ref expected, l.then);
 		endCheckPattern(nAdded);
-		return new Expr.Let(l.loc, pattern, value, expr);
+		return new Let(l.loc, pattern, value, expr);
 	}
 
-	Expr checkSeq(ref Expected expected, Ast.Expr.Seq s) {
+	Expr checkSeq(ref Expected expected, Ast.Seq s) {
 		var first = checkVoid(s.first);
 		var then = checkExpr(ref expected, s.then);
-		return new Expr.Seq(s.loc, first, then);
+		return new Seq(s.loc, first, then);
 	}
 
-	Expr checkLiteral(ref Expected expected, Ast.Expr.Literal l) =>
-		handle(ref expected, new Expr.Literal(l.loc, l.value));
+	Expr checkLiteral(ref Expected expected, Ast.Literal l) =>
+		handle(ref expected, new Literal(l.loc, l.value));
 
-	Expr checkSelf(ref Expected expected, Ast.Expr.Self s) => new Expr.Self(s.loc, currentClass);
+	Expr checkSelf(ref Expected expected, Ast.Self s) => new Self(s.loc, currentClass);
 
-	Expr checkWhenTest(ref Expected expected, Ast.Expr.WhenTest w) {
+	Expr checkWhenTest(ref Expected expected, Ast.WhenTest w) {
 		//Can't use '.map' because of the ref parameter
-		var casesBuilder = w.cases.mapBuilder<Expr.WhenTest.Case>();
+		var casesBuilder = w.cases.mapBuilder<WhenTest.Case>();
 		for (uint i = 0; i < casesBuilder.Length; i++) {
 			var kase = w.cases[i];
 			var test = checkSubtype(BuiltinClass.Bool, kase.test);
 			var result = checkExpr(ref expected, kase.result);
-			casesBuilder[i] = new Expr.WhenTest.Case(kase.loc, test, result);
+			casesBuilder[i] = new WhenTest.Case(kase.loc, test, result);
 		}
-		var cases = new Arr<Expr.WhenTest.Case>(casesBuilder);
+		var cases = new Arr<WhenTest.Case>(casesBuilder);
 
 		var elseResult = checkExpr(ref expected, w.elseResult);
 
-		return new Expr.WhenTest(w.loc, cases, elseResult, expected.inferredType);
+		return new WhenTest(w.loc, cases, elseResult, expected.inferredType);
 	}
 
-	Expr checkAssert(ref Expected expected, Ast.Expr.Assert a) =>
-		handle(ref expected, new Expr.Assert(a.loc, checkSubtype(BuiltinClass.Bool, a.asserted)));
+	Expr checkAssert(ref Expected expected, Ast.Assert a) =>
+		handle(ref expected, new Assert(a.loc, checkSubtype(BuiltinClass.Bool, a.asserted)));
 
-	Expr checkTry(ref Expected expected, Ast.Expr.Try t) {
+	Expr checkTry(ref Expected expected, Ast.Try t) {
 		var doo = checkExpr(ref expected, t._do);
-		var katch = t._catch.get(out var c) ? Op.Some(checkCatch(ref expected, c)) : Op<Expr.Try.Catch>.None;
+		var katch = t._catch.get(out var c) ? Op.Some(checkCatch(ref expected, c)) : Op<Try.Catch>.None;
 		var finallee = t._finally.get(out var f) ? Op.Some(checkVoid(f)) : Op<Expr>.None;
-		return new Expr.Try(t.loc, doo, katch, finallee, expected.inferredType);
+		return new Try(t.loc, doo, katch, finallee, expected.inferredType);
 	}
 
-	Expr.Try.Catch checkCatch(ref Expected expected, Ast.Expr.Try.Catch c) {
+	Try.Catch checkCatch(ref Expected expected, Ast.Try.Catch c) {
 		var exceptionTy = baseScope.getTy(c.exceptionTy);
 		var caught = new Pattern.Single(c.exceptionNameLoc, exceptionTy, c.exceptionName);
 		addToScope(caught);
 		var then = checkExpr(ref expected, c.then);
 		popFromScope();
-		return new Expr.Try.Catch(c.loc, caught, then);
+		return new Try.Catch(c.loc, caught, then);
 	}
 
 	Expr callStaticMethod(ref Expected expected, Loc loc, ClassLike klass, Sym methodName, Arr<Ast.Expr> argAsts) {
@@ -205,7 +205,7 @@ class ExprChecker {
 		var method = (Method)member;
 		if (!method.isStatic) throw TODO();
 		var args = checkCall(loc, method, argAsts);
-		return handle(ref expected, new Expr.StaticMethodCall(loc, method, args));
+		return handle(ref expected, new StaticMethodCall(loc, method, args));
 	}
 
 	Expr callMethod(ref Expected expected, Loc loc, Ast.Expr targetAst, Sym methodName, Arr<Ast.Expr> argAsts) {
@@ -214,14 +214,14 @@ class ExprChecker {
 		var method = (Method)member; //TODO: error handling
 		if (method.isStatic) throw TODO(); //error
 		var args = checkCall(loc, method, argAsts);
-		return handle(ref expected, new Expr.InstanceMethodCall(loc, target, method, args));
+		return handle(ref expected, new InstanceMethodCall(loc, target, method, args));
 	}
 
 	Expr callOwnMethod(ref Expected expected, Loc loc, Sym methodName, Arr<Ast.Expr> argAsts) {
 		var member = getMember(loc, currentClass, methodName);
 		var method = (Method)member; //TODO: error handling
 		var args = checkCall(loc, method, argAsts);
-		var call = method.isStatic ? new Expr.StaticMethodCall(loc, method, args) : (Expr)new Expr.MyInstanceMethodCall(loc, method, args);
+		var call = method.isStatic ? new StaticMethodCall(loc, method, args) : (Expr)new MyInstanceMethodCall(loc, method, args);
 		return handle(ref expected, call);
 	}
 
@@ -275,10 +275,10 @@ class ExprChecker {
 
 	Expr get(Loc loc, Sym name) {
 		if (parameters.find(out var param, p => p.name == name))
-			return new Expr.AccessParameter(loc, param);
+			return new AccessParameter(loc, param);
 
 		if (locals.find(out var local, l => l.name == name))
-			return new Expr.AccessLocal(loc, local);
+			return new AccessLocal(loc, local);
 
 		if (!baseScope.tryGetMember(name, out var member))
 			throw TODO(); //error: cannot find name...
@@ -286,7 +286,7 @@ class ExprChecker {
 		switch (member) {
 			case Slot slot:
 				if (isStatic) throw TODO();
-				return new Expr.GetMySlot(loc, currentClass, slot);
+				return new GetMySlot(loc, currentClass, slot);
 
 			case Method.MethodWithBody m:
 				throw TODO();
@@ -313,13 +313,16 @@ class ExprChecker {
 		//For SubTypeOf, this is always non-null.
 		//For Infer, this is mutable.
 		Op<Ty> expectedTy;
-		Expected(Kind kind, Ty ty) { this.kind = kind; this.expectedTy = Op.fromNullable(ty); }
+		Expected(Kind kind, Op<Ty> expectedTy) {
+			this.kind = kind;
+			this.expectedTy = expectedTy;
+		}
 
 		internal bool inTailCallPosition => kind == Kind.Return;
 
-		internal static Expected Return(Ty ty) => new Expected(Kind.Return, ty);
-		internal static Expected SubTypeOf(Ty ty) => new Expected(Kind.SubTypeOf, ty);
-		internal static Expected Infer() => new Expected(Kind.Infer, null);
+		internal static Expected Return(Ty ty) => new Expected(Kind.Return, Op.Some(ty));
+		internal static Expected SubTypeOf(Ty ty) => new Expected(Kind.SubTypeOf, Op.Some(ty));
+		internal static Expected Infer() => new Expected(Kind.Infer, Op<Ty>.None);
 
 		/** Note: This may be called on SubTypeOf. */
 		internal Ty inferredType => expectedTy.force;

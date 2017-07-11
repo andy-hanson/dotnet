@@ -29,7 +29,7 @@ abstract class LiteralValue : ToData<LiteralValue> {
 		public override Dat toDat() => Dat.boolean(value);
 	}
 
-	internal sealed class Nat : LiteralValue  {
+	internal sealed class Nat : LiteralValue {
 		internal readonly uint value;
 		Nat(uint value) { this.value = value; }
 		internal static Nat of(uint value) => new Nat(value); // TODO: cache common values

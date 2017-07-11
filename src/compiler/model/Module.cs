@@ -30,6 +30,9 @@ namespace Model {
 		internal Path fullPath() => ModuleResolver.fullPath(logicalPath, isIndex);
 		internal Sym name => klass.name;
 
+		internal string getText(Loc loc) =>
+			document.text.slice(loc.start.index, loc.end.index);
+
 		bool IEquatable<Module>.Equals(Module m) => object.ReferenceEquals(this, m);
 		public override int GetHashCode() => logicalPath.GetHashCode();
 

@@ -157,7 +157,7 @@ public static class Builtins {
 		[Pure, JsSpecialTranslate(nameof(JsBuiltins.str))]
 		public String str() => String.of(value.ToString());
 
-		[Pure, Nzlib("toNat")]
+		[Pure, Nzlib(nameof(toNat))]
 		public Nat toNat() => Nat.of(checked((uint)value));
 
 		[Pure, JsSpecialTranslate(nameof(JsBuiltins.id))]
@@ -196,13 +196,13 @@ public static class Builtins {
 		[Pure, JsSpecialTranslate(nameof(JsBuiltins.str))]
 		public String str() => String.of(value.ToString());
 
-		[Pure, Nzlib("round")]
+		[Pure, Nzlib(nameof(round))]
 		public Int round() => Int.of(checked((int)Math.Round(value)));
 
-		[Pure, Nzlib("roundDown")]
+		[Pure, Nzlib(nameof(roundDown))]
 		public Int roundDown() => Int.of(checked((int)Math.Floor(value)));
 
-		[Pure, Nzlib("roundUp")]
+		[Pure, Nzlib(nameof(roundUp))]
 		public Int roundUp() => Int.of(checked((int)Math.Ceiling(value)));
 	}
 

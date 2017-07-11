@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Reflection;
 
 using static Utils;
@@ -14,6 +15,7 @@ namespace Model {
 			public Dat toDat() => Dat.of(this, nameof(klassId), klassId, nameof(name), name);
 		}
 
+		Klass MethodOrImpl.klass => (Klass)klass; //TODO: this method shouldn't be called on AbstractMethod, so maybe MethodOrImpl shouldn't contain that?
 		Method MethodOrImpl.implementedMethod => this;
 
 		bool IEquatable<Method>.Equals(Method m) => object.ReferenceEquals(this, m);
@@ -39,6 +41,7 @@ namespace Model {
 
 		internal uint arity => parameters.length;
 
+		[DebuggerDisplay("BuiltinMethod{name}")]
 		internal sealed class BuiltinMethod : Method, IEquatable<BuiltinMethod>, ToData<BuiltinMethod> {
 			internal readonly MethodInfo methodInfo;
 
@@ -87,7 +90,13 @@ namespace Model {
 			internal override bool isAbstract => false;
 			internal override bool isStatic => _isStatic;
 			Late<Expr> _body;
-			internal Expr body { get => _body.get; set => _body.set(value); }
+			internal Expr body {
+				get => _body.get;
+				set {
+					value.parent = this;
+					_body.set(value);
+				}
+			}
 
 			internal MethodWithBody(Klass klass, Loc loc, bool isStatic, Ty returnTy, Sym name, Arr<Parameter> parameters, Effect effect)
 				: base(klass, loc, returnTy, name, parameters, effect) {

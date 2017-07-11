@@ -77,8 +77,11 @@ namespace Model {
 		}
 	}
 
-	interface MethodOrImpl {
+	interface MethodOrImplOrExpr {}
+
+	interface MethodOrImpl : MethodOrImplOrExpr {
 		Method implementedMethod { get; }
+		Klass klass { get; }
 	}
 
 	internal sealed class Impl : ModelElement, MethodOrImpl, ToData<Impl> {
@@ -86,8 +89,15 @@ namespace Model {
 		[ParentPointer] internal readonly Super super;
 		[UpPointer] internal readonly Method implemented;
 		Late<Expr> _body;
-		internal Expr body { get => _body.get; set => _body.set(value); }
+		internal Expr body {
+			get => _body.get;
+			set {
+				value.parent = this;
+				_body.set(value);
+			}
+		}
 
+		Klass MethodOrImpl.klass => super.containingClass;
 		Method MethodOrImpl.implementedMethod => implemented;
 
 		internal Impl(Super super, Loc loc, Method implemented) {
