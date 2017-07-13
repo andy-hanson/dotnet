@@ -43,36 +43,57 @@ namespace Model {
 
 		[DebuggerDisplay("BuiltinMethod{name}")]
 		internal sealed class BuiltinMethod : Method, IEquatable<BuiltinMethod>, ToData<BuiltinMethod> {
+			readonly bool _isStatic;
 			internal readonly MethodInfo methodInfo;
 
-			BuiltinMethod(BuiltinClass klass, MethodInfo methodInfo, Ty returnTy, Sym name, Arr<Parameter> @params, Effect effect)
+			BuiltinMethod(BuiltinClass klass, MethodInfo methodInfo, bool isStatic, Ty returnTy, Sym name, Arr<Parameter> @params, Effect effect)
 				: base(klass, Loc.zero, returnTy, name, @params, effect) {
+				this._isStatic = isStatic;
 				this.methodInfo = methodInfo;
 			}
 
 			internal static BuiltinMethod of(BuiltinClass klass, MethodInfo method) {
+				bool isStatic;
+				var isSpecialInstance = method.GetCustomAttribute<InstanceAttribute>() != null;
+				if (isSpecialInstance) {
+					assert(method.IsStatic);
+					assert(klass.dotNetType.IsValueType);
+					isStatic = false;
+				} else {
+					isStatic = method.IsStatic;
+					if (!isStatic)
+						// Struct instance methods should be implemented as static methods
+						// so we don't have to pass by ref.
+						assert(!klass.dotNetType.IsValueType);
+				}
+
 				var returnTy = BuiltinClass.fromDotNetType(method.ReturnType);
 				var name = BuiltinClass.unescapeName(method.Name);
-				var @params = method.GetParameters().map((p, index) => {
-					assert(!p.IsIn);
-					assert(!p.IsLcid);
-					assert(!p.IsOut);
-					assert(!p.IsOptional);
-					assert(!p.IsRetval);
-					var ty = BuiltinClass.fromDotNetType(p.ParameterType);
-					return new Parameter(Loc.zero, ty, Sym.of(p.Name), index);
-				});
+				var dotNetParams = method.GetParameters();
+				if (isSpecialInstance)
+					assert(dotNetParams[0].ParameterType == klass.dotNetType);
+				var @params = dotNetParams.mapSlice(isSpecialInstance ? 1u : 0, getParam);
 
 				var effectAttr = method.GetCustomAttribute<HasEffectAttribute>();
 				if (effectAttr == null) {
 					throw fail($"Method {name} should have {nameof(HasEffectAttribute)}");
 				}
 
-				return new BuiltinMethod(klass, method, returnTy, name, @params, effectAttr.effect);
+				return new BuiltinMethod(klass, method, isStatic, returnTy, name, @params, effectAttr.effect);
 			}
 
+			static Parameter getParam(ParameterInfo p, uint index) {
+				assert(!p.IsIn);
+				assert(!p.IsLcid);
+				assert(!p.IsOut);
+				assert(!p.IsOptional);
+				assert(!p.IsRetval);
+				var ty = BuiltinClass.fromDotNetType(p.ParameterType);
+				return new Parameter(Loc.zero, ty, Sym.of(p.Name), index);
+			}
+
+			internal override bool isStatic => _isStatic;
 			internal override bool isAbstract => methodInfo.IsAbstract;
-			internal override bool isStatic => methodInfo.IsStatic;
 
 			bool IEquatable<BuiltinMethod>.Equals(BuiltinMethod other) => object.ReferenceEquals(this, other);
 			public override bool deepEqual(Method m) => m is BuiltinMethod b && deepEqual(b);

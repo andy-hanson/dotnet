@@ -249,7 +249,11 @@ sealed class ILExprEmitter {
 	void emitInstanceMethodCall(InstanceMethodCall m) {
 		emitAny(m.target);
 		emitArgs(m.args);
-		// This will work for either a regular instance method call or for an interface 'instance' with static 'this'.
+		/*
+		This may actually call a static method in these cases:
+		An abstract class is implemented as an IL interface, so its "instance" methods are emitted as static methods instead.
+		If a builtin is implemented by a struct, its "instance" methods are emitted as static methods to avoid having to pass by ref.
+		*/
 		il.call(maps.getMethodInfo(m.method), isVirtual: m.method.isAbstract);
 	}
 

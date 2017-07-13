@@ -4,9 +4,6 @@ using System.Reflection.Emit;
 
 using Lsp;
 
-[AttributeUsage(AttributeTargets.Method)]
-sealed class TestAttribute : Attribute {}
-
 #pragma warning disable CC0068 // Allow unused methods in this file
 #pragma warning disable CC0057 // Allow unused arguments in this file
 

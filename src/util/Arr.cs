@@ -326,6 +326,13 @@ static class Arr {
 
 	internal static Arr<U> map<T, U>(this T[] xs, Func<T, U> mapper) => new Arr<U>(mapToArray(xs, mapper));
 
+	internal static Arr<U> mapSlice<T, U>(this T[] xs, uint start, Func<T, uint, U> mapper) {
+		var b = new U[xs.Length - start];
+		for (uint i = 0; i < b.Length; i++)
+			b[i] = mapper(xs[i + start], i);
+		return new Arr<U>(b);
+	}
+
 	internal static U[] mapToArray<T, U>(this T[] xs, Func<T, U> mapper) {
 		var b = new U[xs.Length];
 		for (uint i = 0; i < xs.Length; i++)

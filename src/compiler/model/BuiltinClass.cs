@@ -19,7 +19,7 @@ namespace Model {
 			get {
 				// TODO: handle builtins with supertypes
 				// (TODO: Super has location information, may have to abstract over that)
-				if (dotNetType.BaseType != typeof(object)) throw TODO();
+				if (!dotNetType.IsValueType && dotNetType.BaseType != typeof(object)) throw TODO();
 				foreach (var iface in dotNetType.GetInterfaces()) {
 					var gen = iface.GetGenericTypeDefinition();
 					if (gen != typeof(ToData<>) && gen != typeof(DeepEqual<>))

@@ -22,6 +22,10 @@ sealed class IoAttribute : HasEffectAttribute {
 	internal override Model.Effect effect => Model.Effect.Io;
 }
 
+
+[AttributeUsage(AttributeTargets.Method)]
+sealed class InstanceAttribute : Attribute {}
+
 [AttributeUsage(AttributeTargets.Class)]
 sealed class HidSuperClassAttribute : Attribute {}
 
@@ -31,7 +35,7 @@ Every method in these classes must have a JsTranslate annotation.
 
 For all other classes, there should be an equivalent version in nzlib.
 */
-[AttributeUsage(AttributeTargets.Class)]
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
 sealed class JsPrimitiveAttribute : Attribute {}
 
 [AttributeUsage(AttributeTargets.Method)]
@@ -52,8 +56,6 @@ sealed class NzlibAttribute : AnyJsTranslateAttribute {
 	internal NzlibAttribute(string nzlibFunctionName) { this.nzlibFunctionName = nzlibFunctionName; }
 }
 
-// TODO: Most of these should be structs.
-// But see https://github.com/dotnet/coreclr/issues/12596
 public static class Builtins {
 	[JsPrimitive] // Represented by `undefined`
 	public sealed class Void : ToData<Void> {
@@ -65,7 +67,7 @@ public static class Builtins {
 	}
 
 	[JsPrimitive]
-	public sealed class Bool : ToData<Bool> {
+	public struct Bool : ToData<Bool> {
 		[Hid] public readonly bool value;
 
 		[Hid] public static readonly Bool boolTrue = new Bool(true);
@@ -78,15 +80,15 @@ public static class Builtins {
 		bool DeepEqual<Bool>.deepEqual(Bool b) => value == b.value;
 		Dat ToData<Bool>.toDat() => Dat.boolean(value);
 
-		[Pure, JsBinary("===")]
-		public Bool _eq(Bool other) => of(value == other.value);
+		[Instance, Pure, JsBinary("===")]
+		public static Bool _eq(Bool a, Bool b) => of(a.value == b.value);
 
-		[Pure, JsSpecialTranslate(nameof(JsBuiltins.str))]
-		public String str() => String.of(value.ToString());
+		[Instance, Pure, JsSpecialTranslate(nameof(JsBuiltins.str))]
+		public static String str(Bool b) => String.of(b.value.ToString());
 	}
 
 	[JsPrimitive]
-	public sealed class Nat : ToData<Nat> {
+	public struct Nat : ToData<Nat> {
 		[Hid] internal readonly uint value;
 		Nat(uint value) { this.value = value; }
 
@@ -97,34 +99,34 @@ public static class Builtins {
 		bool DeepEqual<Nat>.deepEqual(Nat n) => value == n.value;
 		Dat ToData<Nat>.toDat() => Dat.nat(value);
 
-		[Pure, JsBinary("===")]
-		public Bool _eq(Nat other) => Bool.of(value == other.value);
+		[Instance, Pure, JsBinary("===")]
+		public static Bool _eq(Nat a, Nat b) => Bool.of(a.value == b.value);
 
-		[Pure, JsBinary("+")]
-		public Nat _add(Nat other) => of(checked(value + other.value));
+		[Instance, Pure, JsBinary("+")]
+		public static Nat _add(Nat a, Nat b) => of(checked(a.value + b.value));
 
-		[Pure, JsBinary("-")]
-		public Int _sub(Nat other) =>
-			Int.of(checked((int)value - (int)other.value)); //TODO: there should be a better way of doing this without inner casts.
+		[Instance, Pure, JsBinary("-")]
+		public static Int _sub(Nat a, Nat b) =>
+			Int.of(checked((int)a.value - (int)b.value)); //TODO: there should be a better way of doing this without inner casts.
 
-		[Pure, JsBinary("*")]
-		public Nat _mul(Nat other) => Nat.of(checked(value * other.value));
+		[Instance, Pure, JsBinary("*")]
+		public static Nat _mul(Nat a, Nat b) => Nat.of(checked(a.value * b.value));
 
-		[Pure, Nzlib("divInt")]
-		public Nat _div(Nat other) => Nat.of(checked(value / other.value));
+		[Instance, Pure, Nzlib("divInt")]
+		public static Nat _div(Nat a, Nat b) => Nat.of(checked(a.value / b.value));
 
-		[Pure, JsSpecialTranslate(nameof(JsBuiltins.str))]
-		public String str() => String.of(value.ToString());
+		[Instance, Pure, JsSpecialTranslate(nameof(JsBuiltins.str))]
+		public static String str(Nat n) => String.of(n.value.ToString());
 
-		[Pure, JsSpecialTranslate(nameof(JsBuiltins.id))]
-		public Int toInt() => Int.of(checked((int)value));
+		[Instance, Pure, JsSpecialTranslate(nameof(JsBuiltins.id))]
+		public static Int toInt(Nat n) => Int.of(checked((int)n.value));
 
-		[Pure, JsSpecialTranslate(nameof(JsBuiltins.id))]
-		public Real toReal() => Real.of((double)value);
+		[Instance, Pure, JsSpecialTranslate(nameof(JsBuiltins.id))]
+		public static Real toReal(Nat n) => Real.of((double)n.value);
 	}
 
 	[JsPrimitive]
-	public sealed class Int : ToData<Int> {
+	public struct Int : ToData<Int> {
 		[Pure, Nzlib("parseInt")]
 		public static Int parse(String s) =>
 			of(int.Parse(s.value)); //TODO: exceptions
@@ -139,33 +141,33 @@ public static class Builtins {
 		bool DeepEqual<Int>.deepEqual(Int i) => value == i.value;
 		Dat ToData<Int>.toDat() => Dat.@int(value);
 
-		[Pure, JsBinary("===")]
-		public Bool _eq(Int other) => Bool.of(value == other.value);
+		[Instance, Pure, JsBinary("===")]
+		public static Bool _eq(Int a, Int b) => Bool.of(a.value == b.value);
 
-		[Pure, JsBinary("+")]
-		public Int _add(Int other) => of(checked(value + other.value));
+		[Instance, Pure, JsBinary("+")]
+		public static Int _add(Int a, Int b) => of(checked(a.value + b.value));
 
-		[Pure, JsBinary("-")]
-		public Int _sub(Int other) => of(checked(value - other.value));
+		[Instance, Pure, JsBinary("-")]
+		public static Int _sub(Int a, Int b) => of(checked(a.value - b.value));
 
-		[Pure, JsBinary("*")]
-		public Int _mul(Int other) => of(checked(value * other.value));
+		[Instance, Pure, JsBinary("*")]
+		public static Int _mul(Int a, Int b) => of(checked(a.value * b.value));
 
-		[Pure, Nzlib("divInt")]
-		public Int _div(Int other) => of(checked(value / other.value));
+		[Instance, Pure, Nzlib("divInt")]
+		public static Int _div(Int a, Int b) => of(checked(a.value / b.value));
 
-		[Pure, JsSpecialTranslate(nameof(JsBuiltins.str))]
-		public String str() => String.of(value.ToString());
+		[Instance, Pure, JsSpecialTranslate(nameof(JsBuiltins.str))]
+		public static String str(Int i) => String.of(i.value.ToString());
 
-		[Pure, Nzlib(nameof(toNat))]
-		public Nat toNat() => Nat.of(checked((uint)value));
+		[Instance, Pure, Nzlib(nameof(toNat))]
+		public static Nat toNat(Int i) => Nat.of(checked((uint)i.value));
 
-		[Pure, JsSpecialTranslate(nameof(JsBuiltins.id))]
-		public Real toReal() => Real.of((double)value);
+		[Instance, Pure, JsSpecialTranslate(nameof(JsBuiltins.id))]
+		public static Real toReal(Int i) => Real.of((double)i.value);
 	}
 
 	[JsPrimitive]
-	public sealed class Real : ToData<Real> {
+	public struct Real : ToData<Real> {
 		[Pure, Nzlib("parseReal")]
 		public static Real parse(String s) =>
 			of(double.Parse(s.value)); //TODO: exceptions
@@ -181,33 +183,33 @@ public static class Builtins {
 		bool DeepEqual<Real>.deepEqual(Real f) => value == f.value;
 		Dat ToData<Real>.toDat() => Dat.realDat(value);
 
-		[Pure, JsBinary("+")]
-		public Real _add(Real other) => of(checked(value + other.value));
+		[Instance, Pure, JsBinary("+")]
+		public static Real _add(Real a, Real b) => of(checked(a.value + b.value));
 
-		[Pure, JsBinary("-")]
-		public Real _sub(Real other) => of(checked(value - other.value));
+		[Instance, Pure, JsBinary("-")]
+		public static Real _sub(Real a, Real b) => of(checked(a.value - b.value));
 
-		[Pure, JsBinary("*")]
-		public Real _mul(Real other) => of(checked(value * other.value));
+		[Instance, Pure, JsBinary("*")]
+		public static Real _mul(Real a, Real b) => of(checked(a.value * b.value));
 
-		[Pure, JsBinary("/")]
-		public Real _div(Real other) => of(checked(value / other.value));
+		[Instance, Pure, JsBinary("/")]
+		public static Real _div(Real a, Real b) => of(checked(a.value / b.value));
 
-		[Pure, JsSpecialTranslate(nameof(JsBuiltins.str))]
-		public String str() => String.of(value.ToString());
+		[Instance, Pure, JsSpecialTranslate(nameof(JsBuiltins.str))]
+		public static String str(Real r) => String.of(r.value.ToString());
 
-		[Pure, Nzlib(nameof(round))]
-		public Int round() => Int.of(checked((int)Math.Round(value)));
+		[Instance, Pure, Nzlib(nameof(round))]
+		public static Int round(Real r) => Int.of(checked((int)Math.Round(r.value)));
 
-		[Pure, Nzlib(nameof(roundDown))]
-		public Int roundDown() => Int.of(checked((int)Math.Floor(value)));
+		[Instance, Pure, Nzlib(nameof(roundDown))]
+		public static Int roundDown(Real r) => Int.of(checked((int)Math.Floor(r.value)));
 
-		[Pure, Nzlib(nameof(roundUp))]
-		public Int roundUp() => Int.of(checked((int)Math.Ceiling(value)));
+		[Instance, Pure, Nzlib(nameof(roundUp))]
+		public static Int roundUp(Real r) => Int.of(checked((int)Math.Ceiling(r.value)));
 	}
 
 	[JsPrimitive]
-	public sealed class String : ToData<String> {
+	public struct String : ToData<String> {
 		[Hid] internal readonly string value;
 
 		String(string value) { this.value = value; }
@@ -217,11 +219,11 @@ public static class Builtins {
 		bool DeepEqual<String>.deepEqual(String s) => value == s.value;
 		Dat ToData<String>.toDat() => Dat.str(value);
 
-		[Pure, JsBinary("===")]
-		public Bool _eq(String other) => Bool.of(value == other.value);
+		[Instance, Pure, JsBinary("===")]
+		public static Bool _eq(String a, String b) => Bool.of(a.value == b.value);
 
-		[Pure, JsBinary("+")]
-		public String _add(String other) => of(value + other.value);
+		[Instance, Pure, JsBinary("+")]
+		public static String _add(String a, String b) => of(a.value + b.value);
 	}
 
 	[HidSuperClass]
