@@ -35,6 +35,18 @@ namespace Test {
 			runSingle(name, method);
 		}
 
+		internal void runAllTests() {
+			testNzlib();
+			runAllCompilerTests();
+		}
+
+		void testNzlib() {
+			var nzlibDataJson = Json.JsonWriter.write(JsBuiltins.nzlibData());
+			var res = Test.SynchronousProcess.run(Path.fromParts("tests", "js-test-runner", "testNzlib.js"), nzlibDataJson);
+			if (res != "OK\n")
+				throw new Test.TestFailureException(res);
+		}
+
 		internal void runAllCompilerTests() {
 			var allTests = listDirectoriesInDirectory(casesRootDir).toArr();
 			checkNoExtraBaselines(allTests);

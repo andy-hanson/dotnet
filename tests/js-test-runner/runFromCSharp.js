@@ -11,21 +11,16 @@ E.g.:
 // @ts-check
 
 const assert = require("assert");
-const { readSync } = require("fs");
+const { readSync } = require("fs"); //this is unused, wtf?
 
 const { runBaseline } = require("./runBaseline");
+const { readStdinSync } = require("./utils");
 
-/*
-Receives commands to run certain modules.
-*/
-process.stdin.resume();
 const bufferSize = 64;
-const buff = new Buffer(bufferSize)
-// @ts-ignore
-const stdinFd = process.stdin.fd;
+const buff = new Buffer(bufferSize);
 
 while (true) {
-	const input = readStdinSync();
+	const input = readStdinSync(/*bufferSize*/ 128);
 	if (input === undefined) break;
 
 	const parts = input.split(" ");
@@ -39,29 +34,4 @@ while (true) {
 	} catch (error) {
 		console.log(error.stack ? JSON.stringify(error.stack) : `ERROR: ${JSON.stringify(error)}`);
 	}
-}
-
-/**
- * @return {string | undefined}
- */
-function readStdinSync() {
-	let bytesRead = 0;
-	while (true) {
-		try {
-			bytesRead = readSync(stdinFd, buff, 0, bufferSize, null);
-			break;
-		} catch (e) {
-			if (e.code === "EAGAIN") {
-				continue;
-			}
-			throw e;
-		}
-	}
-
-	if (bytesRead === 0) return undefined;
-	if (bytesRead === bufferSize) throw new Error(); // bufferSize too small
-	if (buff[bytesRead - 1] !== '\n'.charCodeAt(0)) {
-		throw new Error(buff.toString("utf-8", 0, bytesRead));
-	}
-	return buff.toString("utf-8", 0, bytesRead - 1);
 }

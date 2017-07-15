@@ -323,6 +323,11 @@ static class Arr {
 		new Arr<T>(args);
 
 	internal static Builder<T> builder<T>() => new Builder<T>(true);
+	internal static Builder<T> builder<T>(T first) {
+		var b = new Builder<T>(true);
+		b.add(first);
+		return b;
+	}
 
 	internal static Arr<U> map<T, U>(this T[] xs, Func<T, U> mapper) => new Arr<U>(mapToArray(xs, mapper));
 

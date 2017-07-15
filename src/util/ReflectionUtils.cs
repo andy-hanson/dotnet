@@ -5,6 +5,15 @@ using System.Runtime.ExceptionServices;
 using static Utils;
 
 static class ReflectionUtils {
+	internal static bool hasAttribute<TAttribute>(this Type t) where TAttribute : Attribute =>
+		t.GetCustomAttribute<TAttribute>(inherit: false) != null;
+
+	internal static bool hasAttribute<TAttribute>(this FieldInfo f) where TAttribute : Attribute =>
+		f.GetCustomAttribute<TAttribute>(inherit: false) != null;
+
+	internal static bool hasAttribute<TAttribute>(this MethodInfo m) where TAttribute : Attribute =>
+		m.GetCustomAttribute<TAttribute>(inherit: false) != null;
+
 	internal static object invokeStatic(this Type t, string methodName, params object[] args) {
 		var method = t.GetMethod(methodName, BindingFlags.Static | BindingFlags.Public);
 		assert(method != null);

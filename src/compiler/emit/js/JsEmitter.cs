@@ -84,7 +84,6 @@ sealed class JsEmitter {
 		return new Estree.ClassExpression(loc, id(loc, klass.name), superClass, new Estree.ClassBody(loc, body.finish()));
 	}
 
-	static readonly Sym idMixin = Sym.of("mixin");
 	Op<Estree.Expression> super(Loc loc, Arr<Super> supers) {
 		switch (supers.length) {
 			case 0:
@@ -93,8 +92,7 @@ sealed class JsEmitter {
 				return Op.Some(superClassToExpr(supers.only));
 			default:
 				needsLib = true;
-				var mixin = JsBuiltins.getFromLib(loc, idMixin);
-				return Op.Some<Estree.Expression>(new Estree.CallExpression(loc, mixin, supers.map(superClassToExpr)));
+				return Op.Some<Estree.Expression>(new Estree.CallExpression(loc, JsBuiltins.getMixin(loc), supers.map(superClassToExpr)));
 		}
 	}
 	static Estree.Expression superClassToExpr(Super super) =>

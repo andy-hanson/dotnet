@@ -31,9 +31,9 @@ sealed class HidSuperClassAttribute : Attribute {}
 
 /**
 Attribute for types that are implemented by JS primitives, not by a JS class.
-Every method in these classes must have a JsTranslate annotation.
-
 For all other classes, there should be an equivalent version in nzlib.
+
+Methods in a JSPrimitive class will be implemented by functions in `nzlib/primitive`, or have a JsTranslate annotation for special handling.
 */
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
 sealed class JsPrimitiveAttribute : Attribute {}
@@ -49,11 +49,6 @@ sealed class JsSpecialTranslateAttribute : AnyJsTranslateAttribute {
 sealed class JsBinaryAttribute : AnyJsTranslateAttribute {
 	internal readonly string @operator;
 	internal JsBinaryAttribute(string @operator) { this.@operator = @operator; }
-}
-
-sealed class NzlibAttribute : AnyJsTranslateAttribute {
-	internal readonly string nzlibFunctionName; // Name of a function exported by nzlib
-	internal NzlibAttribute(string nzlibFunctionName) { this.nzlibFunctionName = nzlibFunctionName; }
 }
 
 public static class Builtins {
@@ -83,7 +78,7 @@ public static class Builtins {
 		[Instance, Pure, JsBinary("===")]
 		public static Bool _eq(Bool a, Bool b) => of(a.value == b.value);
 
-		[Instance, Pure, JsSpecialTranslate(nameof(JsBuiltins.str))]
+		[Instance, Pure, JsSpecialTranslate(nameof(JsBuiltins.toString))]
 		public static String str(Bool b) => String.of(b.value.ToString());
 	}
 
@@ -112,10 +107,10 @@ public static class Builtins {
 		[Instance, Pure, JsBinary("*")]
 		public static Nat _mul(Nat a, Nat b) => Nat.of(checked(a.value * b.value));
 
-		[Instance, Pure, Nzlib("divInt")]
+		[Instance, Pure]
 		public static Nat _div(Nat a, Nat b) => Nat.of(checked(a.value / b.value));
 
-		[Instance, Pure, JsSpecialTranslate(nameof(JsBuiltins.str))]
+		[Instance, Pure, JsSpecialTranslate(nameof(JsBuiltins.toString))]
 		public static String str(Nat n) => String.of(n.value.ToString());
 
 		[Instance, Pure, JsSpecialTranslate(nameof(JsBuiltins.id))]
@@ -127,7 +122,7 @@ public static class Builtins {
 
 	[JsPrimitive]
 	public struct Int : ToData<Int> {
-		[Pure, Nzlib("parseInt")]
+		[Pure]
 		public static Int parse(String s) =>
 			of(int.Parse(s.value)); //TODO: exceptions
 
@@ -153,13 +148,13 @@ public static class Builtins {
 		[Instance, Pure, JsBinary("*")]
 		public static Int _mul(Int a, Int b) => of(checked(a.value * b.value));
 
-		[Instance, Pure, Nzlib("divInt")]
+		[Instance, Pure]
 		public static Int _div(Int a, Int b) => of(checked(a.value / b.value));
 
-		[Instance, Pure, JsSpecialTranslate(nameof(JsBuiltins.str))]
+		[Instance, Pure, JsSpecialTranslate(nameof(JsBuiltins.toString))]
 		public static String str(Int i) => String.of(i.value.ToString());
 
-		[Instance, Pure, Nzlib(nameof(toNat))]
+		[Instance, Pure]
 		public static Nat toNat(Int i) => Nat.of(checked((uint)i.value));
 
 		[Instance, Pure, JsSpecialTranslate(nameof(JsBuiltins.id))]
@@ -168,7 +163,7 @@ public static class Builtins {
 
 	[JsPrimitive]
 	public struct Real : ToData<Real> {
-		[Pure, Nzlib("parseReal")]
+		[Pure]
 		public static Real parse(String s) =>
 			of(double.Parse(s.value)); //TODO: exceptions
 
@@ -195,16 +190,16 @@ public static class Builtins {
 		[Instance, Pure, JsBinary("/")]
 		public static Real _div(Real a, Real b) => of(checked(a.value / b.value));
 
-		[Instance, Pure, JsSpecialTranslate(nameof(JsBuiltins.str))]
+		[Instance, Pure, JsSpecialTranslate(nameof(JsBuiltins.toString))]
 		public static String str(Real r) => String.of(r.value.ToString());
 
-		[Instance, Pure, Nzlib(nameof(round))]
+		[Instance, Pure]
 		public static Int round(Real r) => Int.of(checked((int)Math.Round(r.value)));
 
-		[Instance, Pure, Nzlib(nameof(roundDown))]
+		[Instance, Pure]
 		public static Int roundDown(Real r) => Int.of(checked((int)Math.Floor(r.value)));
 
-		[Instance, Pure, Nzlib(nameof(roundUp))]
+		[Instance, Pure]
 		public static Int roundUp(Real r) => Int.of(checked((int)Math.Ceiling(r.value)));
 	}
 
@@ -237,8 +232,8 @@ public static class Builtins {
 		public override String description() => String.of("Assertion failed.");
 	}
 
-	public interface Console {
-		[Io] Void write_line(String s);
+	public abstract class Console {
+		[Io] public abstract Void write_line(String s);
 	}
 
 	internal static readonly Arr<Type> allTypes = new Arr<Type>(typeof(Builtins).GetNestedTypes());

@@ -20,11 +20,6 @@ sealed class JsExprEmitter {
 		this.thisMethodIsAsync = thisMethodIsAsync;
 	}
 
-	Estree.Expression getFromLib(Loc loc, Sym id) {
-		needsLib = true;
-		return JsBuiltins.getFromLib(loc, id);
-	}
-
 	Estree.BlockStatement exprToBlockStatement(Expr expr) =>
 		new Estree.BlockStatement(expr.loc, writeExprToBlockStatement(expr).finish());
 
@@ -87,7 +82,8 @@ sealed class JsExprEmitter {
 
 	Estree.Statement assertToStatement(Assert a) {
 		var loc = a.loc;
-		var idAssertionException = getFromLib(loc, Sym.of(nameof(Builtins.AssertionException)));
+		needsLib = true;
+		var idAssertionException = JsBuiltins.getAssertionException(loc);
 		var fail = new Estree.ThrowStatement(loc,
 			new Estree.NewExpression(loc, idAssertionException, Arr.of<Estree.Expression>()));
 		var notAsserted = negate(exprToExpr(a.asserted));
@@ -141,7 +137,8 @@ sealed class JsExprEmitter {
 			case Klass k:
 				return id(loc, k.name);
 			case BuiltinClass b:
-				return getFromLib(loc, b.name);
+				needsLib = true;
+				return JsBuiltins.getBuiltin(loc, b);
 			default:
 				throw TODO();
 		}

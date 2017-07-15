@@ -63,6 +63,8 @@ public abstract class Dat : ToData<Dat> {
 	internal static Dat arr<T>(Arr<T> a) where T : ToData<T> => new ArrDat<T>(a);
 	internal static Dat arr(Arr<char> a) => new ArrDat<Dat>(a.map(ch => str(ch.ToString())));
 	internal static Dat arr(Arr<string> a) => new ArrDat<Dat>(a.map(str));
+	internal static Dat dict(Dict<Sym, Arr<string>> d) => new DictDat<Dat>(d.map<string, Dat>((k, v) => (k.str, new ArrDat<Dat>(v.map(str)))));
+	internal static Dat dict(Dict<Sym, Arr<Sym>> d) => new DictDat<Dat>(d.map<string, Dat>((k, v) => (k.str, new ArrDat<Sym>(v))));
 	internal static Dat dict<T>(Dict<Sym, T> d) where T : ToData<T> => new DictDat<T>(d.mapKeys(k => k.str));
 	internal static Dat dict<T>(Dict<string, T> d) where T : ToData<T> => new DictDat<T>(d);
 

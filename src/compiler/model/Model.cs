@@ -45,7 +45,6 @@ namespace Model {
 		internal readonly Loc loc;
 		[ParentPointer] internal readonly Klass containingClass;
 		[UpPointer] internal readonly Ty superClass;
-		//internal readonly Arr<Impl> impls;
 		Late<Arr<Impl>> _impls;
 		internal Arr<Impl> impls { get => _impls.get; set => _impls.set(value); }
 

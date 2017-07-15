@@ -6,7 +6,7 @@ using System.Text;
 using static Utils;
 
 namespace Model {
-	sealed class BuiltinClass : ClassLike, ToData<BuiltinClass> {
+	sealed class BuiltinClass : ClassLike, ToData<BuiltinClass>, IEquatable<BuiltinClass> {
 		internal readonly Type dotNetType;
 		readonly Late<Arr<Method>> _abstractMethods;
 		// These will all be BuiltinMethods of course. But Arr is invariant and we want a type compatible with Klass.Head.Abstract.
@@ -15,11 +15,26 @@ namespace Model {
 			private set => _abstractMethods.set(value);
 		}
 
+		//kill?
+		internal Late<Arr<MethodInfo>> _overrides;
+		internal Arr<MethodInfo> overrides { get => _overrides.get; set => _overrides.set(value); }
+
+		//kill?
 		internal override Arr<Super> supers {
 			get {
-				// TODO: handle builtins with supertypes
-				// (TODO: Super has location information, may have to abstract over that)
-				if (!dotNetType.IsValueType && dotNetType.BaseType != typeof(object)) throw TODO();
+				if (dotNetType.hasAttribute<HidSuperClassAttribute>())
+					return Arr.empty<Super>();
+
+				if (!dotNetType.IsValueType) {
+					var baze = dotNetType.BaseType;
+					if (baze != null && baze != typeof(object)) {
+						// TODO: handle builtins with supertypes
+						// (TODO: Super has location information, may have to abstract over that)
+						var baseType = fromDotNetType(baze);
+						throw TODO();//new Super(Loc.zero, this, baseType);
+					}
+				}
+
 				foreach (var iface in dotNetType.GetInterfaces()) {
 					var gen = iface.GetGenericTypeDefinition();
 					if (gen != typeof(ToData<>) && gen != typeof(DeepEqual<>))
@@ -78,7 +93,7 @@ namespace Model {
 			byName[name] = klass;
 
 			foreach (var field in dotNetType.GetFields()) {
-				if (field.GetCustomAttribute<HidAttribute>(inherit: true) != null)
+				if (field.hasAttribute<HidAttribute>())
 					continue;
 				throw TODO();
 			}
@@ -86,9 +101,15 @@ namespace Model {
 			var abstracts = Arr.builder<Method>();
 
 			var dotNetMethods = dotNetType.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
+			var overrides = Arr.builder<MethodInfo>();
 			klass._membersMap = dotNetMethods.mapToDict<MethodInfo, Sym, Member>(method => {
-				if (method.GetCustomAttribute<HidAttribute>(inherit: true) != null)
+				if (method.hasAttribute<HidAttribute>())
 					return Op<(Sym, Member)>.None;
+
+				if (method.GetBaseDefinition() != method) {
+					overrides.add(method);
+					return Op<(Sym, Member)>.None;
+				}
 
 				if (method.IsVirtual && !method.IsAbstract) {
 					// Must be an override. Don't add to the table.
@@ -102,6 +123,7 @@ namespace Model {
 				return Op.Some<(Sym, Member)>((m2.name, m2));
 			});
 
+			klass.overrides = overrides.finish();
 			klass.abstractMethods = abstracts.finish();
 
 			return klass;
@@ -111,23 +133,27 @@ namespace Model {
 
 		public override ClassLike.Id getId() => ClassLike.Id.ofBuiltin(name);
 
+		bool IEquatable<BuiltinClass>.Equals(BuiltinClass other) => object.ReferenceEquals(this, other);
 		public override bool deepEqual(Ty t) => throw new NotSupportedException();
 		public bool deepEqual(BuiltinClass b) => throw new NotSupportedException(); // This should never happen.
 		public override int GetHashCode() => name.GetHashCode();
 		public override Dat toDat() => Dat.of(this, nameof(name), name);
 
-		/*internal static string escapeName(Sym name) {
+		internal static string escapeName(Sym name) {
 			if (operatorEscapes.get(name, out var sym))
 				return sym;
 
-			var str = name.str;
-
-			foreach (var ch in str)
-				if (CharUtils.isLetter(ch))
-					unreachable();
-
-			return str;
-		}*/
+			var sb = new StringBuilder();
+			foreach (var ch in name.str) {
+				if (ch == '-')
+					sb.Append('_');
+				else {
+					assert(CharUtils.isNameChar(ch));
+					sb.Append(ch);
+				}
+			}
+			return sb.ToString();
+		}
 
 		internal static Sym unescapeName(string name) {
 			if (operatorUnescapes.get(name, out var v))

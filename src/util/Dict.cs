@@ -105,6 +105,15 @@ static class Dict {
 			inner[key] = newValue;
 		}
 
+		internal Dict<K2, V2> map<K2, V2>(Func<K, V, (K2, V2)> mapper) where K2 : IEquatable<K2> {
+			var b = builder<K2, V2>();
+			foreach (var (k, v) in inner) {
+				var (k2, v2) = mapper(k, v);
+				b.add(k2, v2);
+			}
+			return b.finish();
+		}
+
 		internal Dict<K, V2> mapValues<V2>(Func<V, V2> mapper) {
 			var b = builder<K, V2>();
 			foreach (var (k, v) in inner)
@@ -120,6 +129,15 @@ static class Dict {
 			inner[key] = value;
 			return true;
 		}
+	}
+}
+
+static class DictBuilderUtils {
+	internal static void multiMapAdd<K, V>(this Dict.Builder<K, Arr.Builder<V>> b, K key, V value) where K : IEquatable<K> {
+		if (b.get(key, out var values))
+			values.add(value);
+		else
+			b.add(key, Arr.builder<V>(value));
 	}
 }
 

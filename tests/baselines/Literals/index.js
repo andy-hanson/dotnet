@@ -5,11 +5,11 @@ module.exports = class Literals {
 		Literals.needsNat(0);
 		Literals.needsInt(0);
 		Literals.needsReal(0);
-		Literals.needsNat(_.toNat(0));
+		Literals.needsNat(_.Int.toNat(0));
 		Literals.needsInt(0);
 		Literals.needsReal(0);
-		Literals.needsNat(_.toNat(_.roundDown(0)));
-		Literals.needsInt(_.roundUp(0));
+		Literals.needsNat(_.Int.toNat(_.Real.roundDown(0)));
+		Literals.needsInt(_.Real.roundUp(0));
 		return Literals.needsReal(0);
 	}
 	static needsNat(n) {}

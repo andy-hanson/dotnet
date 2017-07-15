@@ -30,7 +30,7 @@ namespace Test {
 		}
 
 		internal static JsTestRunner create() =>
-			new JsTestRunner(SynchronousProcess.create());
+			new JsTestRunner(SynchronousProcess.create(Path.fromParts("tests", "js-test-runner", "runFromCSharp.js")));
 	}
 
 	struct SynchronousProcess : IDisposable {
@@ -54,11 +54,20 @@ namespace Test {
 			return response;
 		}
 
-		internal static SynchronousProcess create() {
+		internal static string run(Path path, string input) {
+			using (var p = create(path)) {
+				p.process.StandardInput.WriteLine(input);
+				var response = p.process.StandardOutput.ReadToEnd();
+				assert(response != null);
+				return response;
+			}
+		}
+
+		internal static SynchronousProcess create(Path path) {
 			var proc = new Process();
 			var si = proc.StartInfo;
 			si.FileName = "node";
-			si.Arguments = "--harmony_tailcalls tests/js-test-runner/runFromCSharp.js";
+			si.Arguments = $"--harmony_tailcalls {path.toPathString()}";
 			si.CreateNoWindow = true;
 
 			var syncProc = new SynchronousProcess(proc);
