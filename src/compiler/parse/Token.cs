@@ -70,8 +70,6 @@ internal enum Token {
 	Set,
 	[Text("slots")]
 	Slots,
-	[Text("static")]
-	Static,
 	[Text("true")]
 	True,
 	[Text("try")]

@@ -101,6 +101,13 @@ struct Arr<T> : IEnumerable<T> {
 		return new Arr<U>(b);
 	}
 
+	internal Arr<U> mapTail<U>(Func<T, uint, U> mapper) {
+		var b = new U[length - 1];
+		for (uint i = 0; i < length - 1; i++)
+			b[i] = mapper(this[i + 1], i + 1);
+		return new Arr<U>(b);
+	}
+
 	internal Arr<U> map<U>(Func<T, uint, U> mapper) {
 		var b = new U[length];
 		for (uint i = 0; i < length; i++)
@@ -409,6 +416,13 @@ static class Arr {
 		}
 
 		internal bool isEmpty => curLength == 0;
+	}
+
+	internal static Arr<T> buildWithIndex<T>(uint length, Func<uint, T> buildElement) {
+		var arr = new T[length];
+		for (uint i = 0; i < length; i++)
+			arr[i] = buildElement(i);
+		return new Arr<T>(arr);
 	}
 
 	internal static Arr<T> buildUntilNull<T>(Func<Op<T>> f) {

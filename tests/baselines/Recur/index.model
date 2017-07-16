@@ -1,83 +1,365 @@
 Klass(
-  loc: 0-115,
-  head: Static(
-    loc: 0-8),
+  loc: 0-498,
+  head: Static(),
   membersMap: Dict<Sym, Member>(
     main: MethodWithBody(
-      loc: 8-45,
+      loc: 0-120,
       isStatic: true,
       returnTy: "Void",
       name: "main",
       parameters: [],
-      body: Assert(
-        loc: 25-45,
-        asserted: InstanceMethodCall(
-          loc: 32-45,
-          target: StaticMethodCall(
+      body: Seq(
+        loc: 17-120,
+        action: Assert(
+          loc: 17-45,
+          asserted: InstanceMethodCall(
+            loc: 24-45,
+            target: StaticMethodCall(
+              method: Id(
+                klassId: "",
+                name: "factorial"),
+              args: [Literal(
+                loc: 34-35,
+                value: 5)]),
             method: Id(
-              klassId: "",
-              name: "f"),
+              klassId: "Nat",
+              name: "=="),
             args: [Literal(
-              loc: 35-37,
-              value: 10)]),
-          method: Id(
-            klassId: "Nat",
-            name: "=="),
-          args: [Literal(
-            loc: 42-43,
-            value: 0)]))),
-    f: MethodWithBody(
-      loc: 45-115,
+              loc: 39-42,
+              value: 120)])),
+        then: Seq(
+          loc: 45-120,
+          action: Assert(
+            loc: 45-70,
+            asserted: InstanceMethodCall(
+              loc: 52-70,
+              target: StaticMethodCall(
+                method: Id(
+                  klassId: "",
+                  name: "fibonacci"),
+                args: [Literal(
+                  loc: 62-63,
+                  value: 0)]),
+              method: Id(
+                klassId: "Nat",
+                name: "=="),
+              args: [Literal(
+                loc: 67-68,
+                value: 0)])),
+          then: Seq(
+            loc: 70-120,
+            action: Assert(
+              loc: 70-95,
+              asserted: InstanceMethodCall(
+                loc: 77-95,
+                target: StaticMethodCall(
+                  method: Id(
+                    klassId: "",
+                    name: "fibonacci"),
+                  args: [Literal(
+                    loc: 87-88,
+                    value: 2)]),
+                method: Id(
+                  klassId: "Nat",
+                  name: "=="),
+                args: [Literal(
+                  loc: 92-93,
+                  value: 1)])),
+            then: Assert(
+              loc: 95-120,
+              asserted: InstanceMethodCall(
+                loc: 102-120,
+                target: StaticMethodCall(
+                  method: Id(
+                    klassId: "",
+                    name: "fibonacci"),
+                  args: [Literal(
+                    loc: 112-113,
+                    value: 6)]),
+                method: Id(
+                  klassId: "Nat",
+                  name: "=="),
+                args: [Literal(
+                  loc: 117-118,
+                  value: 8)])))))),
+    factorial: MethodWithBody(
+      loc: 120-171,
       isStatic: true,
       returnTy: "Nat",
-      name: "f",
+      name: "factorial",
       parameters: [Parameter(
-        loc: 55-60,
+        loc: 138-143,
         ty: "Nat",
-        name: "i",
+        name: "n",
         index: 0)],
+      body: StaticMethodCall(
+        method: Id(
+          klassId: "",
+          name: "factorial-recursive"),
+        args: [
+          AccessParameter(
+            loc: 166-167,
+            param: Parameter(
+              loc: 138-143,
+              ty: "Nat",
+              name: "n",
+              index: 0)),
+          Literal(
+            loc: 168-169,
+            value: 1)
+        ])),
+    factorial-recursive: MethodWithBody(
+      loc: 171-273,
+      isStatic: true,
+      returnTy: "Nat",
+      name: "factorial-recursive",
+      parameters: [
+        Parameter(
+          loc: 199-204,
+          ty: "Nat",
+          name: "n",
+          index: 0),
+        Parameter(
+          loc: 206-213,
+          ty: "Nat",
+          name: "acc",
+          index: 1)
+      ],
       body: WhenTest(
-        loc: 63-115,
+        loc: 216-273,
         cases: [Case(
-          loc: 70-84,
+          loc: 216-239,
           test: InstanceMethodCall(
-            loc: 70-80,
+            loc: 216-233,
             target: AccessParameter(
-              loc: 70-71,
+              loc: 216-224,
               param: Parameter(
-                loc: 55-60,
+                loc: 199-204,
                 ty: "Nat",
-                name: "i",
+                name: "n",
                 index: 0)),
             method: Id(
               klassId: "Nat",
               name: "=="),
             args: [Literal(
-              loc: 75-76,
+              loc: 228-229,
               value: 0)]),
-          result: Literal(
-            loc: 80-81,
-            value: 0))],
+          result: AccessParameter(
+            loc: 233-236,
+            param: Parameter(
+              loc: 206-213,
+              ty: "Nat",
+              name: "acc",
+              index: 1)))],
         elseResult: Recur(
-          loc: 92-115,
-          args: [InstanceMethodCall(
-            loc: 98-112,
-            target: InstanceMethodCall(
-              loc: 99-105,
+          loc: 247-273,
+          args: [
+            InstanceMethodCall(
+              loc: 253-259,
               target: AccessParameter(
-                loc: 99-100,
+                loc: 253-254,
                 param: Parameter(
-                  loc: 55-60,
+                  loc: 199-204,
                   ty: "Nat",
-                  name: "i",
+                  name: "n",
                   index: 0)),
               method: Id(
                 klassId: "Nat",
-                name: "-"),
+                name: "decr"),
+              args: []),
+            InstanceMethodCall(
+              loc: 263-271,
+              target: AccessParameter(
+                loc: 263-266,
+                param: Parameter(
+                  loc: 206-213,
+                  ty: "Nat",
+                  name: "acc",
+                  index: 1)),
+              method: Id(
+                klassId: "Nat",
+                name: "*"),
+              args: [AccessParameter(
+                loc: 269-270,
+                param: Parameter(
+                  loc: 199-204,
+                  ty: "Nat",
+                  name: "n",
+                  index: 0))])
+          ]))),
+    fibonacci: MethodWithBody(
+      loc: 273-369,
+      isStatic: true,
+      returnTy: "Nat",
+      name: "fibonacci",
+      parameters: [Parameter(
+        loc: 291-296,
+        ty: "Nat",
+        name: "n",
+        index: 0)],
+      body: WhenTest(
+        loc: 299-369,
+        cases: [
+          Case(
+            loc: 299-320,
+            test: InstanceMethodCall(
+              loc: 299-316,
+              target: AccessParameter(
+                loc: 299-307,
+                param: Parameter(
+                  loc: 291-296,
+                  ty: "Nat",
+                  name: "n",
+                  index: 0)),
+              method: Id(
+                klassId: "Nat",
+                name: "=="),
               args: [Literal(
-                loc: 103-104,
+                loc: 311-312,
+                value: 0)]),
+            result: Literal(
+              loc: 316-317,
+              value: 0)),
+          Case(
+            loc: 320-334,
+            test: InstanceMethodCall(
+              loc: 320-330,
+              target: AccessParameter(
+                loc: 320-321,
+                param: Parameter(
+                  loc: 291-296,
+                  ty: "Nat",
+                  name: "n",
+                  index: 0)),
+              method: Id(
+                klassId: "Nat",
+                name: "=="),
+              args: [Literal(
+                loc: 325-326,
                 value: 1)]),
+            result: Literal(
+              loc: 330-331,
+              value: 1))
+        ],
+        elseResult: StaticMethodCall(
+          method: Id(
+            klassId: "",
+            name: "fibonacci-recursive"),
+          args: [
+            AccessParameter(
+              loc: 362-363,
+              param: Parameter(
+                loc: 291-296,
+                ty: "Nat",
+                name: "n",
+                index: 0)),
+            Literal(
+              loc: 364-365,
+              value: 0),
+            Literal(
+              loc: 366-367,
+              value: 1)
+          ]))),
+    fibonacci-recursive: MethodWithBody(
+      loc: 369-498,
+      isStatic: true,
+      returnTy: "Nat",
+      name: "fibonacci-recursive",
+      parameters: [
+        Parameter(
+          loc: 397-402,
+          ty: "Nat",
+          name: "n",
+          index: 0),
+        Parameter(
+          loc: 404-412,
+          ty: "Nat",
+          name: "acc1",
+          index: 1),
+        Parameter(
+          loc: 414-422,
+          ty: "Nat",
+          name: "acc2",
+          index: 2)
+      ],
+      body: WhenTest(
+        loc: 425-498,
+        cases: [Case(
+          loc: 425-456,
+          test: InstanceMethodCall(
+            loc: 425-442,
+            target: AccessParameter(
+              loc: 425-433,
+              param: Parameter(
+                loc: 397-402,
+                ty: "Nat",
+                name: "n",
+                index: 0)),
             method: Id(
-              klassId: "Int",
-              name: "to-nat"),
-            args: [])])))))
+              klassId: "Nat",
+              name: "=="),
+            args: [Literal(
+              loc: 437-438,
+              value: 2)]),
+          result: InstanceMethodCall(
+            loc: 442-456,
+            target: AccessParameter(
+              loc: 442-446,
+              param: Parameter(
+                loc: 404-412,
+                ty: "Nat",
+                name: "acc1",
+                index: 1)),
+            method: Id(
+              klassId: "Nat",
+              name: "+"),
+            args: [AccessParameter(
+              loc: 449-453,
+              param: Parameter(
+                loc: 414-422,
+                ty: "Nat",
+                name: "acc2",
+                index: 2))]))],
+        elseResult: Recur(
+          loc: 464-498,
+          args: [
+            InstanceMethodCall(
+              loc: 470-476,
+              target: AccessParameter(
+                loc: 470-471,
+                param: Parameter(
+                  loc: 397-402,
+                  ty: "Nat",
+                  name: "n",
+                  index: 0)),
+              method: Id(
+                klassId: "Nat",
+                name: "decr"),
+              args: []),
+            AccessParameter(
+              loc: 479-483,
+              param: Parameter(
+                loc: 414-422,
+                ty: "Nat",
+                name: "acc2",
+                index: 2)),
+            InstanceMethodCall(
+              loc: 485-497,
+              target: AccessParameter(
+                loc: 485-489,
+                param: Parameter(
+                  loc: 404-412,
+                  ty: "Nat",
+                  name: "acc1",
+                  index: 1)),
+              method: Id(
+                klassId: "Nat",
+                name: "+"),
+              args: [AccessParameter(
+                loc: 492-496,
+                param: Parameter(
+                  loc: 414-422,
+                  ty: "Nat",
+                  name: "acc2",
+                  index: 2))])
+          ])))))

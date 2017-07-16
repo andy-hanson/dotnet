@@ -49,11 +49,11 @@ namespace Ast {
 	}
 
 	sealed class Klass : Node, ToData<Klass> {
-		internal readonly Head head;
+		internal readonly Op<Head> head;
 		internal readonly Arr<Super> supers;
 		internal readonly Arr<Member> methods;
 
-		internal Klass(Loc loc, Head head, Arr<Super> supers, Arr<Member> methods) : base(loc) {
+		internal Klass(Loc loc, Op<Head> head, Arr<Super> supers, Arr<Member> methods) : base(loc) {
 			this.head = head;
 			this.supers = supers;
 			this.methods = methods;
@@ -61,19 +61,16 @@ namespace Ast {
 
 		public override bool deepEqual(Node n) => n is Klass k && deepEqual(k);
 		public bool deepEqual(Klass k) => locEq(k) && head.deepEqual(k.head) && supers.deepEqual(k.supers) && methods.deepEqual(k.methods);
-		public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(head), head, nameof(supers), Dat.arr(supers), nameof(methods), Dat.arr(methods));
+		public override Dat toDat() => Dat.of(this,
+			nameof(loc), loc,
+			nameof(head), Dat.op(head),
+			nameof(supers), Dat.arr(supers),
+			nameof(methods), Dat.arr(methods));
 
 		internal abstract class Head : Node, ToData<Head> {
 			Head(Loc loc) : base(loc) {}
 
 			public bool deepEqual(Head h) => Equals((Node)h);
-
-			internal sealed class Static : Head, ToData<Static> {
-				internal Static(Loc loc) : base(loc) {}
-				public override bool deepEqual(Node n) => n is Static s && deepEqual(s);
-				public bool deepEqual(Static s) => locEq(s);
-				public override Dat toDat() => Dat.of(this, nameof(loc), loc);
-			}
 
 			internal sealed class Abstract : Head, ToData<Abstract> {
 				internal Abstract(Loc loc) : base(loc) {}

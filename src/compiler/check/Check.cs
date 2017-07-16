@@ -109,21 +109,20 @@ class Checker {
 		return klass;
 	}
 
-	Klass.Head checkHead(Klass klass, Ast.Klass.Head ast, Dict.Builder<Sym, Member> membersBuilder, Arr<Method> methods) {
-		var loc = ast.loc;
-		switch (ast) {
-			case Ast.Klass.Head.Static _:
-				return new Klass.Head.Static(loc);
+	Klass.Head checkHead(Klass klass, Op<Ast.Klass.Head> ast, Dict.Builder<Sym, Member> membersBuilder, Arr<Method> methods) {
+		if (!ast.get(out var h))
+			return Klass.Head.Static.instance;
 
-			case Ast.Klass.Head.Abstract _: {
+		switch (h) {
+			case Ast.Klass.Head.Abstract a: {
 				var abstractMethods = methods.keep(m => m is Method.AbstractMethod);
-				return new Klass.Head.Abstract(loc, abstractMethods);
+				return new Klass.Head.Abstract(a.loc, abstractMethods);
 			}
 
 			case Ast.Klass.Head.Slots slotsAst: {
-				var slots = new Klass.Head.Slots(loc, klass);
+				var slots = new Klass.Head.Slots(slotsAst.loc, klass);
 				slots.slots = slotsAst.slots.map(var => {
-					var slot = new Slot(slots, ast.loc, var.mutable, baseScope.getTy(var.ty), var.name);
+					var slot = new Slot(slots, slotsAst.loc, var.mutable, baseScope.getTy(var.ty), var.name);
 					addMember(membersBuilder, slot);
 					return slot;
 				});

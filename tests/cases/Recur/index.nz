@@ -1,11 +1,32 @@
-static
-
 fun Void main()
-	assert (f 10) == 0
+	assert factorial 5 == 120
 
-fun Nat f(Nat i)
+	assert fibonacci 0 == 0
+	assert fibonacci 2 == 1
+	assert fibonacci 6 == 8
+
+fun Nat factorial(Nat n)
+	factorial-recursive n 1
+
+fun Nat factorial-recursive(Nat n, Nat acc)
 	when
-		i == 0
-			0
+		n == 0
+			acc
 		else
-			recur (i - 1).to-nat()
+			recur n.decr() (acc * n)
+
+fun Nat fibonacci(Nat n)
+	when
+		n == 0
+			0
+		n == 1
+			1
+		else
+			fibonacci-recursive n 0 1
+
+fun Nat fibonacci-recursive(Nat n, Nat acc1, Nat acc2)
+	when
+		n == 2
+			acc1 + acc2
+		else
+			recur n.decr() acc2 (acc1 + acc2)

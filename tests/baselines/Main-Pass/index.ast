@@ -1,19 +1,18 @@
 Module(
-  loc: 0-30,
+  loc: 0-22,
   imports: [],
   klass: Klass(
-    loc: 0-30,
-    head: Static(
-      loc: 0-8),
+    loc: 0-22,
+    head: null,
     supers: [],
     methods: [Method(
-      loc: 8-30,
+      loc: 0-22,
       isStatic: true,
       returnTy: Access(
-        loc: 12-16,
+        loc: 4-8,
         name: "Void"),
       name: "main",
       parameters: [],
       body: Literal(
-        loc: 25-29,
+        loc: 17-21,
         value: Pass()))]))

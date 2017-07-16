@@ -113,6 +113,11 @@ static class JsBuiltins {
 		return callPossiblyAsync(loc, isAsync(invokedMethod), member, args);
 	}
 
+	internal static Estree.Expression incr(Loc loc, Estree.Expression target, Arr<Estree.Expression> args) {
+		assert(args.isEmpty);
+		return new Estree.BinaryExpression(loc, "+", target, new Estree.Literal(loc, LiteralValue.Nat.of(1)));
+	}
+
 	internal static Estree.Expression callToString(Loc loc, Estree.Expression target, Arr<Estree.Expression> args) {
 		assert(args.isEmpty);
 		return new Estree.CallExpression(loc, Estree.MemberExpression.simple(loc, target, "toString"), Arr.empty<Estree.Expression>());

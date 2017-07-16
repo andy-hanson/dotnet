@@ -1,57 +1,56 @@
 Module(
-  loc: 0-143,
+  loc: 0-135,
   imports: [],
   klass: Klass(
-    loc: 0-143,
-    head: Static(
-      loc: 0-8),
+    loc: 0-135,
+    head: null,
     supers: [],
     methods: [Method(
-      loc: 8-143,
+      loc: 0-135,
       isStatic: true,
       returnTy: Access(
-        loc: 12-16,
+        loc: 4-8,
         name: "Void"),
       name: "main",
       parameters: [],
       body: Let(
-        loc: 27-111,
+        loc: 19-103,
         assigned: Single(
-          loc: 25-26,
+          loc: 17-18,
           name: "x"),
         value: Try(
-          loc: 29-111,
+          loc: 21-103,
           _do: Seq(
-            loc: 41-73,
+            loc: 33-65,
             first: Assert(
-              loc: 41-57,
+              loc: 33-49,
               asserted: Literal(
-                loc: 48-53,
+                loc: 40-45,
                 value: false)),
             then: Literal(
-              loc: 57-70,
+              loc: 49-62,
               value: "unreachable")),
           _catch: Catch(
-            loc: 73-111,
+            loc: 65-103,
             exceptionTy: Access(
-              loc: 79-88,
+              loc: 71-80,
               name: "Exception"),
             exceptionName: "e",
             then: Call(
-              loc: 94-109,
+              loc: 86-101,
               target: GetProperty(
-                loc: 94-107,
+                loc: 86-99,
                 target: Access(
-                  loc: 94-95,
+                  loc: 86-87,
                   name: "e"),
                 propertyName: "description"),
               args: [])),
           _finally: null),
         then: Assert(
-          loc: 111-143,
+          loc: 103-135,
           asserted: OperatorCall(
-            loc: 118-143,
+            loc: 110-135,
             oper: "==",
             right: Literal(
-              loc: 123-142,
+              loc: 115-134,
               value: "Assertion failed.")))))]))

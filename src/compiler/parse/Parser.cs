@@ -16,7 +16,7 @@ sealed class Parser : ExprParser {
 
 	Ast.Module parseModule() {
 		var start = pos;
-		var kw = takeKeyword();
+		var kw = takeKeywordOrEof();
 
 		Arr<Ast.Module.Import> imports;
 		var classStart = start;
@@ -24,7 +24,7 @@ sealed class Parser : ExprParser {
 		if (kw == Token.Import) {
 			imports = buildUntilNull(parseImport);
 			classStart = pos;
-			nextKw = takeKeyword();
+			nextKw = takeKeywordOrEof();
 		} else {
 			imports = Arr.empty<Ast.Module.Import>();
 		}
@@ -57,30 +57,26 @@ sealed class Parser : ExprParser {
 	}
 
 	Ast.Klass parseClass(Pos start, Token kw) {
-		var head = parseHead(start, kw);
-		Arr<Ast.Super> supers;
-		Arr<Ast.Member> methods;
-		if (atEOF) {
-			supers = Arr.empty<Ast.Super>();
-			methods = Arr.empty<Ast.Member>();
-		} else {
-			var (superz, nextStart, next) = parseSupers();
-			supers = superz;
-			methods = next == Token.EOF ? Arr.empty<Ast.Member>() : parseMethods(nextStart, next);
-		}
+		var (head, nextStart, nextKw) = parseHead(start, kw);
+		var (supers, nextNextStart, nextNextKw) = parseSupers(nextStart, nextKw);
+		var methods = nextNextKw == Token.EOF ? Arr.empty<Ast.Member>() : parseMethods(nextNextStart, nextNextKw);
 		return new Ast.Klass(locFrom(start), head, supers, methods);
 	}
 
-	Ast.Klass.Head parseHead(Pos start, Token kw) {
+	(Op<Ast.Klass.Head> head, Pos nextStart, Token nextKeyword) parseHead(Pos start, Token kw) {
 		switch (kw) {
-			case Token.Abstract:
+			case Token.EOF:
+			case Token.Fun:
+				return (Op<Ast.Klass.Head>.None, start, kw);
+			case Token.Abstract: {
 				takeNewline();
-				return new Ast.Klass.Head.Abstract(locFrom(start));
-			case Token.Static:
-				takeNewline();
-				return new Ast.Klass.Head.Static(locFrom(start));
-			case Token.Slots:
-				return parseSlots(start);
+				var head = new Ast.Klass.Head.Abstract(locFrom(start));
+				return (Op.Some<Ast.Klass.Head>(head), pos, takeKeywordOrEof());
+			}
+			case Token.Slots: {
+				var head = parseSlots(start);
+				return (Op.Some<Ast.Klass.Head>(head), pos, takeKeywordOrEof());
+			}
 			case Token.Enum:
 				throw TODO();
 			default:
@@ -88,15 +84,16 @@ sealed class Parser : ExprParser {
 		}
 	}
 
-	(Arr<Ast.Super>, Pos, Token) parseSupers() {
+	(Arr<Ast.Super>, Pos, Token) parseSupers(Pos start, Token next) {
 		var supers = Arr.builder<Ast.Super>();
 		while (true) {
-			var start = pos;
-			var next = takeKeywordOrEof();
 			if (next != Token.Is)
 				return (supers.finish(), start, next);
 
 			supers.add(parseSuper(start));
+
+			start = pos;
+			next = takeKeywordOrEof();
 		}
 	}
 
@@ -173,23 +170,27 @@ sealed class Parser : ExprParser {
 		//TODO: helper fn for this pattern
 		var b = Arr.builder<Ast.Member>();
 		while (true) {
-			b.add(parseMethod(start, next));
-			if (atEOF)
+			var m = parseMethod(start, next);
+			if (!m.get(out var mm))
 				return b.finish();
 
+			b.add(mm);
+
 			start = pos;
-			next = takeKeyword();
+			next = takeKeywordOrEof();
 		}
 	}
 
-	Ast.Member parseMethod(Pos start, Token next) {
+	Op<Ast.Member> parseMethod(Pos start, Token next) {
 		switch (next) {
 			case Token.Fun:
-				return parseMethodWithBody(start, isStatic: true);
+				return Op.Some<Ast.Member>(parseMethodWithBody(start, isStatic: true));
 			case Token.Def:
-				return parseMethodWithBody(start, isStatic: false);
+				return Op.Some<Ast.Member>(parseMethodWithBody(start, isStatic: false));
 			case Token.Abstract:
-				return parseAbstractMethod(start);
+				return Op.Some<Ast.Member>(parseAbstractMethod(start));
+			case Token.EOF:
+				return Op<Ast.Member>.None;
 			default:
 				throw unexpected(start, "'fun' or 'def' or 'abstract'", next);
 		}

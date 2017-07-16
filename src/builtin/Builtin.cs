@@ -110,6 +110,12 @@ public static class Builtins {
 		[Instance, Pure]
 		public static Nat _div(Nat a, Nat b) => Nat.of(checked(a.value / b.value));
 
+		[Instance, Pure]
+		public static Nat decr(Nat n) => Nat.of(checked(n.value - 1));
+
+		[Instance, Pure, JsSpecialTranslate(nameof(JsBuiltins.incr))]
+		public static Nat incr(Nat n) => Nat.of(checked(n.value + 1));
+
 		[Instance, Pure, JsSpecialTranslate(nameof(JsBuiltins.callToString))]
 		public static String str(Nat n) => String.of(n.value.ToString());
 

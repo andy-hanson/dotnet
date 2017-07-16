@@ -1,5 +1,3 @@
-static
-
 fun Void main()
 	x = try
 		do

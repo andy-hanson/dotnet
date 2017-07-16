@@ -1,14 +1,13 @@
 Klass(
-  loc: 0-30,
-  head: Static(
-    loc: 0-8),
+  loc: 0-22,
+  head: Static(),
   membersMap: Dict<Sym, Member>(
     main: MethodWithBody(
-      loc: 8-30,
+      loc: 0-22,
       isStatic: true,
       returnTy: "Void",
       name: "main",
       parameters: [],
       body: Literal(
-        loc: 25-29,
+        loc: 17-21,
         value: Pass()))))

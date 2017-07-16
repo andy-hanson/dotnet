@@ -1,39 +1,38 @@
 Klass(
-  loc: 0-143,
-  head: Static(
-    loc: 0-8),
+  loc: 0-135,
+  head: Static(),
   membersMap: Dict<Sym, Member>(
     main: MethodWithBody(
-      loc: 8-143,
+      loc: 0-135,
       isStatic: true,
       returnTy: "Void",
       name: "main",
       parameters: [],
       body: Let(
-        loc: 27-111,
+        loc: 19-103,
         assigned: Single(
-          loc: 25-26,
+          loc: 17-18,
           name: "x"),
         value: Try(
-          loc: 29-111,
+          loc: 21-103,
           _do: Seq(
-            loc: 41-73,
+            loc: 33-65,
             action: Assert(
-              loc: 41-57,
+              loc: 33-49,
               asserted: Literal(
-                loc: 48-53,
+                loc: 40-45,
                 value: false)),
             then: Literal(
-              loc: 57-70,
+              loc: 49-62,
               value: "unreachable")),
           _catch: Catch(
-            loc: 73-111,
+            loc: 65-103,
             exceptionTy: "Exception",
             caught: Single(
-              loc: 89-90,
+              loc: 81-82,
               name: "e"),
             then: InstanceMethodCall(
-              loc: 94-107,
+              loc: 86-99,
               target: AccessLocal(
                 local: "e"),
               method: Id(
@@ -42,14 +41,14 @@ Klass(
               args: [])),
           _finally: null),
         then: Assert(
-          loc: 111-143,
+          loc: 103-135,
           asserted: InstanceMethodCall(
-            loc: 118-143,
+            loc: 110-135,
             target: AccessLocal(
               local: "x"),
             method: Id(
               klassId: "String",
               name: "=="),
             args: [Literal(
-              loc: 123-142,
+              loc: 115-134,
               value: "Assertion failed.")]))))))

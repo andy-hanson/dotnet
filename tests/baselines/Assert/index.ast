@@ -1,21 +1,20 @@
 Module(
-  loc: 0-37,
+  loc: 0-29,
   imports: [],
   klass: Klass(
-    loc: 0-37,
-    head: Static(
-      loc: 0-8),
+    loc: 0-29,
+    head: null,
     supers: [],
     methods: [Method(
-      loc: 8-37,
+      loc: 0-29,
       isStatic: true,
       returnTy: Access(
-        loc: 12-16,
+        loc: 4-8,
         name: "Void"),
       name: "main",
       parameters: [],
       body: Assert(
-        loc: 25-37,
+        loc: 17-29,
         asserted: Literal(
-          loc: 32-36,
+          loc: 24-28,
           value: true)))]))

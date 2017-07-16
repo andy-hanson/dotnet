@@ -1,26 +1,25 @@
 Klass(
-  loc: 0-82,
-  head: Static(
-    loc: 0-8),
+  loc: 0-74,
+  head: Static(),
   membersMap: Dict<Sym, Member>(
     main: MethodWithBody(
-      loc: 8-82,
+      loc: 0-74,
       isStatic: true,
       returnTy: "Void",
       name: "main",
       parameters: [Parameter(
-        loc: 22-37,
+        loc: 14-29,
         ty: "Console-App",
         name: "app",
         index: 0)],
       body: InstanceMethodCall(
-        loc: 43-66,
+        loc: 35-58,
         target: InstanceMethodCall(
-          loc: 43-53,
+          loc: 35-45,
           target: AccessParameter(
-            loc: 43-46,
+            loc: 35-38,
             param: Parameter(
-              loc: 22-37,
+              loc: 14-29,
               ty: "Console-App",
               name: "app",
               index: 0)),
@@ -32,5 +31,5 @@ Klass(
           klassId: "Write-Stream",
           name: "write-line"),
         args: [Literal(
-          loc: 67-81,
+          loc: 59-73,
           value: "Hello world!")]))))

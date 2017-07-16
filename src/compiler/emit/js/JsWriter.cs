@@ -113,10 +113,10 @@ class JsWriter : EmitTextWriter {
 		writeRaw(')');
 
 		var consequentIsBlock = false;
-		if (i.consequent is Estree.BlockStatement b) {
+		if (i.consequent is Estree.BlockStatement consequentBlock) {
 			consequentIsBlock = true;
 			writeRaw(' ');
-			writeBlockStatement(b);
+			writeBlockStatement(consequentBlock);
 		} else {
 			this.doIndent();
 			writeStatement(i.consequent);
@@ -127,8 +127,22 @@ class JsWriter : EmitTextWriter {
 			if (consequentIsBlock)
 				// Didn't finish in a newline, just `} else`
 				writeRaw(' ');
-			writeRaw("else ");
-			writeStatement(alt);
+			writeRaw("else");
+			switch (alt) {
+				case Estree.BlockStatement altBlock:
+					writeRaw(' ');
+					writeBlockStatement(altBlock);
+					break;
+				case Estree.IfStatement nextIf:
+					writeRaw(' ');
+					writeIfStatement(nextIf);
+					break;
+				default:
+					this.doIndent();
+					writeStatement(alt);
+					this.doDedent();
+					break;
+			}
 		}
 	}
 
@@ -396,14 +410,14 @@ class JsWriter : EmitTextWriter {
 
 	void writeParameters(Arr<Estree.Pattern> pms) {
 		if (pms.length == 0) {
-			writeRaw("()");
+			writeRaw("() ");
 			return;
 		}
 
 		writeRaw('(');
 		for (uint i = 0; i < pms.length - 1; i++) {
 			writePattern(pms[i]);
-			writeRaw(',');
+			writeRaw(", ");
 		}
 		writePattern(pms.last);
 		writeRaw(") ");

@@ -16,7 +16,12 @@ static class ReaderU {
 		while (nlAfter < source.Length && source.at(nlAfter) != '\n')
 			nlAfter++;
 
-		return $"{source.slice(nlBefore, pos.index)}|{source.slice(pos.index, nlAfter)}";
+		var lineNo = 0;
+		for (uint i = 0; i < nlBefore; i++)
+			if (source.at(i) == '\n')
+				lineNo++;
+
+		return $"Line {lineNo + 1}: {source.slice(nlBefore, pos.index)}|{source.slice(pos.index, nlAfter)}";
 	}
 }
 
@@ -301,6 +306,7 @@ abstract class Lexer : Reader {
 		} else if (indent == oldIndent) {
 			return Token.Newline;
 		} else {
+			// `- 1` becuase the Token.Dedent that we're about to return doesn't go in dedenting
 			dedenting = oldIndent - indent - 1;
 			return Token.Dedent;
 		}

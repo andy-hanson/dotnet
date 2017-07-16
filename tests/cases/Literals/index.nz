@@ -1,5 +1,3 @@
-static
-
 fun Void main()
 	needs-nat 0
 	needs-int 0.to-int()

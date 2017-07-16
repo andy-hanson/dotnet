@@ -34,7 +34,6 @@ const keywords = [
 	"self",
 	"set",
 	"slots",
-	"static",
 	"true",
 	"try",
 	"val",

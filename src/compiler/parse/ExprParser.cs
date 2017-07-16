@@ -66,9 +66,7 @@ abstract class ExprParser : Lexer {
 		}
 	}
 
-	Ast.Expr parseExprAndEndContext(Ctx ctx, Next expectedNext) {
-		var start = pos;
-		var startToken = nextToken();
+	Ast.Expr parseExprAndEndContext(Ctx ctx, Next expectedNext, Pos start, Token startToken) {
 		var (expr, next) = parseExprWithNext(ctx, start, startToken);
 		if (next != expectedNext) throw TODO();
 		return expr;
@@ -312,18 +310,27 @@ abstract class ExprParser : Lexer {
 				elseResult
 		*/
 		takeIndent();
-		//Must take at least one non-'else' part.
-		var firstCaseStartPos = pos;
-		var firstTest = parseExprAndEndContext(Ctx.Plain, Next.Indent);
-		var firstResult = parseBlock();
-		var firstCase = new Ast.WhenTest.Case(locFrom(firstCaseStartPos), firstTest, firstResult);
 
-		//TODO: support arbitrary number of clauses
-		takeSpecificKeyword(Token.Else);
+		var cases = Arr.builder<Ast.WhenTest.Case>();
+
+		var caseStart = startPos;
+		var caseStartToken = nextToken();
+		do {
+			var firstTest = parseExprAndEndContext(Ctx.Plain, Next.Indent, caseStart, caseStartToken);
+			var firstResult = parseBlock();
+			cases.add(new Ast.WhenTest.Case(locFrom(caseStart), firstTest, firstResult));
+
+			caseStart = pos;
+			caseStartToken = nextToken();
+		} while (caseStartToken != Token.Else);
+
 		takeIndent();
 		var elseResult = parseBlock();
+		if (!tryTakeDedentFromDedenting()) {
+			throw TODO(); //'else' must be the last clause. Must double-dedent after its block.
+		}
 
-		return new Ast.WhenTest(locFrom(startPos), Arr.of(firstCase), elseResult);
+		return new Ast.WhenTest(locFrom(startPos), cases.finish(), elseResult);
 	}
 
 	Ast.Expr parseTry(Pos startPos) {

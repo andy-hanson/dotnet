@@ -1,4 +1,2 @@
-static
-
 fun Void main()
 	assert true

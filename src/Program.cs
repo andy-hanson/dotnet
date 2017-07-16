@@ -15,9 +15,9 @@ static class Program {
 		//doTestIl();
 
 		using (var tc = new Test.TestCompile(updateBaselines: true)) {
-			tc.runAllTests();
+			//tc.runAllTests();
 			//tc.runAllCompilerTests();
-			//tc.runTestNamed("Console-App-User");
+			tc.runTestNamed("Recur");
 		}
 	}
 

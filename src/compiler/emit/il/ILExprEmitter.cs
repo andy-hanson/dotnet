@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -153,37 +154,48 @@ sealed class ILExprEmitter {
 
 	static readonly Sym symElse = Sym.of("else");
 	static readonly Sym symEndWhen = Sym.of("endWhen");
+	//static readonly Arr<Sym> caseSyms = Arr.buildWithIndex<Sym>(8, i => Sym.of($"case{i}"));
+	static readonly List<Sym> caseSyms = new List<Sym>();
+	static Sym caseSym(uint idx) {
+		while (caseSyms.Count <= idx)
+			caseSyms.Add(Sym.of($"case{caseSyms.Count}"));
+		return caseSyms[signed(idx)];
+	}
+
 	void emitWhenTest(WhenTest w) {
 		/*
-		test1:
-		do test1
-		ifnot: goto test2
-			do test1 result
+		do test0
+		ifnot: goto case1
+			do case0 result
 			goto end
-		test2:
-		do test2
+		case1:
+		do test1
 		ifnot: goto elze
-			do test2 result
+			do test1 result
 			goto end
 		elze:
 			do elze result
 			(already at end)
 		end:
-		...
 		*/
 
-		if (w.cases.length != 1) throw TODO(); //TODO
-		var kase = w.cases.only;
+		// At index i, stores the label for case i + 1.
+		var nextCaseLabels = Arr.buildWithIndex(w.cases.length - 1, i => il.label(caseSym(i + 1)));
 
 		var elzeResultLabel = il.label(symElse);
 		var end = il.label(symEndWhen);
 
-		emitAny(kase.test);
-		unpackBool();
-		il.goToIfFalse(elzeResultLabel);
+		for (uint i = 0; i < w.cases.length; i++) {
+			var kase = w.cases[i];
+			if (i != 0)
+				il.markLabel(nextCaseLabels[i - 1]);
 
-		emitAny(kase.result);
-		il.goTo(end);
+			emitAny(kase.test);
+			unpackBool();
+			il.goToIfFalse(i == w.cases.length - 1 ? elzeResultLabel : nextCaseLabels[i]);
+			emitAny(kase.result);
+			il.goTo(end);
+		}
 
 		il.markLabel(elzeResultLabel);
 		emitAny(w.elseResult);
