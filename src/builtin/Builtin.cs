@@ -232,8 +232,8 @@ public static class Builtins {
 		public override String description() => String.of("Assertion failed.");
 	}
 
-	public abstract class Console {
-		[Io] public abstract Void write_line(String s);
+	public interface Console {
+		[Io] Void write_line(String s);
 	}
 
 	internal static readonly Arr<Type> allTypes = new Arr<Type>(typeof(Builtins).GetNestedTypes());

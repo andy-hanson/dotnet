@@ -73,6 +73,7 @@ namespace Model {
 		internal static readonly BuiltinClass Int = fromDotNetType(typeof(Builtins.Int));
 		internal static readonly BuiltinClass Real = fromDotNetType(typeof(Builtins.Real));
 		internal static readonly BuiltinClass String = fromDotNetType(typeof(Builtins.String));
+		internal static readonly BuiltinClass Exception = fromDotNetType(typeof(Builtins.Exception));
 
 		/** Get an already-registered type by name. */
 		internal static bool tryGet(Sym name, out BuiltinClass b) => byName.TryGetValue(name, out b);
@@ -80,6 +81,7 @@ namespace Model {
 		/** Safe to call this twice on the same type. */
 		internal static BuiltinClass fromDotNetType(Type dotNetType) {
 			assert(dotNetType.DeclaringType == typeof(Builtins));
+			assert(dotNetType == typeof(Builtins.Exception) || !dotNetType.IsAbstract || dotNetType.IsInterface, "Use an interface instead of an abstract class.");
 
 			var name = unescapeName(dotNetType.Name);
 

@@ -59,10 +59,7 @@ sealed class ILEmitter {
 		var logger = logs != null ? new LogWriter() : null;
 
 		var klass = module.klass;
-
-		var interfaces = klass.supers.mapToArray<Type>(s => maps.toType(s.superClass));
-		var typeBuilder = moduleBuilder.DefineType(klass.name.str, TypeAttributes.Public | typeFlags(klass.head), parent: null, interfaces: interfaces);
-
+		var typeBuilder = initType(klass);
 		maps.beginTypeBuilding(klass, typeBuilder.GetTypeInfo());
 
 		fillHead(typeBuilder, klass, logger);
@@ -73,6 +70,20 @@ sealed class ILEmitter {
 		var type = typeBuilder.CreateTypeInfo();
 		maps.finishTypeBuilding(klass, type);
 		return type;
+	}
+
+	TypeBuilder initType(Klass klass) {
+		Type superClass;
+		Type[] interfaces;
+		if (klass.supers.find(out var es, s => s.superClass == BuiltinClass.Exception)) {
+			superClass = BuiltinClass.Exception.dotNetType;
+			interfaces = klass.supers.mapDefinedToArray<Type>(s => s.superClass == BuiltinClass.Exception ? Op<Type>.None : Op.Some(maps.toType(s.superClass)));
+		} else {
+			superClass = null;
+			interfaces = klass.supers.mapToArray<Type>(s => maps.toType(s.superClass));
+		}
+
+		return moduleBuilder.DefineType(klass.name.str, TypeAttributes.Public | typeFlags(klass.head), parent: null, interfaces: interfaces);
 	}
 
 	static TypeAttributes typeFlags(Klass.Head head) {

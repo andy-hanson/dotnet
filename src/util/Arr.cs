@@ -132,14 +132,19 @@ struct Arr<T> : IEnumerable<T> {
 		return b;
 	}
 
-	internal Arr<U> mapDefined<U>(Func<T, Op<U>> mapper) {
+	internal Arr<U> mapDefined<U>(Func<T, Op<U>> mapper) => mapDefinedToBuilder(mapper).finish();
+
+	internal U[] mapDefinedToArray<U>(Func<T, Op<U>> mapper) => mapDefinedToBuilder(mapper).finishToArray();
+
+	Arr.Builder<U> mapDefinedToBuilder<U>(Func<T, Op<U>> mapper) {
 		var b = Arr.builder<U>();
 		for (uint i = 0; i < length; i++) {
 			var res = mapper(this[i]);
 			if (res.get(out var r))
 				b.add(r);
 		}
-		return b.finish();
+		return b;
+
 	}
 
 	internal Dict<K, V> mapDefinedToDict<K, V>(Func<T, Op<(K, V)>> mapper) where K : IEquatable<K> {
@@ -365,6 +370,7 @@ static class Arr {
 		}
 
 		internal void add(T u) { b.Add(u); }
+		internal T[] finishToArray() => b.ToArray();
 		internal Arr<T> finish() => new Arr<T>(b.ToArray());
 
 		internal Arr<T> finishWithFirst(T first) {
