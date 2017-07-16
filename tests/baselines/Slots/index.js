@@ -8,7 +8,7 @@ module.exports = class Slots {
 		const obj = new Slots(1);
 		const gotX = obj.getX();
 		if (gotX !== 1)
-			throw new _.AssertionException();
+			throw new _.Assertion_Exception();
 		
 	}
 	getX(){

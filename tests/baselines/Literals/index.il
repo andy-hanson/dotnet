@@ -1,65 +1,65 @@
 Void main() [PrivateScope, Public, Static]
 
-Void needsNat(Nat) [PrivateScope, Public, Static]
+Void needs-nat(Nat) [PrivateScope, Public, Static]
 
-Void needsInt(Int) [PrivateScope, Public, Static]
+Void needs-int(Int) [PrivateScope, Public, Static]
 
-Void needsReal(Real) [PrivateScope, Public, Static]
+Void needs-real(Real) [PrivateScope, Public, Static]
 
 main
 	const uint 0
 	call non-virtual Nat.of
-	call non-virtual Literals.needsNat
+	call non-virtual Literals.needs-nat
 	pop
 	const uint 0
 	call non-virtual Nat.of
-	call non-virtual Nat.toInt
-	call non-virtual Literals.needsInt
+	call non-virtual Nat.to_int
+	call non-virtual Literals.needs-int
 	pop
 	const uint 0
 	call non-virtual Nat.of
-	call non-virtual Nat.toReal
-	call non-virtual Literals.needsReal
+	call non-virtual Nat.to_real
+	call non-virtual Literals.needs-real
 	pop
 	const int 0
 	call non-virtual Int.of
-	call non-virtual Int.toNat
-	call non-virtual Literals.needsNat
+	call non-virtual Int.to_nat
+	call non-virtual Literals.needs-nat
 	pop
 	const int 0
 	call non-virtual Int.of
-	call non-virtual Literals.needsInt
+	call non-virtual Literals.needs-int
 	pop
 	const int 0
 	call non-virtual Int.of
-	call non-virtual Int.toReal
-	call non-virtual Literals.needsReal
+	call non-virtual Int.to_real
+	call non-virtual Literals.needs-real
 	pop
 	const double 0
 	call non-virtual Real.of
-	call non-virtual Real.roundDown
-	call non-virtual Int.toNat
-	call non-virtual Literals.needsNat
+	call non-virtual Real.round_down
+	call non-virtual Int.to_nat
+	call non-virtual Literals.needs-nat
 	pop
 	const double 0
 	call non-virtual Real.of
-	call non-virtual Real.roundUp
-	call non-virtual Literals.needsInt
+	call non-virtual Real.round_up
+	call non-virtual Literals.needs-int
 	pop
 	const double 0
 	call non-virtual Real.of
-	call non-virtual Literals.needsReal
+	call non-virtual Literals.needs-real
 	return
 
-needsNat
+needs-nat
 	load static field Void.instance
 	return
 
-needsInt
+needs-int
 	load static field Void.instance
 	return
 
-needsReal
+needs-real
 	load static field Void.instance
 	return
 

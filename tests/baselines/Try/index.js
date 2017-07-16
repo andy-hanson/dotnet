@@ -5,7 +5,7 @@ module.exports = class Try {
 		const x = (() => {
 			try {
 				if (!(false))
-					throw new _.AssertionException();
+					throw new _.Assertion_Exception();
 				
 				return "unreachable";
 			} catch (e) {
@@ -16,7 +16,7 @@ module.exports = class Try {
 			}
 		})();
 		if (x !== "Assertion failed.")
-			throw new _.AssertionException();
+			throw new _.Assertion_Exception();
 		
 	}
 };

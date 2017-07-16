@@ -42,7 +42,6 @@ namespace Test {
 			var si = process.StartInfo;
 			si.RedirectStandardInput = true;
 			si.RedirectStandardOutput = true;
-			// Don't redirect stderr, the script shouldn't error
 
 			process.Start();
 		}

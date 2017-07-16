@@ -21,8 +21,11 @@ namespace Cli {
 
 			var args = main.GetParameters().mapToArray<ParameterInfo, object>(p => {
 				var t = p.ParameterType;
-				if (t == typeof(Builtins.Console))
-					return new BuiltinImpls.Console();
+				if (t == typeof(Builtins.Console_App)) {
+					var d = path.directory();
+					//TODO: installationDirectory and currentWorkingDirectory will differ for a program in PATH.
+					return new BuiltinImpls.ConsoleApp(installationDirectory: d, currentWorkingDirectory: d);
+				}
 				throw TODO("bad parameter type"); // unexpected type
 			});
 

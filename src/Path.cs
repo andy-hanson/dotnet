@@ -13,18 +13,38 @@ struct Path : ToData<Path>, IEquatable<Path> {
 		this.parts = parts;
 	}
 
+	static bool isPathPart(string s) {
+		if (s.Length == 0)
+			return false;
+		foreach (var ch in s)
+			switch (ch) {
+				case '/':
+				case '\\':
+					return false;
+			}
+		return true;
+	}
+
 	internal static readonly Path empty = new Path(Arr.empty<string>());
 
 	internal static Path resolveWithRoot(Path root, Path path) =>
 		new Path(root.parts.Concat(path.parts));
 
-	internal static Path fromParts(params string[] elements) =>
-		new Path(new Arr<string>(elements));
+	internal static Path fromParts(params string[] elements) {
+		foreach (var e in elements)
+			assert(isPathPart(e));
+		return new Path(new Arr<string>(elements));
+	}
 
 	internal static Path fromString(string str) =>
-		new Path(Arr.of(str.Split('/')));
+		fromParts(str.Split('/'));
 
 	internal RelPath asRel => new RelPath(0, this);
+
+	internal Path child(string childName) {
+		assert(isPathPart(childName));
+		return new Path(parts.rcons(childName));
+	}
 
 	internal Path resolve(RelPath rel1, RelPath rel2) =>
 		resolve(rel1).resolve(rel2);

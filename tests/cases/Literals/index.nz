@@ -1,23 +1,23 @@
 static
 
 fun Void main()
-	needsNat 0
-	needsInt 0.toInt()
-	needsReal 0.toReal()
+	needs-nat 0
+	needs-int 0.to-int()
+	needs-real 0.to-real()
 
-	needsNat +0.toNat()
-	needsInt +0
-	needsReal +0.toReal()
+	needs-nat +0.to-nat()
+	needs-int +0
+	needs-real +0.to-real()
 
-	needsNat 0.0.roundDown().toNat()
-	needsInt 0.0.roundUp()
-	needsReal 0.0
+	needs-nat 0.0.round-down().to-nat()
+	needs-int 0.0.round-up()
+	needs-real 0.0
 
-fun Void needsNat(Nat n)
+fun Void needs-nat(Nat n)
 	pass
 
-fun Void needsInt(Int i)
+fun Void needs-int(Int i)
 	pass
 
-fun Void needsReal(Real f)
+fun Void needs-real(Real f)
 	pass

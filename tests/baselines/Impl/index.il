@@ -29,7 +29,7 @@ main
 	call non-virtual Nat._eq
 	get instance field Bool.value
 	goto if true: endAssert
-	new AssertionException
+	new Assertion_Exception
 	throw
 	endAssert:
 	load static field Void.instance

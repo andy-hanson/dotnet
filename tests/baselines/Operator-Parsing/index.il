@@ -19,13 +19,13 @@ main
 	call non-virtual Nat._eq
 	get instance field Bool.value
 	goto if true: endAssert
-	new AssertionException
+	new Assertion_Exception
 	throw
 	endAssert:
 	load static field Void.instance
 	pop
 	get local x
-	call non-virtual OperatorParsing.double
+	call non-virtual Operator-Parsing.double
 	const uint 1
 	call non-virtual Nat.of
 	call non-virtual Nat._add
@@ -37,7 +37,7 @@ main
 	call non-virtual Nat._eq
 	get instance field Bool.value
 	goto if true: endAssert
-	new AssertionException
+	new Assertion_Exception
 	throw
 	endAssert:
 	load static field Void.instance
@@ -46,7 +46,7 @@ main
 	const uint 1
 	call non-virtual Nat.of
 	call non-virtual Nat._add
-	call non-virtual OperatorParsing.double
+	call non-virtual Operator-Parsing.double
 	declare local z
 	set local z
 	get local z
@@ -55,7 +55,7 @@ main
 	call non-virtual Nat._eq
 	get instance field Bool.value
 	goto if true: endAssert
-	new AssertionException
+	new Assertion_Exception
 	throw
 	endAssert:
 	load static field Void.instance

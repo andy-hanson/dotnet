@@ -13,7 +13,7 @@ module.exports = class Impl extends AbstractClass {
 		const instance = new Impl(1);
 		const gotN = AbstractClass.getN(instance);
 		if (gotN !== 1)
-			throw new _.AssertionException();
+			throw new _.Assertion_Exception();
 		
 	}
 };

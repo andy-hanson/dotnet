@@ -1,6 +1,7 @@
 using Model;
 
 using static EstreeUtils;
+using static NameEscaping;
 using static Utils;
 
 sealed class JsEmitter {
@@ -11,9 +12,9 @@ sealed class JsEmitter {
 
 	private bool needsLib = false;
 
-	static Estree.Identifier baseId(string name) => id(Loc.zero, Sym.of(name));
+	static Estree.Identifier baseId(string name) => id(Loc.zero, name);
 	static readonly Estree.Identifier requireId = baseId("require");
-	static readonly Estree.Statement requireNzlib = importStatement(Sym.of("_"), "nzlib");
+	static readonly Estree.Statement requireNzlib = importStatement("_", "nzlib");
 
 	static readonly Estree.Statement useStrict =
 		Estree.ExpressionStatement.of(Estree.Literal.str(Loc.zero, "use strict"));
@@ -35,18 +36,18 @@ sealed class JsEmitter {
 		var relPath = importer.fullPath().relTo(imported.fullPath());
 		// Must find relative path.
 		var pathStr = relPath.withoutExtension(ModuleResolver.extension).toPathString();
-		return importStatement(imported.name, pathStr);
+		return importStatement(escapeName(imported.name), pathStr);
 	}
 
-	static Estree.Statement importStatement(Sym importedName, string importedPath) {
+	static Estree.Statement importStatement(string importedName, string importedPath) {
 		var required = Estree.Literal.str(Loc.zero, importedPath);
 		var require = Estree.CallExpression.of(Loc.zero, requireId, required);
 		return Estree.VariableDeclaration.simple(Loc.zero, importedName, require);
 	}
 
-	static readonly Estree.MemberExpression moduleExports = Estree.MemberExpression.simple(Loc.zero, Sym.of("module"), Sym.of("exports"));
+	static readonly Estree.MemberExpression moduleExports = Estree.MemberExpression.simple(Loc.zero, "module", "exports");
 
-	static readonly Estree.MemberExpression objectCreate = Estree.MemberExpression.simple(Loc.zero, Sym.of("Object"), Sym.of("create"));
+	static readonly Estree.MemberExpression objectCreate = Estree.MemberExpression.simple(Loc.zero, "Object", "create");
 	Estree.ClassExpression emitClass(Klass klass) {
 		var body = Arr.builder<Estree.MethodDefinition>();
 
@@ -81,7 +82,7 @@ sealed class JsEmitter {
 			}
 
 		var loc = klass.loc;
-		return new Estree.ClassExpression(loc, id(loc, klass.name), superClass, new Estree.ClassBody(loc, body.finish()));
+		return new Estree.ClassExpression(loc, id(loc, escapeName(klass.name)), superClass, new Estree.ClassBody(loc, body.finish()));
 	}
 
 	Op<Estree.Expression> super(Loc loc, Arr<Super> supers) {
@@ -96,11 +97,11 @@ sealed class JsEmitter {
 		}
 	}
 	static Estree.Expression superClassToExpr(Super super) =>
-		id(super.loc, super.superClass.name);
+		id(super.loc, escapeName(super.superClass.name));
 
 	static Estree.MethodDefinition emitSlotsConstructor(Klass.Head.Slots s, bool needSuperCall) {
 		// constructor(x) { this.x = x; }
-		var patterns = s.slots.map<Estree.Pattern>(slot => id(slot.loc, slot.name));
+		var patterns = s.slots.map<Estree.Pattern>(slot => id(slot.loc, escapeName(slot.name)));
 		var first = needSuperCall ? Op.Some(superCall(s.loc)) : Op<Estree.Statement>.None;
 		var statements = s.slots.mapWithFirst<Estree.Statement>(first, (slot, i) => {
 			var slotLoc = slot.loc;
@@ -116,8 +117,8 @@ sealed class JsEmitter {
 
 	Estree.MethodDefinition emitMethodOrImpl(Loc loc, Sym className, Method method, Expr body, bool isStatic) {
 		var @async = isAsync(method);
-		var @params = method.parameters.map<Estree.Pattern>(p => id(p.loc, p.name));
+		var @params = method.parameters.map<Estree.Pattern>(p => id(p.loc, escapeName(p.name)));
 		var block = JsExprEmitter.emitMethodBody(ref needsLib, className, @async, body);
-		return Estree.MethodDefinition.method(loc, @async, method.name, @params, block, isStatic);
+		return Estree.MethodDefinition.method(loc, @async, escapeName(method.name), @params, block, isStatic);
 	}
 }

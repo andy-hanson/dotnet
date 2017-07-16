@@ -11,7 +11,7 @@ main
 	call non-virtual Nat._eq
 	get instance field Bool.value
 	goto if true: endAssert
-	new AssertionException
+	new Assertion_Exception
 	throw
 	endAssert:
 	load static field Void.instance
@@ -32,7 +32,7 @@ f
 	const uint 1
 	call non-virtual Nat.of
 	call non-virtual Nat._sub
-	call non-virtual Int.toNat
+	call non-virtual Int.to_nat
 	tail call non-virtual Recur.f
 	endWhen:
 	return

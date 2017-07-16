@@ -3,6 +3,7 @@ using System.Reflection;
 
 using Model;
 using static EstreeUtils;
+using static NameEscaping;
 using static Utils;
 
 /**
@@ -80,11 +81,11 @@ static class JsBuiltins {
 				return translator(loc, args);
 			else if (primitiveNzlibStaticMethods.has(b)) {
 				usedNzlib = true;
-				return callNzlib(loc, b.klass.name, b.name, args);
+				return callNzlib(loc, escapeName(b.klass.name), escapeName(b.name), args);
 			}
 		}
 
-		var access = Estree.MemberExpression.simple(loc, invokedMethod.klass.name, invokedMethod.name);
+		var access = Estree.MemberExpression.simple(loc, escapeName(invokedMethod.klass.name), escapeName(invokedMethod.name));
 		return callPossiblyAsync(loc, isAsync(invokedMethod), access, args);
 	}
 
@@ -94,11 +95,11 @@ static class JsBuiltins {
 				return translator(loc, target, args);
 			else if (primitiveNzlibInstanceMethods.has(b)) {
 				usedNzlib = true;
-				return callNzlib(loc, b.klass.name, b.name, args.addLeft(target));
+				return callNzlib(loc, escapeName(b.klass.name), escapeName(b.name), args.addLeft(target));
 			}
 		}
 
-		var member = Estree.MemberExpression.simple(loc, target, invokedMethod.name);
+		var member = Estree.MemberExpression.simple(loc, target, escapeName(invokedMethod.name));
 		return callPossiblyAsync(loc, isAsync(invokedMethod), member, args);
 	}
 
@@ -108,14 +109,13 @@ static class JsBuiltins {
 			throw TODO();
 		}
 
-		var member = Estree.MemberExpression.ofThis(loc, invokedMethod.name);
+		var member = Estree.MemberExpression.ofThis(loc, escapeName(invokedMethod.name));
 		return callPossiblyAsync(loc, isAsync(invokedMethod), member, args);
 	}
 
-	static readonly Sym symToString = Sym.of("toString");
-	internal static Estree.Expression toString(Loc loc, Estree.Expression target, Arr<Estree.Expression> args) {
+	internal static Estree.Expression callToString(Loc loc, Estree.Expression target, Arr<Estree.Expression> args) {
 		assert(args.isEmpty);
-		return new Estree.CallExpression(loc, Estree.MemberExpression.simple(loc, target, symToString), Arr.empty<Estree.Expression>());
+		return new Estree.CallExpression(loc, Estree.MemberExpression.simple(loc, target, "toString"), Arr.empty<Estree.Expression>());
 	}
 
 	internal static Estree.Expression id(Loc loc, Estree.Expression target, Arr<Estree.Expression> args) {
@@ -124,32 +124,30 @@ static class JsBuiltins {
 		return target;
 	}
 
-	static Estree.Expression callNzlib(Loc loc, Sym namespaceName, Sym methodName, Arr<Estree.Expression> args) =>
+	static Estree.Expression callNzlib(Loc loc, string namespaceName, string methodName, Arr<Estree.Expression> args) =>
 		new Estree.CallExpression(loc, Estree.MemberExpression.simple(loc, getFromLib(loc, namespaceName), methodName), args);
 
 	static Estree.Expression callNzlib(Loc loc, Arr<Estree.Expression> args, string name) =>
-		new Estree.CallExpression(loc, getFromLib(loc, Sym.of(name)), args);
+		new Estree.CallExpression(loc, getFromLib(loc, name), args);
 
-	static readonly Estree.Identifier idNzlib = new Estree.Identifier(Loc.zero, Sym.of("_"));
+	static readonly Estree.Identifier idNzlib = new Estree.Identifier(Loc.zero, "_");
 
 	static readonly Sym symMixin = Sym.of("mixin");
 	internal static Estree.Expression getMixin(Loc loc) =>
-		getFromLib(loc, symMixin);
-
-	static readonly Sym symAssertionException = Sym.of(nameof(Builtins.AssertionException));
+		getFromLib(loc, "mixin");
 
 	internal static Estree.Expression getAssertionException(Loc loc) =>
-		getFromLib(loc, symAssertionException);
+		getFromLib(loc, nameof(Builtins.Assertion_Exception));
 
 	internal static Estree.Expression getBuiltin(Loc loc, BuiltinClass b) =>
-		getFromLib(loc, b.name);
+		getFromLib(loc, escapeName(b.name));
 
-	static Estree.Expression getFromLib(Loc loc, Sym id) =>
+	static Estree.Expression getFromLib(Loc loc, string id) =>
 		Estree.MemberExpression.simple(loc, idNzlib, id);
 
 	internal static NzlibData nzlibData() {
 		var primitivesBuilder = Dict.builder<BuiltinClass, Arr.Builder<string>>();
-		var classes = Dict.builder<Sym, NzlibClassData>();
+		var classes = Dict.builder<string, NzlibClassData>();
 
 		foreach (var k in BuiltinClass.all()) {
 			if (k.dotNetType.hasAttribute<JsPrimitiveAttribute>()) {
@@ -161,23 +159,23 @@ static class JsBuiltins {
 			var instance = Arr.builder<string>();
 
 			foreach (var (name, m) in k.membersMap) {
-				var method = (Method) m;
-				(method.isStatic ? statics : instance).add(BuiltinClass.escapeName(name));
+				var method = (Method)m;
+				(method.isStatic ? statics : instance).add(escapeName(name));
 			}
 			foreach (var o in k.overrides)
 				instance.add(o.Name);
 			//foreach (var s in k.supers)
-			//	foreach (var i in s.impls)
-			//		instance.add(BuiltinClass.escapeName(i.implemented.name));
+			//  foreach (var i in s.impls)
+			//    instance.add(BuiltinClass.escapeName(i.implemented.name));
 
-			classes.add(k.name, new NzlibClassData(statics.finish(), instance.finish()));
+			classes.add(escapeName(k.name), new NzlibClassData(statics.finish(), instance.finish()));
 		}
 
 		foreach (var p in primitiveNzlibStaticMethods)
-			primitivesBuilder[(BuiltinClass)p.klass].add(BuiltinClass.escapeName(p.name));
+			primitivesBuilder[(BuiltinClass)p.klass].add(escapeName(p.name));
 		foreach (var p in primitiveNzlibInstanceMethods)
-			primitivesBuilder[(BuiltinClass)p.klass].add(BuiltinClass.escapeName(p.name));
-		var primitives = primitivesBuilder.map((klass, names) => (klass.name, names.finish()));
+			primitivesBuilder[(BuiltinClass)p.klass].add(escapeName(p.name));
+		var primitives = primitivesBuilder.map((klass, names) => (escapeName(klass.name), names.finish()));
 
 		var other = Arr.of(symMixin);
 
@@ -187,11 +185,11 @@ static class JsBuiltins {
 
 /** Information about the expected content of nzlib. Used by `testNzlib.js`. */
 struct NzlibData : ToData<NzlibData> {
-	readonly Dict<Sym, Arr<string>> primitives;
-	readonly Dict<Sym, NzlibClassData> classes;
+	readonly Dict<string, Arr<string>> primitives;
+	readonly Dict<string, NzlibClassData> classes;
 	readonly Arr<Sym> other;
 
-	internal NzlibData(Dict<Sym, Arr<string>> primitives, Dict<Sym, NzlibClassData> classes, Arr<Sym> other) {
+	internal NzlibData(Dict<string, Arr<string>> primitives, Dict<string, NzlibClassData> classes, Arr<Sym> other) {
 		this.primitives = primitives;
 		this.classes = classes;
 		this.other = other;

@@ -8,4 +8,4 @@ fun Nat f(Nat i)
 		i == 0
 			0
 		else
-			recur (i - 1).toNat()
+			recur (i - 1).to-nat()

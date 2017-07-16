@@ -1,14 +1,14 @@
 Module(
-  loc: 0-308,
+  loc: 0-327,
   imports: [],
   klass: Klass(
-    loc: 0-308,
+    loc: 0-327,
     head: Static(
       loc: 0-8),
     supers: [],
     methods: [
       Method(
-        loc: 8-211,
+        loc: 8-227,
         isStatic: true,
         returnTy: Access(
           loc: 12-16,
@@ -16,181 +16,181 @@ Module(
         name: "main",
         parameters: [],
         body: Seq(
-          loc: 25-211,
+          loc: 25-227,
           first: Call(
-            loc: 25-37,
+            loc: 25-38,
             target: Access(
-              loc: 25-33,
-              name: "needsNat"),
+              loc: 25-34,
+              name: "needs-nat"),
             args: [Literal(
-              loc: 34-35,
+              loc: 35-36,
               value: 0)]),
           then: Seq(
-            loc: 37-211,
+            loc: 38-227,
             first: Call(
-              loc: 37-57,
+              loc: 38-60,
               target: Access(
-                loc: 37-45,
-                name: "needsInt"),
+                loc: 38-47,
+                name: "needs-int"),
               args: [Call(
-                loc: 46-55,
+                loc: 48-58,
                 target: GetProperty(
-                  loc: 46-53,
+                  loc: 48-56,
                   target: Literal(
-                    loc: 46-47,
+                    loc: 48-49,
                     value: 0),
-                  propertyName: "toInt"),
+                  propertyName: "to-int"),
                 args: [])]),
             then: Seq(
-              loc: 57-211,
+              loc: 60-227,
               first: Call(
-                loc: 57-80,
+                loc: 60-85,
                 target: Access(
-                  loc: 57-66,
-                  name: "needsReal"),
+                  loc: 60-70,
+                  name: "needs-real"),
                 args: [Call(
-                  loc: 67-77,
+                  loc: 71-82,
                   target: GetProperty(
-                    loc: 67-75,
+                    loc: 71-80,
                     target: Literal(
-                      loc: 67-68,
+                      loc: 71-72,
                       value: 0),
-                    propertyName: "toReal"),
+                    propertyName: "to-real"),
                   args: [])]),
               then: Seq(
-                loc: 80-211,
+                loc: 85-227,
                 first: Call(
-                  loc: 80-101,
+                  loc: 85-108,
                   target: Access(
-                    loc: 80-88,
-                    name: "needsNat"),
+                    loc: 85-94,
+                    name: "needs-nat"),
                   args: [Call(
-                    loc: 89-99,
+                    loc: 95-106,
                     target: GetProperty(
-                      loc: 89-97,
+                      loc: 95-104,
                       target: Literal(
-                        loc: 89-91,
+                        loc: 95-97,
                         value: 0),
-                      propertyName: "toNat"),
+                      propertyName: "to-nat"),
                     args: [])]),
                 then: Seq(
-                  loc: 101-211,
+                  loc: 108-227,
                   first: Call(
-                    loc: 101-114,
+                    loc: 108-122,
                     target: Access(
-                      loc: 101-109,
-                      name: "needsInt"),
+                      loc: 108-117,
+                      name: "needs-int"),
                     args: [Literal(
-                      loc: 110-112,
+                      loc: 118-120,
                       value: 0)]),
                   then: Seq(
-                    loc: 114-211,
+                    loc: 122-227,
                     first: Call(
-                      loc: 114-138,
+                      loc: 122-148,
                       target: Access(
-                        loc: 114-123,
-                        name: "needsReal"),
+                        loc: 122-132,
+                        name: "needs-real"),
                       args: [Call(
-                        loc: 124-135,
+                        loc: 133-145,
                         target: GetProperty(
-                          loc: 124-133,
+                          loc: 133-143,
                           target: Literal(
-                            loc: 124-126,
+                            loc: 133-135,
                             value: 0),
-                          propertyName: "toReal"),
+                          propertyName: "to-real"),
                         args: [])]),
                     then: Seq(
-                      loc: 138-211,
+                      loc: 148-227,
                       first: Call(
-                        loc: 138-172,
+                        loc: 148-185,
                         target: Access(
-                          loc: 138-146,
-                          name: "needsNat"),
+                          loc: 148-157,
+                          name: "needs-nat"),
                         args: [Call(
-                          loc: 147-170,
+                          loc: 158-183,
                           target: GetProperty(
-                            loc: 147-168,
+                            loc: 158-181,
                             target: Call(
-                              loc: 147-162,
+                              loc: 158-174,
                               target: GetProperty(
-                                loc: 147-160,
+                                loc: 158-172,
                                 target: Literal(
-                                  loc: 147-150,
+                                  loc: 158-161,
                                   value: 0),
-                                propertyName: "roundDown"),
+                                propertyName: "round-down"),
                               args: []),
-                            propertyName: "toNat"),
+                            propertyName: "to-nat"),
                           args: [])]),
                       then: Seq(
-                        loc: 172-211,
+                        loc: 185-227,
                         first: Call(
-                          loc: 172-196,
+                          loc: 185-211,
                           target: Access(
-                            loc: 172-180,
-                            name: "needsInt"),
+                            loc: 185-194,
+                            name: "needs-int"),
                           args: [Call(
-                            loc: 181-194,
+                            loc: 195-209,
                             target: GetProperty(
-                              loc: 181-192,
+                              loc: 195-207,
                               target: Literal(
-                                loc: 181-184,
+                                loc: 195-198,
                                 value: 0),
-                              propertyName: "roundUp"),
+                              propertyName: "round-up"),
                             args: [])]),
                         then: Call(
-                          loc: 196-211,
+                          loc: 211-227,
                           target: Access(
-                            loc: 196-205,
-                            name: "needsReal"),
+                            loc: 211-221,
+                            name: "needs-real"),
                           args: [Literal(
-                            loc: 206-209,
+                            loc: 222-225,
                             value: 0)])))))))))),
       Method(
-        loc: 211-243,
+        loc: 227-260,
         isStatic: true,
         returnTy: Access(
-          loc: 215-219,
+          loc: 231-235,
           name: "Void"),
-        name: "needsNat",
+        name: "needs-nat",
         parameters: [Parameter(
-          loc: 229-234,
+          loc: 246-251,
           ty: Access(
-            loc: 229-232,
+            loc: 246-249,
             name: "Nat"),
           name: "n")],
         body: Literal(
-          loc: 237-241,
+          loc: 254-258,
           value: Pass())),
       Method(
-        loc: 243-275,
+        loc: 260-293,
         isStatic: true,
         returnTy: Access(
-          loc: 247-251,
+          loc: 264-268,
           name: "Void"),
-        name: "needsInt",
+        name: "needs-int",
         parameters: [Parameter(
-          loc: 261-266,
+          loc: 279-284,
           ty: Access(
-            loc: 261-264,
+            loc: 279-282,
             name: "Int"),
           name: "i")],
         body: Literal(
-          loc: 269-273,
+          loc: 287-291,
           value: Pass())),
       Method(
-        loc: 275-308,
+        loc: 293-327,
         isStatic: true,
         returnTy: Access(
-          loc: 279-283,
+          loc: 297-301,
           name: "Void"),
-        name: "needsReal",
+        name: "needs-real",
         parameters: [Parameter(
-          loc: 294-300,
+          loc: 313-319,
           ty: Access(
-            loc: 294-298,
+            loc: 313-317,
             name: "Real"),
           name: "f")],
         body: Literal(
-          loc: 303-307,
+          loc: 322-326,
           value: Pass()))
     ]))

@@ -19,7 +19,7 @@ function main() {
 		check(str);
 	} catch (e) {
 		error = true;
-		console.error(e.stack);
+		console.log(e.stack);
 	}
 	if (!error) {
 		console.log("OK");

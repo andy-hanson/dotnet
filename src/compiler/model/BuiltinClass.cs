@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Text;
 
 using static Utils;
 
@@ -30,8 +29,8 @@ namespace Model {
 					if (baze != null && baze != typeof(object)) {
 						// TODO: handle builtins with supertypes
 						// (TODO: Super has location information, may have to abstract over that)
-						var baseType = fromDotNetType(baze);
-						throw TODO();//new Super(Loc.zero, this, baseType);
+						//var baseType = fromDotNetType(baze);
+						throw TODO();
 					}
 				}
 
@@ -58,15 +57,6 @@ namespace Model {
 				fromDotNetType(klass);
 		}
 
-		static Dict<Sym, string> operatorEscapes = Dict.of(
-			("==", "_eq"),
-			("+", "_add"),
-			("-", "_sub"),
-			("*", "_mul"),
-			("/", "_div"),
-			("^", "_pow")).mapKeys(Sym.of);
-		static Dict<string, Sym> operatorUnescapes = operatorEscapes.reverse();
-
 		internal static readonly BuiltinClass Void = fromDotNetType(typeof(Builtins.Void));
 		internal static readonly BuiltinClass Bool = fromDotNetType(typeof(Builtins.Bool));
 		internal static readonly BuiltinClass Nat = fromDotNetType(typeof(Builtins.Nat));
@@ -83,7 +73,7 @@ namespace Model {
 			assert(dotNetType.DeclaringType == typeof(Builtins));
 			assert(dotNetType == typeof(Builtins.Exception) || !dotNetType.IsAbstract || dotNetType.IsInterface, "Use an interface instead of an abstract class.");
 
-			var name = unescapeName(dotNetType.Name);
+			var name = NameEscaping.unescapeTypeName(dotNetType.Name);
 
 			if (byName.TryGetValue(name, out var old)) {
 				assert(old.dotNetType == dotNetType);
@@ -140,38 +130,6 @@ namespace Model {
 		public bool deepEqual(BuiltinClass b) => throw new NotSupportedException(); // This should never happen.
 		public override int GetHashCode() => name.GetHashCode();
 		public override Dat toDat() => Dat.of(this, nameof(name), name);
-
-		internal static string escapeName(Sym name) {
-			if (operatorEscapes.get(name, out var sym))
-				return sym;
-
-			var sb = new StringBuilder();
-			foreach (var ch in name.str) {
-				if (ch == '-')
-					sb.Append('_');
-				else {
-					assert(CharUtils.isNameChar(ch));
-					sb.Append(ch);
-				}
-			}
-			return sb.ToString();
-		}
-
-		internal static Sym unescapeName(string name) {
-			if (operatorUnescapes.get(name, out var v))
-				return v;
-
-			var sb = new StringBuilder();
-			foreach (var ch in name) {
-				if (ch == '_')
-					sb.Append('-');
-				else {
-					assert(CharUtils.isNameChar(ch));
-					sb.Append(ch);
-				}
-			}
-			return Sym.of(sb);
-		}
 
 		public override string ToString() => $"BuiltinClass({name})";
 	}

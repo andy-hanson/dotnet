@@ -68,7 +68,7 @@ namespace Model {
 				}
 
 				var returnTy = BuiltinClass.fromDotNetType(method.ReturnType);
-				var name = BuiltinClass.unescapeName(method.Name);
+				var name = NameEscaping.unescapeMethodName(method.Name);
 				var dotNetParams = method.GetParameters();
 				if (isSpecialInstance)
 					assert(dotNetParams[0].ParameterType == klass.dotNetType);

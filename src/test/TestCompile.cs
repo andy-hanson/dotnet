@@ -40,7 +40,7 @@ namespace Test {
 			runAllCompilerTests();
 		}
 
-		void testNzlib() {
+		static void testNzlib() {
 			var nzlibDataJson = Json.JsonWriter.write(JsBuiltins.nzlibData());
 			var res = Test.SynchronousProcess.run(Path.fromParts("tests", "js-test-runner", "testNzlib.js"), nzlibDataJson);
 			if (res != "OK\n")

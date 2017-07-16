@@ -2,6 +2,8 @@ using System;
 using System.Diagnostics;
 
 static class Utils {
+	internal static T upcast<T>(this T t) => t;
+
 	internal static void writeQuotedString(string s, Action<char> writeChar) {
 		writeChar('"');
 		void escape(char ch) {

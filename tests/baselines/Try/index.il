@@ -6,7 +6,7 @@ main
 	load static field Bool.boolFalse
 	get instance field Bool.value
 	goto if true: endAssert
-	new AssertionException
+	new Assertion_Exception
 	throw
 	endAssert:
 	load static field Void.instance
@@ -30,7 +30,7 @@ main
 	call non-virtual String._eq
 	get instance field Bool.value
 	goto if true: endAssert
-	new AssertionException
+	new Assertion_Exception
 	throw
 	endAssert:
 	load static field Void.instance

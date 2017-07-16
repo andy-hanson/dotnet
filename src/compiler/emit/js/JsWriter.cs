@@ -484,6 +484,6 @@ class JsWriter : EmitTextWriter {
 	}
 
 	void writeId(Estree.Identifier i) {
-		writeRaw(i.name.str);
+		writeRaw(i.name);
 	}
 }

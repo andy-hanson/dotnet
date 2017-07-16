@@ -1,6 +1,5 @@
 using System;
 
-using static EstreeUtils;
 using static Utils;
 
 // https://github.com/estree/estree
@@ -23,8 +22,19 @@ namespace Estree {
 	interface Pattern : INode {}
 
 	sealed class Identifier : Node, Expression, Pattern {
-		internal readonly Sym name;
-		internal Identifier(Loc loc, Sym name) : base(loc) { this.name = name; }
+		internal readonly string name;
+		internal Identifier(Loc loc, string name) : base(loc) {
+			assert(isSafeName(name));
+			this.name = name;
+		}
+
+		static bool isSafeName(string s) {
+			foreach (var ch in s) {
+				if (ch != '_' && !CharUtils.isDigit(ch) && !CharUtils.isLetter(ch))
+					return false;
+			}
+			return true;
+		}
 	}
 
 	sealed class Literal : Node, Expression {
@@ -161,7 +171,7 @@ namespace Estree {
 
 		internal static VariableDeclaration simple(Loc loc, Identifier id, Expression init) =>
 			new VariableDeclaration(loc, Arr.of(new VariableDeclarator(loc, id, Op.Some(init))), Kind.Const);
-		internal static VariableDeclaration simple(Loc loc, Sym id, Expression init) =>
+		internal static VariableDeclaration simple(Loc loc, string id, Expression init) =>
 			simple(loc, new Identifier(loc, id), init);
 
 		internal enum Kind { Var, Let, Const }
@@ -202,20 +212,15 @@ namespace Estree {
 		internal static MemberExpression notComputed(Loc loc, Expression lhs, Identifier property) =>
 			new MemberExpression(loc, lhs, property, computed: false);
 
-		internal static MemberExpression simple(Loc loc, Expression lhs, Sym name) {
-			var nameStr = name.str;
-			if (isSafeMemberName(nameStr))
-				return notComputed(loc, lhs, new Identifier(loc, name));
-			return new MemberExpression(loc, lhs, Literal.str(loc, nameStr), computed: true);
-		}
+		internal static MemberExpression simple(Loc loc, Expression lhs, string name) => notComputed(loc, lhs, new Identifier(loc, name));
 
-		internal static MemberExpression simple(Loc loc, Sym left, Sym name) =>
+		internal static MemberExpression simple(Loc loc, string left, string name) =>
 			simple(loc, new Identifier(loc, left), name);
 
-		internal static MemberExpression simple(Loc loc, Sym a, Sym b, Sym c) =>
+		internal static MemberExpression simple(Loc loc, string a, string b, string c) =>
 			simple(loc, simple(loc, a, b), c);
 
-		internal static MemberExpression ofThis(Loc loc, Sym name) =>
+		internal static MemberExpression ofThis(Loc loc, string name) =>
 			simple(loc, new ThisExpression(loc), name);
 	}
 
@@ -307,17 +312,12 @@ namespace Estree {
 			this.@static = @static;
 		}
 
-		internal static MethodDefinition method(Loc loc, bool @async, Sym name, Arr<Pattern> @params, BlockStatement body, bool @static) {
-			var nameStr = name.str;
-			var computed = !isSafeMemberName(nameStr);
-			var key = computed ? Literal.str(loc, nameStr) : (Expression)new Identifier(loc, name);
-			return new MethodDefinition(loc, key, new FunctionExpression(loc, @async, @params, body), Kind.Method, computed, @static);
-		}
+		internal static MethodDefinition method(Loc loc, bool @async, string name, Arr<Pattern> @params, BlockStatement body, bool @static) =>
+			new MethodDefinition(loc, new Identifier(loc, name), new FunctionExpression(loc, @async, @params, body), Kind.Method, computed: false, @static: @static);
 
-		internal static readonly Sym symConstructor = Sym.of(nameof(constructor));
 		internal static MethodDefinition constructor(Loc loc, Arr<Pattern> @params, Arr<Statement> body) {
 			var fn = new FunctionExpression(loc, /*async*/ false, @params, new BlockStatement(loc, body));
-			return new MethodDefinition(loc, new Identifier(loc, symConstructor), fn, Kind.Constructor, computed: false, @static: false);
+			return new MethodDefinition(loc, new Identifier(loc, nameof(constructor)), fn, Kind.Constructor, computed: false, @static: false);
 		}
 
 		internal enum Kind { Constructor, Method, Get, Set }

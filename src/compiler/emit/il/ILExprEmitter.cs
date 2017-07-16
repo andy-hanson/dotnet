@@ -231,7 +231,7 @@ sealed class ILExprEmitter {
 		unpackBool();
 		il.goToIfTrue(end);
 
-		var exceptionType = typeof(Builtins.AssertionException);
+		var exceptionType = typeof(Builtins.Assertion_Exception);
 		var ctr = exceptionType.GetConstructor(new Type[] {});
 		il.callConstructor(ctr);
 		il.doThrow();

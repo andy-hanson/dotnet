@@ -1,6 +1,7 @@
 using Model;
 
 using static EstreeUtils;
+using static NameEscaping;
 using static Utils;
 
 sealed class JsExprEmitter {
@@ -33,7 +34,7 @@ sealed class JsExprEmitter {
 			switch (expr) {
 				case Let l:
 					var x = (Pattern.Single)l.assigned; // TODO: handle other patterns
-					parts.add(Estree.VariableDeclaration.simple(loc, id(x.loc, x.name), exprToExpr(l.value)));
+					parts.add(Estree.VariableDeclaration.simple(loc, id(x.loc, escapeName(x.name)), exprToExpr(l.value)));
 					expr = l.then;
 					break;
 				case Seq s:
@@ -121,7 +122,7 @@ sealed class JsExprEmitter {
 
 	Estree.CatchClause catchToCatch(Try.Catch c) {
 		var loc = c.loc;
-		var caught = id(c.caught.loc, c.caught.name);
+		var caught = id(c.caught.loc, escapeName(c.caught.name));
 
 		// `if (!(e is ExceptionType)) throw e;`
 		var isInstance = new Estree.BinaryExpression(loc, "instanceof", caught, accessTy(loc, c.exceptionTy));
@@ -135,7 +136,7 @@ sealed class JsExprEmitter {
 	Estree.Expression accessTy(Loc loc, Ty ty) {
 		switch (ty) {
 			case Klass k:
-				return id(loc, k.name);
+				return id(loc, escapeName(k.name));
 			case BuiltinClass b:
 				needsLib = true;
 				return JsBuiltins.getBuiltin(loc, b);
@@ -153,9 +154,9 @@ sealed class JsExprEmitter {
 		var loc = expr.loc;
 		switch (expr) {
 			case AccessParameter p:
-				return id(loc, p.param.name);
+				return id(loc, escapeName(p.param.name));
 			case AccessLocal lo:
-				return id(loc, lo.local.name);
+				return id(loc, escapeName(lo.local.name));
 			case Let l:
 			case Seq s:
 			case Assert a:
@@ -170,13 +171,13 @@ sealed class JsExprEmitter {
 			case MyInstanceMethodCall my:
 				return emitMyInstanceMethodCall(my);
 			case New n:
-				return new Estree.NewExpression(loc, id(loc, n.klass.name), n.args.map(exprToExpr));
+				return new Estree.NewExpression(loc, id(loc, escapeName(n.klass.name)), n.args.map(exprToExpr));
 			case Recur r:
 				return emitRecur(r);
 			case GetSlot g:
-				return Estree.MemberExpression.simple(loc, exprToExpr(g.target), g.slot.name);
+				return Estree.MemberExpression.simple(loc, exprToExpr(g.target), escapeName(g.slot.name));
 			case GetMySlot g:
-				return Estree.MemberExpression.simple(loc, new Estree.ThisExpression(loc), g.slot.name);
+				return Estree.MemberExpression.simple(loc, new Estree.ThisExpression(loc), escapeName(g.slot.name));
 			case WhenTest w:
 				return whenToExpr(w);
 			default:
@@ -197,7 +198,9 @@ sealed class JsExprEmitter {
 		var loc = r.loc;
 		var implemented = r.recurseTo.implementedMethod;
 		var methodName = implemented.name;
-		var fn = implemented.isStatic ? Estree.MemberExpression.simple(loc, currentClassName, methodName) : Estree.MemberExpression.ofThis(loc, methodName);
+		var fn = implemented.isStatic
+			? Estree.MemberExpression.simple(loc, escapeName(currentClassName), escapeName(methodName))
+			: Estree.MemberExpression.ofThis(loc, escapeName(methodName));
 		return new Estree.CallExpression(loc, fn, r.args.map(exprToExpr));
 	}
 

@@ -1,15 +1,7 @@
 static class EstreeUtils {
 	internal static bool isAsync(Model.Method method) => method.effect == Model.Effect.Io;
 
-	internal static bool isSafeMemberName(string s) {
-		foreach (var ch in s) {
-			if (!CharUtils.isDigit(ch) && !CharUtils.isLetter(ch))
-				return false;
-		}
-		return true;
-	}
-
-	internal static Estree.Identifier id(Loc loc, Sym name) =>
+	internal static Estree.Identifier id(Loc loc, string name) =>
 		new Estree.Identifier(loc, name);
 
 	internal static Estree.Expression callPossiblyAsync(Loc loc, bool @async, Estree.Expression target, Arr<Estree.Expression> args) {
@@ -20,9 +12,9 @@ static class EstreeUtils {
 	internal static Estree.Statement assign(Loc loc, Estree.Pattern lhs, Estree.Expression rhs) =>
 		Estree.ExpressionStatement.of(new Estree.AssignmentExpression(loc, lhs, rhs));
 
-	internal static Estree.Statement assign(Loc loc, Sym a, Sym b, Estree.Expression rhs) =>
+	internal static Estree.Statement assign(Loc loc, string a, string b, Estree.Expression rhs) =>
 		assign(loc, Estree.MemberExpression.simple(loc, a, b), rhs);
 
-	internal static Estree.Statement assign(Loc loc, Sym a, Sym b, Sym c, Estree.Expression rhs) =>
+	internal static Estree.Statement assign(Loc loc, string a, string b, string c, Estree.Expression rhs) =>
 		assign(loc, Estree.MemberExpression.simple(loc, a, b, c), rhs);
 }

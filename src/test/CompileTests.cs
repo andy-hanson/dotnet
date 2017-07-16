@@ -1,13 +1,15 @@
 using static Test.TestUtils;
 
+#pragma warning disable CC0068 // Private methods not used
+
 namespace Test {
 	static class Tests {
 		static readonly Builtins.Int one = Builtins.Int.of(1);
 
-		[TestFor(nameof(MainPass))]
+		[TestFor("Main-Pass")]
 		static void MainPass(TestData t) => runCsJsTests(t);
 
-		[TestFor(nameof(AbstractClass))]
+		[TestFor("Abstract-Class")]
 		static void AbstractClass(TestData t) { //TODO:NEATER
 			// We need to implement its abstract class.
 			var cls = t.emittedRoot;
@@ -28,19 +30,19 @@ namespace Test {
 		[TestFor(nameof(Try))]
 		static void Try(TestData t) => runCsJsTests(t);
 
-		[TestFor(nameof(MultipleInheritance))]
+		[TestFor("Multiple-Inheritance")]
 		static void MultipleInheritance(TestData t) => runCsJsTests(t);
 
-		[TestFor(nameof(ConsoleApp))]
-		static void ConsoleApp(TestData t) {
+		[TestFor("Console-App-User")]
+		static void ConsoleAppUser(TestData t) {
 			var cls = t.emittedRoot;
-			cls.invokeStatic("main", new BuiltinImpls.Console());
+			cls.invokeStatic("main", new BuiltinImpls.ConsoleApp(installationDirectory: t.testPath, currentWorkingDirectory: t.testPath));
 		}
 
 		[TestFor(nameof(Recur))]
 		static void Recur(TestData t) => runCsJsTests(t);
 
-		[TestFor(nameof(OperatorParsing))]
+		[TestFor("Operator-Parsing")]
 		static void OperatorParsing(TestData t) => runCsJsTests(t);
 
 		[TestFor(nameof(Literals))]

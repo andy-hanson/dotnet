@@ -20,7 +20,7 @@ exports._div = (a, b) => {
  * @param {int} n
  * @return {nat}
  */
-exports.toNat = (n) => {
+exports.to_nat = (n) => {
 	if (n < 0) {
 		throw new Error("TODO");
 	}

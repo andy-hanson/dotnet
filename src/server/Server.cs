@@ -186,9 +186,17 @@ static class TcpUtils {
 
 	internal static void writeTcpString(Stream stream, string content) {
 		var contentBytes = System.Text.Encoding.UTF8.GetBytes(content);
-		var contentLengthBytes = System.Text.Encoding.UTF8.GetBytes($"{contentLengthStr}{contentBytes.Length}\r\n\r\n");
-		stream.WriteAll(contentLengthBytes);
-		stream.WriteAll(contentBytes);
+
+		//var contentLengthBytes = System.Text.Encoding.UTF8.GetBytes($"{contentLengthStr}{contentBytes.Length}\r\n\r\n");
+
+		#pragma warning disable CC0022 // Closing sw would close 'stream', which we don't want.
+		var sw = new System.IO.StreamWriter(stream);
+		#pragma warning restore CC0022
+		sw.Write(contentLengthStr);
+		sw.Write(contentBytes.Length); // This writes the text representation of the number, not binary representation.
+		sw.Write("\r\n\r\n");
+
+		stream.writeAll(contentBytes);
 	}
 
 	static uint readContentLength(Stream stream) {
@@ -200,7 +208,7 @@ static class TcpUtils {
 }
 
 static class StreamUtils {
-	internal static void WriteAll(this Stream stream, byte[] bytes) {
+	internal static void writeAll(this Stream stream, byte[] bytes) {
 		stream.Write(bytes, 0, bytes.Length);
 	}
 

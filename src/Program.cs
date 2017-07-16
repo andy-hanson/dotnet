@@ -17,9 +17,8 @@ static class Program {
 		using (var tc = new Test.TestCompile(updateBaselines: true)) {
 			tc.runAllTests();
 			//tc.runAllCompilerTests();
-			//tc.runTestNamed("Literals");
+			//tc.runTestNamed("Console-App-User");
 		}
-
 	}
 
 	static void doTestIl() {

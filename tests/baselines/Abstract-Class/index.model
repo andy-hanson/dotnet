@@ -1,5 +1,5 @@
 Klass(
-  loc: 0-83,
+  loc: 0-84,
   head: Abstract(
     loc: 0-10),
   membersMap: Dict<Sym, Member>(
@@ -9,25 +9,25 @@ Klass(
       name: "s",
       parameters: []),
     main: MethodWithBody(
-      loc: 31-83,
+      loc: 31-84,
       isStatic: true,
       returnTy: "Void",
       name: "main",
       parameters: [Parameter(
-        loc: 45-60,
+        loc: 45-61,
         ty: "",
         name: "a",
         index: 0)],
       body: Assert(
-        loc: 63-83,
+        loc: 64-84,
         asserted: InstanceMethodCall(
-          loc: 70-83,
+          loc: 71-84,
           target: InstanceMethodCall(
-            loc: 70-73,
+            loc: 71-74,
             target: AccessParameter(
-              loc: 70-71,
+              loc: 71-72,
               param: Parameter(
-                loc: 45-60,
+                loc: 45-61,
                 ty: "",
                 name: "a",
                 index: 0)),
@@ -39,5 +39,5 @@ Klass(
             klassId: "String",
             name: "=="),
           args: [Literal(
-            loc: 79-82,
+            loc: 80-83,
             value: "s")])))))

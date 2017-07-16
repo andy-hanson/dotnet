@@ -1,5 +1,5 @@
 Klass(
-  loc: 0-114,
+  loc: 0-115,
   head: Static(
     loc: 0-8),
   membersMap: Dict<Sym, Member>(
@@ -27,7 +27,7 @@ Klass(
             loc: 42-43,
             value: 0)]))),
     f: MethodWithBody(
-      loc: 45-114,
+      loc: 45-115,
       isStatic: true,
       returnTy: "Nat",
       name: "f",
@@ -37,7 +37,7 @@ Klass(
         name: "i",
         index: 0)],
       body: WhenTest(
-        loc: 63-114,
+        loc: 63-115,
         cases: [Case(
           loc: 70-84,
           test: InstanceMethodCall(
@@ -59,9 +59,9 @@ Klass(
             loc: 80-81,
             value: 0))],
         elseResult: Recur(
-          loc: 92-114,
+          loc: 92-115,
           args: [InstanceMethodCall(
-            loc: 98-111,
+            loc: 98-112,
             target: InstanceMethodCall(
               loc: 99-105,
               target: AccessParameter(
@@ -79,5 +79,5 @@ Klass(
                 value: 1)]),
             method: Id(
               klassId: "Int",
-              name: "toNat"),
+              name: "to-nat"),
             args: [])])))))

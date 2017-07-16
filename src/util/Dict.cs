@@ -9,19 +9,26 @@ struct Dict<K, V> where K : IEquatable<K> {
 	internal Dict(Dictionary<K, V> inner) { this.inner = inner; }
 
 	internal Dict<K2, V> mapKeys<K2>(Func<K, K2> mapper) where K2 : IEquatable<K2> {
-		var b = new Dictionary<K2, V>();
+		var b = Dict.builder<K2, V>();
 		foreach (var (k, v) in inner)
-			b[mapper(k)] = v;
-		return new Dict<K2, V>(b);
+			b.add(mapper(k), v);
+		return b.finish();
+	}
+
+	internal Dict<K, V2> mapValues<V2>(Func<V, V2> mapper) {
+		var b = Dict.builder<K, V2>();
+		foreach (var (k, v) in inner)
+			b.add(k, mapper(v));
+		return b.finish();
 	}
 
 	internal Dict<K2, V2> map<K2, V2>(Func<K, V, (K2, V2)> mapper) where K2 : IEquatable<K2> {
-		var b = new Dictionary<K2, V2>();
+		var b = Dict.builder<K2, V2>();
 		foreach (var (k, v) in inner) {
 			var (k2, v2) = mapper(k, v);
-			b[k2] = v2;
+			b.add(k2, v2);
 		}
-		return new Dict<K2, V2>(b);
+		return b.finish();
 	}
 
 	internal Arr<T> mapToArr<T>(Func<K, V, T> mapper) {
@@ -62,28 +69,27 @@ static class Dict {
 		new Builder<K, V>(dummy: false);
 
 	internal static Dict<K, V> of<K, V>(params (K, V)[] pairs) where K : IEquatable<K> {
-		var b = new Dictionary<K, V>();
+		var b = builder<K, V>();
 		foreach (var pair in pairs)
-			b[pair.Item1] = pair.Item2;
-		return new Dict<K, V>(b);
+			b.add(pair.Item1, pair.Item2);
+		return b.finish();
 	}
 
 	internal static Dict<V, K> reverse<K, V>(this Dict<K, V> dict) where K : IEquatable<K> where V : IEquatable<V> {
-		var b = new Dictionary<V, K>();
+		var b = builder<V, K>();
 		foreach (var (k, v) in dict)
-			b[v] = k;
-		return new Dict<V, K>(b);
+			b.add(v, k);
+		return b.finish();
 	}
 
 	internal static Dict<K, V> mapToDict<T, K, V>(this T[] xs, Func<T, Op<(K, V)>> mapper) where K : IEquatable<K> {
-		var b = new Dictionary<K, V>();
+		var b = builder<K, V>();
 		foreach (var x in xs) {
 			var pair = mapper(x);
 			if (pair.get(out var p))
-				b[p.Item1] = p.Item2;
+				b.add(p.Item1, p.Item2);
 		}
-
-		return new Dict<K, V>(b);
+		return b.finish();
 	}
 
 	internal struct Builder<K, V> where K : IEquatable<K> {

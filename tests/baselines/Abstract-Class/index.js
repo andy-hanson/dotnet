@@ -1,9 +1,9 @@
 "use strict";
 const _ = require("nzlib");
-module.exports = class AbstractClass {
+module.exports = class Abstract_Class {
 	static main(a) {
 		if (a.s() !== "s")
-			throw new _.AssertionException();
+			throw new _.Assertion_Exception();
 		
 	}
 };

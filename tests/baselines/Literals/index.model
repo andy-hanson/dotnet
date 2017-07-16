@@ -1,171 +1,171 @@
 Klass(
-  loc: 0-308,
+  loc: 0-327,
   head: Static(
     loc: 0-8),
   membersMap: Dict<Sym, Member>(
     main: MethodWithBody(
-      loc: 8-211,
+      loc: 8-227,
       isStatic: true,
       returnTy: "Void",
       name: "main",
       parameters: [],
       body: Seq(
-        loc: 25-211,
+        loc: 25-227,
         action: StaticMethodCall(
           method: Id(
             klassId: "",
-            name: "needsNat"),
+            name: "needs-nat"),
           args: [Literal(
-            loc: 34-35,
+            loc: 35-36,
             value: 0)]),
         then: Seq(
-          loc: 37-211,
+          loc: 38-227,
           action: StaticMethodCall(
             method: Id(
               klassId: "",
-              name: "needsInt"),
+              name: "needs-int"),
             args: [InstanceMethodCall(
-              loc: 46-53,
+              loc: 48-56,
               target: Literal(
-                loc: 46-47,
+                loc: 48-49,
                 value: 0),
               method: Id(
                 klassId: "Nat",
-                name: "toInt"),
+                name: "to-int"),
               args: [])]),
           then: Seq(
-            loc: 57-211,
+            loc: 60-227,
             action: StaticMethodCall(
               method: Id(
                 klassId: "",
-                name: "needsReal"),
+                name: "needs-real"),
               args: [InstanceMethodCall(
-                loc: 67-75,
+                loc: 71-80,
                 target: Literal(
-                  loc: 67-68,
+                  loc: 71-72,
                   value: 0),
                 method: Id(
                   klassId: "Nat",
-                  name: "toReal"),
+                  name: "to-real"),
                 args: [])]),
             then: Seq(
-              loc: 80-211,
+              loc: 85-227,
               action: StaticMethodCall(
                 method: Id(
                   klassId: "",
-                  name: "needsNat"),
+                  name: "needs-nat"),
                 args: [InstanceMethodCall(
-                  loc: 89-97,
+                  loc: 95-104,
                   target: Literal(
-                    loc: 89-91,
+                    loc: 95-97,
                     value: 0),
                   method: Id(
                     klassId: "Int",
-                    name: "toNat"),
+                    name: "to-nat"),
                   args: [])]),
               then: Seq(
-                loc: 101-211,
+                loc: 108-227,
                 action: StaticMethodCall(
                   method: Id(
                     klassId: "",
-                    name: "needsInt"),
+                    name: "needs-int"),
                   args: [Literal(
-                    loc: 110-112,
+                    loc: 118-120,
                     value: 0)]),
                 then: Seq(
-                  loc: 114-211,
+                  loc: 122-227,
                   action: StaticMethodCall(
                     method: Id(
                       klassId: "",
-                      name: "needsReal"),
+                      name: "needs-real"),
                     args: [InstanceMethodCall(
-                      loc: 124-133,
+                      loc: 133-143,
                       target: Literal(
-                        loc: 124-126,
+                        loc: 133-135,
                         value: 0),
                       method: Id(
                         klassId: "Int",
-                        name: "toReal"),
+                        name: "to-real"),
                       args: [])]),
                   then: Seq(
-                    loc: 138-211,
+                    loc: 148-227,
                     action: StaticMethodCall(
                       method: Id(
                         klassId: "",
-                        name: "needsNat"),
+                        name: "needs-nat"),
                       args: [InstanceMethodCall(
-                        loc: 147-168,
+                        loc: 158-181,
                         target: InstanceMethodCall(
-                          loc: 147-160,
+                          loc: 158-172,
                           target: Literal(
-                            loc: 147-150,
+                            loc: 158-161,
                             value: 0),
                           method: Id(
                             klassId: "Real",
-                            name: "roundDown"),
+                            name: "round-down"),
                           args: []),
                         method: Id(
                           klassId: "Int",
-                          name: "toNat"),
+                          name: "to-nat"),
                         args: [])]),
                     then: Seq(
-                      loc: 172-211,
+                      loc: 185-227,
                       action: StaticMethodCall(
                         method: Id(
                           klassId: "",
-                          name: "needsInt"),
+                          name: "needs-int"),
                         args: [InstanceMethodCall(
-                          loc: 181-192,
+                          loc: 195-207,
                           target: Literal(
-                            loc: 181-184,
+                            loc: 195-198,
                             value: 0),
                           method: Id(
                             klassId: "Real",
-                            name: "roundUp"),
+                            name: "round-up"),
                           args: [])]),
                       then: StaticMethodCall(
                         method: Id(
                           klassId: "",
-                          name: "needsReal"),
+                          name: "needs-real"),
                         args: [Literal(
-                          loc: 206-209,
+                          loc: 222-225,
                           value: 0)])))))))))),
-    needsNat: MethodWithBody(
-      loc: 211-243,
+    needs-nat: MethodWithBody(
+      loc: 227-260,
       isStatic: true,
       returnTy: "Void",
-      name: "needsNat",
+      name: "needs-nat",
       parameters: [Parameter(
-        loc: 229-234,
+        loc: 246-251,
         ty: "Nat",
         name: "n",
         index: 0)],
       body: Literal(
-        loc: 237-241,
+        loc: 254-258,
         value: Pass())),
-    needsInt: MethodWithBody(
-      loc: 243-275,
+    needs-int: MethodWithBody(
+      loc: 260-293,
       isStatic: true,
       returnTy: "Void",
-      name: "needsInt",
+      name: "needs-int",
       parameters: [Parameter(
-        loc: 261-266,
+        loc: 279-284,
         ty: "Int",
         name: "i",
         index: 0)],
       body: Literal(
-        loc: 269-273,
+        loc: 287-291,
         value: Pass())),
-    needsReal: MethodWithBody(
-      loc: 275-308,
+    needs-real: MethodWithBody(
+      loc: 293-327,
       isStatic: true,
       returnTy: "Void",
-      name: "needsReal",
+      name: "needs-real",
       parameters: [Parameter(
-        loc: 294-300,
+        loc: 313-319,
         ty: "Real",
         name: "f",
         index: 0)],
       body: Literal(
-        loc: 303-307,
+        loc: 322-326,
         value: Pass()))))

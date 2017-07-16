@@ -144,7 +144,6 @@ struct Arr<T> : IEnumerable<T> {
 				b.add(r);
 		}
 		return b;
-
 	}
 
 	internal Dict<K, V> mapDefinedToDict<K, V>(Func<T, Op<(K, V)>> mapper) where K : IEquatable<K> {

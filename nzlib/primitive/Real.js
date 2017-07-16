@@ -17,10 +17,10 @@ exports.round = r => Math.round(r);
  * @param {real} r
  * @return {int}
  */
-exports.roundDown = r => Math.floor(r);
+exports.round_down = r => Math.floor(r);
 
 /**
  * @param {real} r
  * @return {int}
  */
-exports.roundUp = r => Math.ceil(r);
+exports.round_up = r => Math.ceil(r);
