@@ -153,10 +153,8 @@ namespace Ast {
 
 	abstract class Member : Node, ToData<Member> {
 		internal readonly Sym name;
-		internal readonly Model.Effect effect;
-		Member(Loc loc, Sym name, Model.Effect effect) : base(loc) {
+		Member(Loc loc, Sym name) : base(loc) {
 			this.name = name;
-			this.effect = effect;
 		}
 
 		public override bool deepEqual(Node n) => n is Member m && deepEqual(m);
@@ -165,11 +163,13 @@ namespace Ast {
 		internal sealed class Method : Member, ToData<Method> {
 			internal readonly bool isStatic;
 			internal readonly Ty returnTy;
+			internal readonly Model.Effect selfEffect;
 			internal readonly Arr<Parameter> parameters;
 			internal readonly Expr body;
-			internal Method(Loc loc, bool isStatic, Ty returnTy, Sym name, Arr<Parameter> parameters, Model.Effect effect, Expr body) : base(loc, name, effect) {
+			internal Method(Loc loc, bool isStatic, Ty returnTy, Sym name, Model.Effect selfEffect, Arr<Parameter> parameters, Expr body) : base(loc, name) {
 				this.isStatic = isStatic;
 				this.returnTy = returnTy;
+				this.selfEffect = selfEffect;
 				this.parameters = parameters;
 				this.body = body;
 			}
@@ -193,9 +193,11 @@ namespace Ast {
 
 		internal sealed class AbstractMethod : Member, ToData<AbstractMethod> {
 			internal readonly Ty returnTy;
+			internal readonly Model.Effect selfEffect;
 			internal readonly Arr<Parameter> parameters;
-			internal AbstractMethod(Loc loc, Ty returnTy, Sym name, Arr<Parameter> parameters, Model.Effect effect) : base(loc, name, effect) {
+			internal AbstractMethod(Loc loc, Ty returnTy, Sym name, Model.Effect selfEffect, Arr<Parameter> parameters) : base(loc, name) {
 				this.returnTy = returnTy;
+				this.selfEffect = selfEffect;
 				this.parameters = parameters;
 			}
 
@@ -226,11 +228,24 @@ namespace Ast {
 		public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(ty), ty, nameof(name), name);
 	}
 
-	abstract class Ty : Node, ToData<Ty> {
-		Ty(Loc loc) : base(loc) {}
-		public bool deepEqual(Ty ty) => Equals((Node)ty);
+	sealed class Ty : Node, ToData<Ty> {
+		internal readonly Model.Effect effect;
+		internal readonly ClsRef cls;
+		internal Ty(Loc loc, Model.Effect effect, ClsRef cls) : base(loc) {
+			this.effect = effect;
+			this.cls = cls;
+		}
 
-		internal sealed class Access : Ty, ToData<Access> {
+		public override bool deepEqual(Node n) => n is Ty t && deepEqual(t);
+		public bool deepEqual(Ty t) => locEq(t) && effect == t.effect && cls.deepEqual(t.cls);
+		public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(cls), cls);
+	}
+
+	abstract class ClsRef : Node, ToData<ClsRef> {
+		ClsRef(Loc loc) : base(loc) {}
+		public bool deepEqual(ClsRef c) => deepEqual((Node)c);
+
+		internal sealed class Access : ClsRef, ToData<Access> {
 			internal readonly Sym name;
 			internal Access(Loc loc, Sym name) : base(loc) { this.name = name; }
 
@@ -239,7 +254,7 @@ namespace Ast {
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(name), name);
 		}
 
-		internal sealed class Inst : Ty, ToData<Inst> {
+		internal sealed class Inst : ClsRef, ToData<Inst> {
 			internal readonly Access instantiated;
 			internal readonly Arr<Ty> tyArgs;
 			internal Inst(Loc loc, Access instantiated, Arr<Ty> tyArgs) : base(loc) {

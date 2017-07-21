@@ -9,9 +9,11 @@ Module(
       Method(
         loc: 0-116,
         isStatic: true,
-        returnTy: Access(
+        returnTy: Ty(
           loc: 4-8,
-          name: "Void"),
+          cls: Access(
+            loc: 4-8,
+            name: "Void")),
         name: "main",
         parameters: [],
         body: Let(
@@ -83,15 +85,19 @@ Module(
       Method(
         loc: 116-145,
         isStatic: true,
-        returnTy: Access(
+        returnTy: Ty(
           loc: 120-123,
-          name: "Nat"),
+          cls: Access(
+            loc: 120-123,
+            name: "Nat")),
         name: "double",
         parameters: [Parameter(
           loc: 131-136,
-          ty: Access(
+          ty: Ty(
             loc: 131-134,
-            name: "Nat"),
+            cls: Access(
+              loc: 131-134,
+              name: "Nat")),
           name: "x")],
         body: OperatorCall(
           loc: 139-145,

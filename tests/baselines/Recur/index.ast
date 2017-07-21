@@ -9,9 +9,11 @@ Module(
       Method(
         loc: 0-120,
         isStatic: true,
-        returnTy: Access(
+        returnTy: Ty(
           loc: 4-8,
-          name: "Void"),
+          cls: Access(
+            loc: 4-8,
+            name: "Void")),
         name: "main",
         parameters: [],
         body: Seq(
@@ -55,15 +57,19 @@ Module(
       Method(
         loc: 120-171,
         isStatic: true,
-        returnTy: Access(
+        returnTy: Ty(
           loc: 124-127,
-          name: "Nat"),
+          cls: Access(
+            loc: 124-127,
+            name: "Nat")),
         name: "factorial",
         parameters: [Parameter(
           loc: 138-143,
-          ty: Access(
+          ty: Ty(
             loc: 138-141,
-            name: "Nat"),
+            cls: Access(
+              loc: 138-141,
+              name: "Nat")),
           name: "n")],
         body: Call(
           loc: 146-171,
@@ -81,22 +87,28 @@ Module(
       Method(
         loc: 171-273,
         isStatic: true,
-        returnTy: Access(
+        returnTy: Ty(
           loc: 175-178,
-          name: "Nat"),
+          cls: Access(
+            loc: 175-178,
+            name: "Nat")),
         name: "factorial-recursive",
         parameters: [
           Parameter(
             loc: 199-204,
-            ty: Access(
+            ty: Ty(
               loc: 199-202,
-              name: "Nat"),
+              cls: Access(
+                loc: 199-202,
+                name: "Nat")),
             name: "n"),
           Parameter(
             loc: 206-213,
-            ty: Access(
+            ty: Ty(
               loc: 206-209,
-              name: "Nat"),
+              cls: Access(
+                loc: 206-209,
+                name: "Nat")),
             name: "acc")
         ],
         body: WhenTest(
@@ -134,15 +146,19 @@ Module(
       Method(
         loc: 273-369,
         isStatic: true,
-        returnTy: Access(
+        returnTy: Ty(
           loc: 277-280,
-          name: "Nat"),
+          cls: Access(
+            loc: 277-280,
+            name: "Nat")),
         name: "fibonacci",
         parameters: [Parameter(
           loc: 291-296,
-          ty: Access(
+          ty: Ty(
             loc: 291-294,
-            name: "Nat"),
+            cls: Access(
+              loc: 291-294,
+              name: "Nat")),
           name: "n")],
         body: WhenTest(
           loc: 299-369,
@@ -189,28 +205,36 @@ Module(
       Method(
         loc: 369-498,
         isStatic: true,
-        returnTy: Access(
+        returnTy: Ty(
           loc: 373-376,
-          name: "Nat"),
+          cls: Access(
+            loc: 373-376,
+            name: "Nat")),
         name: "fibonacci-recursive",
         parameters: [
           Parameter(
             loc: 397-402,
-            ty: Access(
+            ty: Ty(
               loc: 397-400,
-              name: "Nat"),
+              cls: Access(
+                loc: 397-400,
+                name: "Nat")),
             name: "n"),
           Parameter(
             loc: 404-412,
-            ty: Access(
+            ty: Ty(
               loc: 404-407,
-              name: "Nat"),
+              cls: Access(
+                loc: 404-407,
+                name: "Nat")),
             name: "acc1"),
           Parameter(
             loc: 414-422,
-            ty: Access(
+            ty: Ty(
               loc: 414-417,
-              name: "Nat"),
+              cls: Access(
+                loc: 414-417,
+                name: "Nat")),
             name: "acc2")
         ],
         body: WhenTest(

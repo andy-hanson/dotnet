@@ -9,7 +9,7 @@ abstract class LiteralValue : ToData<LiteralValue> {
 	internal sealed class Pass : LiteralValue, ToData<Pass> {
 		Pass() {}
 		internal static readonly Pass instance = new Pass();
-		internal override Ty ty => BuiltinClass.Void;
+		internal override Ty ty => Ty.Void;
 		public override bool deepEqual(LiteralValue l) => l == instance;
 		public bool deepEqual(Pass p) => true;
 		public override Dat toDat() => Dat.of(this);
@@ -22,7 +22,7 @@ abstract class LiteralValue : ToData<LiteralValue> {
 		internal static readonly Bool @false = new Bool(false);
 		internal static Bool of(bool b) => b ? @true : @false;
 
-		internal override Ty ty => BuiltinClass.Bool;
+		internal override Ty ty => Ty.Bool;
 
 		public override bool deepEqual(LiteralValue l) => l is Bool b && deepEqual(b);
 		public bool deepEqual(Bool b) => value == b.value;
@@ -34,7 +34,7 @@ abstract class LiteralValue : ToData<LiteralValue> {
 		Nat(uint value) { this.value = value; }
 		internal static Nat of(uint value) => new Nat(value); // TODO: cache common values
 
-		internal override Ty ty => BuiltinClass.Nat;
+		internal override Ty ty => Ty.Nat;
 
 		public override bool deepEqual(LiteralValue l) => l is Nat && deepEqual(l);
 		public bool deepEqual(Nat n) => value == n.value;
@@ -46,7 +46,7 @@ abstract class LiteralValue : ToData<LiteralValue> {
 		Int(int value) { this.value = value; }
 		internal static Int of(int value) => new Int(value); // TODO: cache common values
 
-		internal override Ty ty => BuiltinClass.Int;
+		internal override Ty ty => Ty.Int;
 
 		public override bool deepEqual(LiteralValue l) => l is Int i && deepEqual(i);
 		public bool deepEqual(Int i) => value == i.value;
@@ -58,7 +58,7 @@ abstract class LiteralValue : ToData<LiteralValue> {
 		Real(double value) { this.value = value; }
 		internal static Real of(double value) => new Real(value);
 
-		internal override Ty ty => BuiltinClass.Real;
+		internal override Ty ty => Ty.Real;
 
 		public override bool deepEqual(LiteralValue l) => l is Real f && deepEqual(f);
 		public bool deepEqual(Real f) => value == f.value;
@@ -70,7 +70,7 @@ abstract class LiteralValue : ToData<LiteralValue> {
 		String(string value) { this.value = value; }
 		internal static String of(string value) => new String(value);
 
-		internal override Ty ty => BuiltinClass.String;
+		internal override Ty ty => Ty.String;
 
 		public override bool deepEqual(LiteralValue l) => l is String s && deepEqual(s);
 		public bool deepEqual(String s) => value == s.value;

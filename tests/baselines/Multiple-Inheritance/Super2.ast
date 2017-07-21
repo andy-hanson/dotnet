@@ -9,17 +9,21 @@ Module(
     methods: [
       AbstractMethod(
         loc: 10-29,
-        returnTy: Access(
+        returnTy: Ty(
           loc: 19-22,
-          name: "Nat"),
+          cls: Access(
+            loc: 19-22,
+            name: "Nat")),
         name: "s2",
         parameters: []),
       Method(
         loc: 29-56,
         isStatic: false,
-        returnTy: Access(
+        returnTy: Ty(
           loc: 33-36,
-          name: "Nat"),
+          cls: Access(
+            loc: 33-36,
+            name: "Nat")),
         name: "s2Def",
         parameters: [],
         body: OperatorCall(

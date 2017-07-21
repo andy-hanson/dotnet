@@ -1,15 +1,8 @@
 using static ParserExitException;
 using static Utils;
 
-abstract class ExprParser : Lexer {
+abstract class ExprParser : TyParser {
 	protected ExprParser(string source) : base(source) {}
-
-	protected Ast.Ty parseTy() {
-		var start = pos;
-		var name = takeTyName();
-		//TODO: handle Inst too
-		return new Ast.Ty.Access(locFrom(start), name);
-	}
 
 	protected Ast.Expr parseBlock() {
 		var start = pos;

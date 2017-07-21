@@ -5,14 +5,19 @@ Klass(
       loc: 0-18,
       name: "x",
       mutable: false,
-      ty: BuiltinClass(
-        name: "Nat"))]),
+      ty: Ty(
+        effect: "pure",
+        cls: BuiltinClass(
+          name: "Nat")))]),
   membersMap: Dict<Sym, Member>(
     main: MethodWithBody(
       loc: 18-85,
       isStatic: true,
-      returnTy: "Void",
+      returnTy: Id(
+        effect: "pure",
+        clsId: "Void"),
       name: "main",
+      selfEffect: "pure",
       parameters: [],
       body: Let(
         loc: 39-48,
@@ -51,8 +56,11 @@ Klass(
     getX: MethodWithBody(
       loc: 85-103,
       isStatic: false,
-      returnTy: "Nat",
+      returnTy: Id(
+        effect: "pure",
+        clsId: "Nat"),
       name: "getX",
+      selfEffect: "pure",
       parameters: [],
       body: GetMySlot(
         slot: Id(
@@ -62,5 +70,7 @@ Klass(
       loc: 0-18,
       name: "x",
       mutable: false,
-      ty: BuiltinClass(
-        name: "Nat"))))
+      ty: Ty(
+        effect: "pure",
+        cls: BuiltinClass(
+          name: "Nat")))))

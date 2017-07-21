@@ -1,7 +1,7 @@
 const assert = require("assert");
 // @ts-ignore
 const nzlib = require("nzlib");
-const { readStdinSync } = require("./utils");
+const { handleSingleLineFromStdin } = require("./utils");
 
 if (module.parent === null)
 	main();
@@ -11,19 +11,14 @@ if (module.parent === null)
 /** @typedef {{ primitives: Primitives, classes: Classes, other: ReadonlyArray<string> }} J */
 
 function main() {
-	/** @type {string} */
-	// @ts-ignore
-	const str = readStdinSync(/*bufferSize*/ 1 << 20);
-	let error = false;
-	try {
-		check(str);
-	} catch (e) {
-		error = true;
-		console.log(e.stack);
-	}
-	if (!error) {
-		console.log("OK");
-	}
+	handleSingleLineFromStdin(str => {
+		try {
+			check(str);
+			console.log("OK");
+		} catch (error) {
+			console.log(error.stack ? JSON.stringify(error.stack) : `ERROR: ${JSON.stringify(error)}`);
+		}
+	});
 }
 
 /**

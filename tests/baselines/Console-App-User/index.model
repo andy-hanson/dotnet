@@ -5,11 +5,16 @@ Klass(
     main: MethodWithBody(
       loc: 0-74,
       isStatic: true,
-      returnTy: "Void",
+      returnTy: Id(
+        effect: "pure",
+        clsId: "Void"),
       name: "main",
+      selfEffect: "pure",
       parameters: [Parameter(
-        loc: 14-29,
-        ty: "Console-App",
+        loc: 14-32,
+        ty: Id(
+          effect: "io",
+          clsId: "Console-App"),
         name: "app",
         index: 0)],
       body: InstanceMethodCall(
@@ -19,8 +24,10 @@ Klass(
           target: AccessParameter(
             loc: 35-38,
             param: Parameter(
-              loc: 14-29,
-              ty: "Console-App",
+              loc: 14-32,
+              ty: Id(
+                effect: "io",
+                clsId: "Console-App"),
               name: "app",
               index: 0)),
           method: Id(

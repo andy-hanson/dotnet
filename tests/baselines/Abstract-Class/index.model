@@ -5,17 +5,24 @@ Klass(
   membersMap: Dict<Sym, Member>(
     s: AbstractMethod(
       loc: 10-31,
-      returnTy: "String",
+      returnTy: Id(
+        effect: "pure",
+        clsId: "String"),
       name: "s",
       parameters: []),
     main: MethodWithBody(
       loc: 31-84,
       isStatic: true,
-      returnTy: "Void",
+      returnTy: Id(
+        effect: "pure",
+        clsId: "Void"),
       name: "main",
+      selfEffect: "pure",
       parameters: [Parameter(
         loc: 45-61,
-        ty: "",
+        ty: Id(
+          effect: "pure",
+          clsId: ""),
         name: "a",
         index: 0)],
       body: Assert(
@@ -28,7 +35,9 @@ Klass(
               loc: 71-72,
               param: Parameter(
                 loc: 45-61,
-                ty: "",
+                ty: Id(
+                  effect: "pure",
+                  clsId: ""),
                 name: "a",
                 index: 0)),
             method: Id(

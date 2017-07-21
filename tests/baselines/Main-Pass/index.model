@@ -5,8 +5,11 @@ Klass(
     main: MethodWithBody(
       loc: 0-22,
       isStatic: true,
-      returnTy: "Void",
+      returnTy: Id(
+        effect: "pure",
+        clsId: "Void"),
       name: "main",
+      selfEffect: "pure",
       parameters: [],
       body: Literal(
         loc: 17-21,

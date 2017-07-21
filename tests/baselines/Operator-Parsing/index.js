@@ -1,7 +1,7 @@
 "use strict";
 const _ = require("nzlib");
 module.exports = class Operator_Parsing {
-	static main(){
+	static main() {
 		const x = (1 + 2) * 3;
 		if (x !== 9)
 			throw new _.Assertion_Exception();

@@ -1,2 +1,2 @@
-fun Void main(Console-App app) io
+fun Void main(io Console-App app)
 	app.stdout().write-line "Hello world!"

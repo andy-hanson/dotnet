@@ -4,24 +4,23 @@ using Model;
 using static Utils;
 
 class ExprChecker {
-	internal static Expr checkMethod(BaseScope baseScope, MethodOrImpl methodOrImpl, bool isStatic, Ty returnTy, Arr<Parameter> parameters, Effect effect, Ast.Expr body) =>
-		new ExprChecker(baseScope, methodOrImpl, isStatic, parameters, effect).checkReturn(returnTy, body);
+	internal static Expr checkMethod(BaseScope baseScope, MethodOrImpl methodOrImpl, bool isStatic, Ty returnTy, Effect selfEffect, Arr<Parameter> parameters, Ast.Expr body) =>
+		new ExprChecker(baseScope, methodOrImpl, isStatic, selfEffect, parameters).checkReturn(returnTy, body);
 
 	readonly BaseScope baseScope;
 	Klass currentClass => baseScope.self;
 	readonly MethodOrImpl methodOrImpl;
 	readonly bool isStatic;
+	readonly Effect selfEffect;
 	readonly Arr<Parameter> parameters;
-	/** Declared effect for this method. Cannot call methods that have effects we haven't declared. */
-	readonly Effect effect;
 	readonly Stack<Pattern.Single> locals = new Stack<Pattern.Single>();
 
-	ExprChecker(BaseScope baseScope, MethodOrImpl methodOrImpl, bool isStatic, Arr<Parameter> parameters, Effect effect) {
+	ExprChecker(BaseScope baseScope, MethodOrImpl methodOrImpl, bool isStatic, Effect selfEffect, Arr<Parameter> parameters) {
 		this.baseScope = baseScope;
 		this.methodOrImpl = methodOrImpl;
 		this.isStatic = isStatic;
+		this.selfEffect = selfEffect;
 		this.parameters = parameters;
-		this.effect = effect;
 
 		// Assert that parameters don't shadow each other.
 		for (uint i = 0; i < parameters.length; i++) {
@@ -35,7 +34,7 @@ class ExprChecker {
 		}
 	}
 
-	Expr checkVoid(Ast.Expr a) => checkSubtype(BuiltinClass.Void, a);
+	Expr checkVoid(Ast.Expr a) => checkSubtype(Ty.Void, a);
 
 	Expr checkInfer(Ast.Expr a) {
 		var expected = Expected.Infer();
@@ -102,7 +101,7 @@ class ExprChecker {
 	Expr checkCallAst(ref Expected expected, Ast.Call call) {
 		switch (call.target) {
 			case Ast.StaticAccess sa:
-				var ty = baseScope.accessTy(call.loc, sa.className);
+				var ty = baseScope.accessClsRef(call.loc, sa.className);
 				var klass = ty as ClassLike ?? throw TODO();
 				return callStaticMethod(ref expected, sa.loc, klass, sa.staticMethodName, call.args);
 
@@ -122,10 +121,8 @@ class ExprChecker {
 		if (!expected.inTailCallPosition)
 			throw TODO(); //compile error
 
-		//should match this.parameters
-		var loc = r.loc;
-		var args = this.checkCallArguments(loc, parameters, r.args);
-		return handle(ref expected, new Recur(loc, methodOrImpl, args));
+		var args = this.checkCallArguments(r.loc, parameters, r.args);
+		return handle(ref expected, new Recur(r.loc, methodOrImpl, args));
 	}
 
 	Expr checkNew(ref Expected expected, Ast.New n) {
@@ -141,8 +138,10 @@ class ExprChecker {
 
 	Expr checkGetProperty(ref Expected expected, Ast.GetProperty g) {
 		var target = checkInfer(g.target);
-		var member = getMember(g.loc, target.ty, g.propertyName);
+		var member = getMember(g.loc, target.ty.cls, g.propertyName);
 		var slot = (Slot)member; //TODO: error handling
+		if (slot.mutable && !target.ty.effect.contains(Effect.Get))
+			throw TODO(); // Tried to observe mutable state, but don't have permission.
 		return handle(ref expected, new GetSlot(g.loc, target, slot));
 	}
 
@@ -163,14 +162,15 @@ class ExprChecker {
 	Expr checkLiteral(ref Expected expected, Ast.Literal l) =>
 		handle(ref expected, new Literal(l.loc, l.value));
 
-	Expr checkSelf(ref Expected expected, Ast.Self s) => new Self(s.loc, currentClass);
+	Expr checkSelf(ref Expected expected, Ast.Self s) =>
+		new Self(s.loc, Ty.of(selfEffect, currentClass));
 
 	Expr checkWhenTest(ref Expected expected, Ast.WhenTest w) {
 		//Can't use '.map' because of the ref parameter
 		var casesBuilder = w.cases.mapBuilder<WhenTest.Case>();
 		for (uint i = 0; i < casesBuilder.Length; i++) {
 			var kase = w.cases[i];
-			var test = checkSubtype(BuiltinClass.Bool, kase.test);
+			var test = checkSubtype(Ty.Bool, kase.test);
 			var result = checkExpr(ref expected, kase.result);
 			casesBuilder[i] = new WhenTest.Case(kase.loc, test, result);
 		}
@@ -182,7 +182,7 @@ class ExprChecker {
 	}
 
 	Expr checkAssert(ref Expected expected, Ast.Assert a) =>
-		handle(ref expected, new Assert(a.loc, checkSubtype(BuiltinClass.Bool, a.asserted)));
+		handle(ref expected, new Assert(a.loc, checkSubtype(Ty.Bool, a.asserted)));
 
 	Expr checkTry(ref Expected expected, Ast.Try t) {
 		var doo = checkExpr(ref expected, t._do);
@@ -204,15 +204,18 @@ class ExprChecker {
 		if (!klass.membersMap.get(methodName, out var member)) TODO();
 		var method = (Method)member;
 		if (!method.isStatic) throw TODO();
+		// No need to check selfEffect, because this is a static method.
 		var args = checkCall(loc, method, argAsts);
 		return handle(ref expected, new StaticMethodCall(loc, method, args));
 	}
 
 	Expr callMethod(ref Expected expected, Loc loc, Ast.Expr targetAst, Sym methodName, Arr<Ast.Expr> argAsts) {
 		var target = checkInfer(targetAst);
-		var member = getMember(loc, target.ty, methodName);
+		var member = getMember(loc, target.ty.cls, methodName);
 		var method = (Method)member; //TODO: error handling
 		if (method.isStatic) throw TODO(); //error
+		if (!target.ty.effect.contains(method.selfEffect))
+			throw TODO(); // Can't call a method on an object with a greater effect than we've declared for it.
 		var args = checkCall(loc, method, argAsts);
 		return handle(ref expected, new InstanceMethodCall(loc, target, method, args));
 	}
@@ -220,21 +223,24 @@ class ExprChecker {
 	Expr callOwnMethod(ref Expected expected, Loc loc, Sym methodName, Arr<Ast.Expr> argAsts) {
 		var member = getMember(loc, currentClass, methodName);
 		var method = (Method)member; //TODO: error handling
+		if (!isStatic && !selfEffect.contains(method.selfEffect))
+			throw TODO(); //Can't call my method with a greater effect
 		var args = checkCall(loc, method, argAsts);
 		var call = method.isStatic ? new StaticMethodCall(loc, method, args) : (Expr)new MyInstanceMethodCall(loc, method, args);
 		return handle(ref expected, call);
 	}
 
-	static Member getMember(Loc loc, Ty ty, Sym memberName) {
-		if (tryGetMember(ty, memberName, out var member))
+	//Caller is responsible for checking that we can access this member's effect.
+	static Member getMember(Loc loc, ClsRef cls, Sym memberName) {
+		if (tryGetMember(cls, memberName, out var member))
 			return member;
 
 		unused(loc);
 		throw TODO(); //error
 	}
 
-	static bool tryGetMember(Ty ty, Sym memberName, out Member member) {
-		var klass = (ClassLike)ty; //TODO
+	static bool tryGetMember(ClsRef cls, Sym memberName, out Member member) {
+		var klass = (ClassLike)cls; //TODO
 		if (klass.membersMap.get(memberName, out member)) {
 			return true;
 		}
@@ -247,11 +253,9 @@ class ExprChecker {
 		return false;
 	}
 
-	Arr<Expr> checkCall(Loc callLoc, Method method, Arr<Ast.Expr> argAsts) {
-		if (!effect.contains(method.effect))
-			throw TODO(); // Error: can't call method with greater effect
-		return checkCallArguments(callLoc, method.parameters, argAsts);
-	}
+	// Note: Caller is responsible for checking selfEffect
+	Arr<Expr> checkCall(Loc callLoc, Method method, Arr<Ast.Expr> argAsts) =>
+		checkCallArguments(callLoc, method.parameters, argAsts);
 
 	// Used by normal calls and by 'recur' (which doesn't need an effect check)
 	Arr<Expr> checkCallArguments(Loc loc, Arr<Parameter> parameters, Arr<Ast.Expr> argAsts) {
@@ -274,11 +278,11 @@ class ExprChecker {
 	}
 
 	Expr get(Loc loc, Sym name) {
-		if (parameters.find(out var param, p => p.name == name))
-			return new AccessParameter(loc, param);
-
 		if (locals.find(out var local, l => l.name == name))
 			return new AccessLocal(loc, local);
+
+		if (parameters.find(out var param, p => p.name == name))
+			return new AccessParameter(loc, param);
 
 		if (!baseScope.tryGetMember(name, out var member))
 			throw TODO(); //error: cannot find name...
@@ -335,12 +339,7 @@ class ExprChecker {
 					return c.checkType(expectedTy.force, e);
 				case Kind.Infer:
 					if (expectedTy.get(out var ety)) {
-						// Types must exactly equal.
-						if (ety != e.ty) {
-							//loc;
-							//new Err.CombineTypes(ety, e.ty);
-							throw TODO();
-						}
+						expectedTy = Op.Some(c.getCombinedType(ety, e.ty));
 						return e;
 					} else {
 						expectedTy = Op.Some(e.ty);
@@ -350,6 +349,15 @@ class ExprChecker {
 					throw unreachable();
 			}
 		}
+	}
+
+	Ty getCombinedType(Ty a, Ty b) {
+		var effect = a.effect.minCommonEffect(b.effect);
+		if (!a.cls.fastEquals(b.cls)) {
+			unused(this);
+			throw TODO();
+		}
+		return Ty.of(effect, a.cls);
 	}
 
 	//mv
@@ -363,11 +371,15 @@ class ExprChecker {
 		throw TODO();
 	}
 
-	bool isSubtype(Ty expectedTy, Ty actualTy) {
-		if (expectedTy.fastEquals(actualTy))
+	bool isSubtype(Ty expectedTy, Ty actualTy) =>
+		actualTy.effect.contains(expectedTy.effect) && // Pure `Foo` can't be assigned to `io Foo`.
+			isSubclass(expectedTy.cls, actualTy.cls);
+
+	bool isSubclass(ClsRef expected, ClsRef actual) {
+		if (expected.fastEquals(actual))
 			return true;
-		foreach (var s in actualTy.supers) {
-			if (isSubtype(expectedTy, s.superClass))
+		foreach (var s in actual.supers) {
+			if (isSubclass(expected, s.superClass))
 				return true;
 		}
 		return false;

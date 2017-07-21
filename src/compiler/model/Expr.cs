@@ -215,7 +215,7 @@ namespace Model {
 
 			public bool deepEqual(Catch c) =>
 				loc.deepEqual(c.loc) &&
-				exceptionTy.equalsId<Ty, ClassLike.Id>(c.exceptionTy) &&
+				exceptionTy.equalsId<Ty, Ty.Id>(c.exceptionTy) &&
 				caught.deepEqual(c.caught) &&
 				then.deepEqual(c.then);
 			public Dat toDat() => Dat.of(this,
@@ -326,7 +326,7 @@ namespace Model {
 
 		internal Klass klass => slots.klass;
 		internal override IEnumerable<Expr> children() => args;
-		internal override Ty ty => klass;
+		internal override Ty ty => Ty.io(klass); // A new object always has full permission.
 
 		public override bool deepEqual(Expr e) => e is New n && deepEqual(n);
 		// Don't need to compare `klass` since that has only one legal value.
@@ -369,15 +369,15 @@ namespace Model {
 	}
 
 	internal sealed class Self : Expr, ToData<Self> {
-		[ParentPointer] internal readonly Klass klass; // Pointer to the class this appears in.
-		internal Self(Loc loc, Klass klass) : base(loc) { this.klass = klass; }
+		[ParentPointer] internal readonly Ty _ty; // Class this method was defined in, plus selfEffect of the method.
+		internal Self(Loc loc, Ty ty) : base(loc) { _ty = ty; }
 
 		internal override IEnumerable<Expr> children() => noChildren;
-		internal override Ty ty => klass;
+		internal override Ty ty => _ty;
 
 		public override bool deepEqual(Expr e) => e is Self s && deepEqual(s);
 		public bool deepEqual(Self s) {
-			assert(klass.equalsId<ClassLike, ClassLike.Id>(s.klass));
+			assert(ty.equalsId<Ty, Ty.Id>(s.ty));
 			return locEq(s);
 		}
 		public override Dat toDat() => Dat.of(this, nameof(loc), loc);
@@ -391,7 +391,7 @@ namespace Model {
 		}
 
 		internal override IEnumerable<Expr> children() { yield return asserted; }
-		internal override Ty ty => BuiltinClass.Void;
+		internal override Ty ty => Ty.Void;
 
 		public override bool deepEqual(Expr e) => e is Assert a && deepEqual(a);
 		public bool deepEqual(Assert a) => locEq(a) && asserted.deepEqual(a.asserted);

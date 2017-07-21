@@ -9,23 +9,29 @@ Module(
     methods: [
       AbstractMethod(
         loc: 10-28,
-        returnTy: Access(
+        returnTy: Ty(
           loc: 19-22,
-          name: "Nat"),
+          cls: Access(
+            loc: 19-22,
+            name: "Nat")),
         name: "n",
         parameters: []),
       Method(
         loc: 28-65,
         isStatic: true,
-        returnTy: Access(
+        returnTy: Ty(
           loc: 32-35,
-          name: "Nat"),
+          cls: Access(
+            loc: 32-35,
+            name: "Nat")),
         name: "getN",
         parameters: [Parameter(
           loc: 41-56,
-          ty: Access(
+          ty: Ty(
             loc: 41-54,
-            name: "AbstractClass"),
+            cls: Access(
+              loc: 41-54,
+              name: "AbstractClass")),
           name: "a")],
         body: Call(
           loc: 59-64,

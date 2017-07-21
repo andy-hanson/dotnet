@@ -8,9 +8,11 @@ Module(
     methods: [Method(
       loc: 0-135,
       isStatic: true,
-      returnTy: Access(
+      returnTy: Ty(
         loc: 4-8,
-        name: "Void"),
+        cls: Access(
+          loc: 4-8,
+          name: "Void")),
       name: "main",
       parameters: [],
       body: Let(
@@ -32,9 +34,11 @@ Module(
               value: "unreachable")),
           _catch: Catch(
             loc: 65-103,
-            exceptionTy: Access(
+            exceptionTy: Ty(
               loc: 71-80,
-              name: "Exception"),
+              cls: Access(
+                loc: 71-80,
+                name: "Exception")),
             exceptionName: "e",
             then: Call(
               loc: 86-101,

@@ -5,8 +5,11 @@ Klass(
     main: MethodWithBody(
       loc: 0-116,
       isStatic: true,
-      returnTy: "Void",
+      returnTy: Id(
+        effect: "pure",
+        clsId: "Void"),
       name: "main",
+      selfEffect: "pure",
       parameters: [],
       body: Let(
         loc: 19-32,
@@ -113,11 +116,16 @@ Klass(
     double: MethodWithBody(
       loc: 116-145,
       isStatic: true,
-      returnTy: "Nat",
+      returnTy: Id(
+        effect: "pure",
+        clsId: "Nat"),
       name: "double",
+      selfEffect: "pure",
       parameters: [Parameter(
         loc: 131-136,
-        ty: "Nat",
+        ty: Id(
+          effect: "pure",
+          clsId: "Nat"),
         name: "x",
         index: 0)],
       body: InstanceMethodCall(
@@ -126,7 +134,9 @@ Klass(
           loc: 139-140,
           param: Parameter(
             loc: 131-136,
-            ty: "Nat",
+            ty: Id(
+              effect: "pure",
+              clsId: "Nat"),
             name: "x",
             index: 0)),
         method: Id(

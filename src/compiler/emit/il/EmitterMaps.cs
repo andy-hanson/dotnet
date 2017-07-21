@@ -9,7 +9,8 @@ interface EmitterMaps {
 	MethodInfo getMethodInfo(Method method);
 	ConstructorInfo getConstructorInfo(Klass klass);
 	FieldInfo getFieldInfo(Slot slot);
-	Type toType(Ty ty);
+	Type toType(Ty ty); // Just calls toType(ty.cls)
+	Type toType(ClsRef cls);
 }
 
 sealed class EmitterMapsBuilder : EmitterMaps {
@@ -48,8 +49,10 @@ sealed class EmitterMapsBuilder : EmitterMaps {
 		typeInfos[klass] = typeInfos[klass].withType(type);
 
 	Type EmitterMaps.toType(Ty ty) => toType(ty);
-	internal Type toType(Ty ty) {
-		switch (ty) {
+	Type EmitterMaps.toType(ClsRef cls) => toType(cls);
+	internal Type toType(Ty ty) => toType(ty.cls);
+	internal Type toType(ClsRef cls) {
+		switch (cls) {
 			case BuiltinClass b:
 				return b.dotNetType;
 			case Klass k:

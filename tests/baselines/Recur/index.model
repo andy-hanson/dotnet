@@ -5,8 +5,11 @@ Klass(
     main: MethodWithBody(
       loc: 0-120,
       isStatic: true,
-      returnTy: "Void",
+      returnTy: Id(
+        effect: "pure",
+        clsId: "Void"),
       name: "main",
+      selfEffect: "pure",
       parameters: [],
       body: Seq(
         loc: 17-120,
@@ -85,11 +88,16 @@ Klass(
     factorial: MethodWithBody(
       loc: 120-171,
       isStatic: true,
-      returnTy: "Nat",
+      returnTy: Id(
+        effect: "pure",
+        clsId: "Nat"),
       name: "factorial",
+      selfEffect: "pure",
       parameters: [Parameter(
         loc: 138-143,
-        ty: "Nat",
+        ty: Id(
+          effect: "pure",
+          clsId: "Nat"),
         name: "n",
         index: 0)],
       body: StaticMethodCall(
@@ -101,7 +109,9 @@ Klass(
             loc: 166-167,
             param: Parameter(
               loc: 138-143,
-              ty: "Nat",
+              ty: Id(
+                effect: "pure",
+                clsId: "Nat"),
               name: "n",
               index: 0)),
           Literal(
@@ -111,17 +121,24 @@ Klass(
     factorial-recursive: MethodWithBody(
       loc: 171-273,
       isStatic: true,
-      returnTy: "Nat",
+      returnTy: Id(
+        effect: "pure",
+        clsId: "Nat"),
       name: "factorial-recursive",
+      selfEffect: "pure",
       parameters: [
         Parameter(
           loc: 199-204,
-          ty: "Nat",
+          ty: Id(
+            effect: "pure",
+            clsId: "Nat"),
           name: "n",
           index: 0),
         Parameter(
           loc: 206-213,
-          ty: "Nat",
+          ty: Id(
+            effect: "pure",
+            clsId: "Nat"),
           name: "acc",
           index: 1)
       ],
@@ -135,7 +152,9 @@ Klass(
               loc: 216-224,
               param: Parameter(
                 loc: 199-204,
-                ty: "Nat",
+                ty: Id(
+                  effect: "pure",
+                  clsId: "Nat"),
                 name: "n",
                 index: 0)),
             method: Id(
@@ -148,7 +167,9 @@ Klass(
             loc: 233-236,
             param: Parameter(
               loc: 206-213,
-              ty: "Nat",
+              ty: Id(
+                effect: "pure",
+                clsId: "Nat"),
               name: "acc",
               index: 1)))],
         elseResult: Recur(
@@ -160,7 +181,9 @@ Klass(
                 loc: 253-254,
                 param: Parameter(
                   loc: 199-204,
-                  ty: "Nat",
+                  ty: Id(
+                    effect: "pure",
+                    clsId: "Nat"),
                   name: "n",
                   index: 0)),
               method: Id(
@@ -173,7 +196,9 @@ Klass(
                 loc: 263-266,
                 param: Parameter(
                   loc: 206-213,
-                  ty: "Nat",
+                  ty: Id(
+                    effect: "pure",
+                    clsId: "Nat"),
                   name: "acc",
                   index: 1)),
               method: Id(
@@ -183,18 +208,25 @@ Klass(
                 loc: 269-270,
                 param: Parameter(
                   loc: 199-204,
-                  ty: "Nat",
+                  ty: Id(
+                    effect: "pure",
+                    clsId: "Nat"),
                   name: "n",
                   index: 0))])
           ]))),
     fibonacci: MethodWithBody(
       loc: 273-369,
       isStatic: true,
-      returnTy: "Nat",
+      returnTy: Id(
+        effect: "pure",
+        clsId: "Nat"),
       name: "fibonacci",
+      selfEffect: "pure",
       parameters: [Parameter(
         loc: 291-296,
-        ty: "Nat",
+        ty: Id(
+          effect: "pure",
+          clsId: "Nat"),
         name: "n",
         index: 0)],
       body: WhenTest(
@@ -208,7 +240,9 @@ Klass(
                 loc: 299-307,
                 param: Parameter(
                   loc: 291-296,
-                  ty: "Nat",
+                  ty: Id(
+                    effect: "pure",
+                    clsId: "Nat"),
                   name: "n",
                   index: 0)),
               method: Id(
@@ -228,7 +262,9 @@ Klass(
                 loc: 320-321,
                 param: Parameter(
                   loc: 291-296,
-                  ty: "Nat",
+                  ty: Id(
+                    effect: "pure",
+                    clsId: "Nat"),
                   name: "n",
                   index: 0)),
               method: Id(
@@ -250,7 +286,9 @@ Klass(
               loc: 362-363,
               param: Parameter(
                 loc: 291-296,
-                ty: "Nat",
+                ty: Id(
+                  effect: "pure",
+                  clsId: "Nat"),
                 name: "n",
                 index: 0)),
             Literal(
@@ -263,22 +301,31 @@ Klass(
     fibonacci-recursive: MethodWithBody(
       loc: 369-498,
       isStatic: true,
-      returnTy: "Nat",
+      returnTy: Id(
+        effect: "pure",
+        clsId: "Nat"),
       name: "fibonacci-recursive",
+      selfEffect: "pure",
       parameters: [
         Parameter(
           loc: 397-402,
-          ty: "Nat",
+          ty: Id(
+            effect: "pure",
+            clsId: "Nat"),
           name: "n",
           index: 0),
         Parameter(
           loc: 404-412,
-          ty: "Nat",
+          ty: Id(
+            effect: "pure",
+            clsId: "Nat"),
           name: "acc1",
           index: 1),
         Parameter(
           loc: 414-422,
-          ty: "Nat",
+          ty: Id(
+            effect: "pure",
+            clsId: "Nat"),
           name: "acc2",
           index: 2)
       ],
@@ -292,7 +339,9 @@ Klass(
               loc: 425-433,
               param: Parameter(
                 loc: 397-402,
-                ty: "Nat",
+                ty: Id(
+                  effect: "pure",
+                  clsId: "Nat"),
                 name: "n",
                 index: 0)),
             method: Id(
@@ -307,7 +356,9 @@ Klass(
               loc: 442-446,
               param: Parameter(
                 loc: 404-412,
-                ty: "Nat",
+                ty: Id(
+                  effect: "pure",
+                  clsId: "Nat"),
                 name: "acc1",
                 index: 1)),
             method: Id(
@@ -317,7 +368,9 @@ Klass(
               loc: 449-453,
               param: Parameter(
                 loc: 414-422,
-                ty: "Nat",
+                ty: Id(
+                  effect: "pure",
+                  clsId: "Nat"),
                 name: "acc2",
                 index: 2))]))],
         elseResult: Recur(
@@ -329,7 +382,9 @@ Klass(
                 loc: 470-471,
                 param: Parameter(
                   loc: 397-402,
-                  ty: "Nat",
+                  ty: Id(
+                    effect: "pure",
+                    clsId: "Nat"),
                   name: "n",
                   index: 0)),
               method: Id(
@@ -340,7 +395,9 @@ Klass(
               loc: 479-483,
               param: Parameter(
                 loc: 414-422,
-                ty: "Nat",
+                ty: Id(
+                  effect: "pure",
+                  clsId: "Nat"),
                 name: "acc2",
                 index: 2)),
             InstanceMethodCall(
@@ -349,7 +406,9 @@ Klass(
                 loc: 485-489,
                 param: Parameter(
                   loc: 404-412,
-                  ty: "Nat",
+                  ty: Id(
+                    effect: "pure",
+                    clsId: "Nat"),
                   name: "acc1",
                   index: 1)),
               method: Id(
@@ -359,7 +418,9 @@ Klass(
                 loc: 492-496,
                 param: Parameter(
                   loc: 414-422,
-                  ty: "Nat",
+                  ty: Id(
+                    effect: "pure",
+                    clsId: "Nat"),
                   name: "acc2",
                   index: 2))])
           ])))))

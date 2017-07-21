@@ -5,14 +5,19 @@ Klass(
       loc: 23-40,
       name: "x",
       mutable: false,
-      ty: BuiltinClass(
-        name: "Nat"))]),
+      ty: Ty(
+        effect: "pure",
+        cls: BuiltinClass(
+          name: "Nat")))]),
   membersMap: Dict<Sym, Member>(
     main: MethodWithBody(
       loc: 67-155,
       isStatic: true,
-      returnTy: "Void",
+      returnTy: Id(
+        effect: "pure",
+        clsId: "Void"),
       name: "main",
+      selfEffect: "pure",
       parameters: [],
       body: Let(
         loc: 93-102,
@@ -50,5 +55,7 @@ Klass(
       loc: 23-40,
       name: "x",
       mutable: false,
-      ty: BuiltinClass(
-        name: "Nat"))))
+      ty: Ty(
+        effect: "pure",
+        cls: BuiltinClass(
+          name: "Nat")))))

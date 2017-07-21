@@ -8,18 +8,22 @@ Module(
       slots: [Slot(
         loc: 7-16,
         mutable: false,
-        ty: Access(
+        ty: Ty(
           loc: 11-14,
-          name: "Nat"),
+          cls: Access(
+            loc: 11-14,
+            name: "Nat")),
         name: "x")]),
     supers: [],
     methods: [
       Method(
         loc: 18-85,
         isStatic: true,
-        returnTy: Access(
+        returnTy: Ty(
           loc: 22-26,
-          name: "Void"),
+          cls: Access(
+            loc: 22-26,
+            name: "Void")),
         name: "main",
         parameters: [],
         body: Let(
@@ -57,9 +61,11 @@ Module(
       Method(
         loc: 85-103,
         isStatic: false,
-        returnTy: Access(
+        returnTy: Ty(
           loc: 89-92,
-          name: "Nat"),
+          cls: Access(
+            loc: 89-92,
+            name: "Nat")),
         name: "getX",
         parameters: [],
         body: Access(

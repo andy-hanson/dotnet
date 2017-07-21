@@ -6,22 +6,53 @@ namespace Model {
 		public override int GetHashCode() => throw new NotSupportedException();
 	}
 
+	struct Ty : ToData<Ty>, Identifiable<Ty.Id> {
+		internal readonly Effect effect;
+		internal readonly ClsRef cls;
+		Ty(Effect effect, ClsRef cls) {
+			this.effect = effect;
+			this.cls = cls;
+		}
+		internal static Ty of(Effect effect, ClsRef clsRef) => new Ty(effect, clsRef);
+		static Ty pure(ClsRef cls) => of(Effect.Pure, cls);
+		internal static Ty io(ClsRef cls) => of(Effect.Io, cls);
+
+		internal static readonly Ty Void = pure(BuiltinClass.Void);
+		internal static readonly Ty Bool = pure(BuiltinClass.Bool);
+		internal static readonly Ty Nat = pure(BuiltinClass.Nat);
+		internal static readonly Ty Int = pure(BuiltinClass.Int);
+		internal static readonly Ty Real = pure(BuiltinClass.Real);
+		internal static readonly Ty String = pure(BuiltinClass.String);
+
+		public bool deepEqual(Ty ty) => effect == ty.effect && cls.deepEqual(ty.cls);
+		public Dat toDat() => Dat.of(this, nameof(effect), Dat.str(effect.show()), nameof(cls), cls);
+		public Id getId() => new Id(effect, cls.getId());
+
+		internal struct Id : ToData<Id> {
+			internal readonly Effect effect;
+			internal readonly ClassLike.Id clsId;
+			internal Id(Effect effect, ClassLike.Id clsId) { this.effect = effect; this.clsId = clsId; }
+			public bool deepEqual(Id i) => effect == i.effect && clsId.deepEqual(i.clsId);
+			public Dat toDat() => Dat.of(this, nameof(effect), Dat.str(effect.show()), nameof(clsId), clsId);
+		}
+	}
+
 	// This is always a ClassLike currently. Eventually we'll add instantiated generic classes too.
-	abstract class Ty : ModelElement, ToData<Ty>, Identifiable<ClassLike.Id> {
+	abstract class ClsRef : ModelElement, ToData<ClsRef>, Identifiable<ClassLike.Id> {
 		internal abstract bool isAbstract { get; } //kill
 		internal abstract Sym name { get; }
 		internal abstract Arr<Super> supers { get; }
 
-		public abstract bool deepEqual(Ty ty);
+		public abstract bool deepEqual(ClsRef ty);
 		public override abstract int GetHashCode();
 		public abstract Dat toDat();
 
-		public bool fastEquals(Ty other) => object.ReferenceEquals(this, other);
+		public bool fastEquals(ClsRef other) => object.ReferenceEquals(this, other);
 
 		public abstract ClassLike.Id getId();
 	}
 
-	abstract class ClassLike : Ty, Identifiable<ClassLike.Id> {
+	abstract class ClassLike : ClsRef, Identifiable<ClassLike.Id> {
 		// For a builtin type, identified by the builtin name.
 		// For a
 		internal struct Id : ToData<Id> {
@@ -44,11 +75,11 @@ namespace Model {
 	sealed class Super : ModelElement, ToData<Super>, Identifiable<Super.Id> {
 		internal readonly Loc loc;
 		[ParentPointer] internal readonly Klass containingClass;
-		[UpPointer] internal readonly Ty superClass;
+		[UpPointer] internal readonly ClsRef superClass;
 		Late<Arr<Impl>> _impls;
 		internal Arr<Impl> impls { get => _impls.get; set => _impls.set(value); }
 
-		internal Super(Loc loc, Klass klass, Ty superClass) {
+		internal Super(Loc loc, Klass klass, ClsRef superClass) {
 			this.loc = loc;
 			this.containingClass = klass;
 			this.superClass = superClass;
@@ -56,7 +87,7 @@ namespace Model {
 
 		public bool deepEqual(Super s) =>
 			containingClass.equalsId<Klass, ClassLike.Id>(s.containingClass) &&
-			superClass.equalsId<Ty, ClassLike.Id>(s.superClass) &&
+			superClass.equalsId<ClsRef, ClassLike.Id>(s.superClass) &&
 			impls.deepEqual(s.impls);
 		public Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(superClass), superClass.getId(), nameof(impls), Dat.arr(impls));
 		public Id getId() => new Id(containingClass.getId(), superClass.getId());

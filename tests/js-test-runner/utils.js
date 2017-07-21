@@ -1,33 +1,27 @@
+const { execSync } = require("child_process");
 const { readSync } = require("fs");
+const readline = require("readline");
 
 // @ts-ignore
 const stdinFd = process.stdin.fd;
 
 /**
- * @param {number} bufferSize
- * @return {string | undefined}
+ * @param {function(string): void} cb
+ * @return {void}
  */
-exports.readStdinSync = (bufferSize) => {
-	const buff = new Buffer(bufferSize);
+exports.onLineFromStdin = (cb) => {
+	const rl = readline.createInterface({ input: process.stdin });
+	rl.on("line", cb);
+};
 
-	let bytesRead = 0;
-	while (true) {
-		try {
-			bytesRead = readSync(stdinFd, buff, 0, bufferSize, null);
-			break;
-		} catch (e) {
-			if (e.code === "EAGAIN") {
-				continue;
-			}
-			throw e;
-		}
-	}
-
-	if (bytesRead === 0) return undefined;
-	if (bytesRead === bufferSize) throw new Error(); // bufferSize too small
-	if (buff[bytesRead - 1] !== '\n'.charCodeAt(0)) {
-		throw new Error(buff.toString("utf-8", 0, bytesRead));
-	}
-	return buff.toString("utf-8", 0, bytesRead - 1);
-}
-
+/**
+ * @param {function(string): void} cb
+ * @return {void}
+ */
+exports.handleSingleLineFromStdin = cb => {
+	const rl = readline.createInterface({ input: process.stdin });
+	rl.on("line", line => {
+		cb(line);
+		process.exit(0);
+	});
+};

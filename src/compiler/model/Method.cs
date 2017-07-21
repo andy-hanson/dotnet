@@ -25,18 +25,18 @@ namespace Model {
 		internal abstract bool isAbstract { get; }
 		internal abstract bool isStatic { get; }
 		[UpPointer] internal readonly Ty returnTy;
+		internal readonly Effect selfEffect;
 		internal readonly Arr<Parameter> parameters;
-		internal readonly Effect effect;
 
 		public sealed override bool deepEqual(Member m) => m is Method mt && deepEqual(mt);
 		public abstract bool deepEqual(Method m);
 		public Id getId() => new Id(klass.getId(), name);
 
-		private Method(ClassLike klass, Loc loc, Ty returnTy, Sym name, Arr<Parameter> parameters, Effect effect) : base(loc, name) {
+		private Method(ClassLike klass, Loc loc, Ty returnTy, Sym name, Effect selfEffect, Arr<Parameter> parameters) : base(loc, name) {
 			this.klass = klass;
 			this.returnTy = returnTy;
+			this.selfEffect = selfEffect;
 			this.parameters = parameters;
-			this.effect = effect;
 		}
 
 		internal uint arity => parameters.length;
@@ -46,8 +46,8 @@ namespace Model {
 			readonly bool _isStatic;
 			internal readonly MethodInfo methodInfo;
 
-			BuiltinMethod(BuiltinClass klass, MethodInfo methodInfo, bool isStatic, Ty returnTy, Sym name, Arr<Parameter> @params, Effect effect)
-				: base(klass, Loc.zero, returnTy, name, @params, effect) {
+			BuiltinMethod(BuiltinClass klass, MethodInfo methodInfo, bool isStatic, Ty returnTy, Sym name, Effect selfEffect, Arr<Parameter> @params)
+				: base(klass, Loc.zero, returnTy, name, selfEffect, @params) {
 				this._isStatic = isStatic;
 				this.methodInfo = methodInfo;
 			}
@@ -67,29 +67,38 @@ namespace Model {
 						assert(!klass.dotNetType.IsValueType);
 				}
 
-				var returnTy = BuiltinClass.fromDotNetType(method.ReturnType);
+				var allPure = method.hasAttribute<AllPureAttribute>();
+				var selfEffect = getEffect(method.GetCustomAttribute<SelfEffectAttribute>(), allPure);
+				var returnEffect = getEffect(method.GetCustomAttribute<ReturnEffectAttribute>(), allPure);
+
+				var returnCls = BuiltinClass.fromDotNetType(method.ReturnType);
 				var name = NameEscaping.unescapeMethodName(method.Name);
 				var dotNetParams = method.GetParameters();
 				if (isSpecialInstance)
 					assert(dotNetParams[0].ParameterType == klass.dotNetType);
-				var @params = dotNetParams.mapSlice(isSpecialInstance ? 1u : 0, getParam);
+				var @params = dotNetParams.mapSlice(isSpecialInstance ? 1u : 0, (p, i) => getParam(p, i, allPure));
 
-				var effectAttr = method.GetCustomAttribute<HasEffectAttribute>();
-				if (effectAttr == null) {
-					throw fail($"Method {name} should have {nameof(HasEffectAttribute)}");
-				}
-
-				return new BuiltinMethod(klass, method, isStatic, returnTy, name, @params, effectAttr.effect);
+				return new BuiltinMethod(klass, method, isStatic, Ty.of(returnEffect, returnCls), name, selfEffect, @params);
 			}
 
-			static Parameter getParam(ParameterInfo p, uint index) {
+			static Parameter getParam(ParameterInfo p, uint index, bool allPure) {
 				assert(!p.IsIn);
 				assert(!p.IsLcid);
 				assert(!p.IsOut);
 				assert(!p.IsOptional);
 				assert(!p.IsRetval);
-				var ty = BuiltinClass.fromDotNetType(p.ParameterType);
-				return new Parameter(Loc.zero, ty, Sym.of(p.Name), index);
+
+				var effect = getEffect(p.GetCustomAttribute<ParameterEffectAttribute>(), allPure);
+				var cls = BuiltinClass.fromDotNetType(p.ParameterType);
+				return new Parameter(Loc.zero, Ty.of(effect, cls), Sym.of(p.Name), index);
+			}
+
+			static Effect getEffect(EffectLikeAttribute effectAttr, bool allPure) {
+				if (effectAttr == null) {
+					assert(allPure);
+					return Effect.Pure;
+				} else
+					return effectAttr.effect;
 			}
 
 			internal override bool isStatic => _isStatic;
@@ -98,11 +107,17 @@ namespace Model {
 			bool IEquatable<BuiltinMethod>.Equals(BuiltinMethod other) => object.ReferenceEquals(this, other);
 			public override bool deepEqual(Method m) => m is BuiltinMethod b && deepEqual(b);
 			public bool deepEqual(BuiltinMethod m) =>
-				loc.deepEqual(m.loc) && name.deepEqual(m.name) && isStatic == m.isStatic && returnTy.equalsId<Ty, ClassLike.Id>(m.returnTy) && parameters.deepEqual(m.parameters);
+				loc.deepEqual(m.loc) &&
+				name.deepEqual(m.name) &&
+				isStatic == m.isStatic &&
+				returnTy.equalsId<Ty, Ty.Id>(m.returnTy) &&
+				selfEffect == m.selfEffect &&
+				parameters.deepEqual(m.parameters);
 			public override Dat toDat() => Dat.of(this,
 				nameof(name), name,
 				nameof(isStatic), Dat.boolean(isStatic),
 				nameof(returnTy), returnTy.getId(),
+				nameof(selfEffect), Dat.str(selfEffect.show()),
 				nameof(parameters), Dat.arr(parameters));
 		}
 
@@ -119,8 +134,8 @@ namespace Model {
 				}
 			}
 
-			internal MethodWithBody(Klass klass, Loc loc, bool isStatic, Ty returnTy, Sym name, Arr<Parameter> parameters, Effect effect)
-				: base(klass, loc, returnTy, name, parameters, effect) {
+			internal MethodWithBody(Klass klass, Loc loc, bool isStatic, Ty returnTy, Sym name, Effect selfEffect, Arr<Parameter> parameters)
+				: base(klass, loc, returnTy, name, selfEffect, parameters) {
 				this._isStatic = isStatic;
 			}
 
@@ -131,6 +146,7 @@ namespace Model {
 				nameof(isStatic), Dat.boolean(isStatic),
 				nameof(returnTy), returnTy.getId(),
 				nameof(name), name,
+				nameof(selfEffect), Dat.str(selfEffect.show()),
 				nameof(parameters), Dat.arr(parameters),
 				nameof(body), body);
 		}
@@ -140,8 +156,8 @@ namespace Model {
 			internal override bool isAbstract => true;
 			internal override bool isStatic => false;
 
-			internal AbstractMethod(Klass klass, Loc loc, Ty returnTy, Sym name, Arr<Parameter> parameters, Effect effect)
-				: base(klass, loc, returnTy, name, parameters, effect) {}
+			internal AbstractMethod(Klass klass, Loc loc, Ty returnTy, Sym name, Effect selfEffect, Arr<Parameter> parameters)
+				: base(klass, loc, returnTy, name, selfEffect, parameters) {}
 
 			public override bool deepEqual(Method m) => m is AbstractMethod a && deepEqual(a);
 			public bool deepEqual(AbstractMethod a) => throw TODO();
@@ -163,7 +179,7 @@ namespace Model {
 			this.index = index;
 		}
 
-		public bool deepEqual(Parameter p) => loc.deepEqual(p.loc) && ty.equalsId<Ty, ClassLike.Id>(p.ty) && name.deepEqual(p.name) && index == p.index;
+		public bool deepEqual(Parameter p) => loc.deepEqual(p.loc) && ty.equalsId<Ty, Ty.Id>(p.ty) && name.deepEqual(p.name) && index == p.index;
 		public Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(ty), ty.getId(), nameof(name), name, nameof(index), Dat.nat(index));
 		Sym Identifiable<Sym>.getId() => name;
 	}

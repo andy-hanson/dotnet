@@ -13,7 +13,7 @@ class Checker {
 		this.baseScope = new BaseScope(klass, imports);
 	}
 
-	static Arr<Method> getAbstractMethods(Ty superClass) {
+	static Arr<Method> getAbstractMethods(ClsRef superClass) {
 		if (!superClass.supers.isEmpty)
 			//TODO: also handle abstract methods in superclass of superclass
 			throw TODO();
@@ -53,7 +53,7 @@ class Checker {
 
 		// Not that all members exist, we can fill in bodies.
 		klass.setSupers(ast.supers.map(superAst => {
-			var superClass = (Klass)baseScope.accessTy(superAst.loc, superAst.name); //TODO: handle builtin
+			var superClass = (Klass)baseScope.accessClsRef(superAst.loc, superAst.name); //TODO: handle builtin
 			var super = new Super(superAst.loc, klass, superClass);
 
 			var abstractMethods = getAbstractMethods(super.superClass);
@@ -85,7 +85,7 @@ class Checker {
 				});
 
 				var impl = new Impl(super, implAst.loc, implemented);
-				impl.body = ExprChecker.checkMethod(baseScope, impl, /*isStatic*/ false, implemented.returnTy, implemented.parameters, implemented.effect, implAst.body);
+				impl.body = ExprChecker.checkMethod(baseScope, impl, /*isStatic*/ false, implemented.returnTy, implemented.selfEffect, implemented.parameters, implAst.body);
 				return impl;
 			});
 
@@ -97,7 +97,7 @@ class Checker {
 			switch (memberAst) {
 				case Ast.Member.Method methodAst:
 					var method = (Method.MethodWithBody)member;
-					method.body = ExprChecker.checkMethod(baseScope, method, method.isStatic, method.returnTy, method.parameters, method.effect, methodAst.body);
+					method.body = ExprChecker.checkMethod(baseScope, method, method.isStatic, method.returnTy, method.selfEffect, method.parameters, methodAst.body);
 					break;
 				case Ast.Member.AbstractMethod _:
 					break;
@@ -138,10 +138,10 @@ class Checker {
 		switch (ast) {
 			case Ast.Member.Method m:
 				return new Method.MethodWithBody(
-					klass, m.loc, m.isStatic, baseScope.getTy(m.returnTy), m.name, getParams(m.parameters), ast.effect);
+					klass, m.loc, m.isStatic, baseScope.getTy(m.returnTy), m.name, m.selfEffect, getParams(m.parameters));
 			case Ast.Member.AbstractMethod a:
 				return new Method.AbstractMethod(
-					klass, a.loc, baseScope.getTy(a.returnTy), a.name, getParams(a.parameters), ast.effect);
+					klass, a.loc, baseScope.getTy(a.returnTy), a.name, a.selfEffect, getParams(a.parameters));
 			default:
 				throw unreachable();
 		}

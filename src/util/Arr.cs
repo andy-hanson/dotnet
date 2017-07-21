@@ -18,6 +18,13 @@ struct Arr<T> : IEnumerable<T> {
 		}
 	}
 
+	internal bool some(Func<T, bool> predicate) {
+		for (uint i = 0; i < length; i++)
+			if (predicate(this[i]))
+				return true;
+		return false;
+	}
+
 	internal U foldBackwards<U>(U u, Func<U, T, U> fold) {
 		var i = length;
 		do {

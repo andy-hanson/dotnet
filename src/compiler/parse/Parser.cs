@@ -210,41 +210,39 @@ sealed class Parser : ExprParser {
 		return Op.Some(takeName());
 	}
 
-	(Ast.Ty, Sym, Arr<Ast.Parameter>, Model.Effect) parseMethodHead() {
+	(Ast.Ty, Sym, Model.Effect selfEffect, Arr<Ast.Parameter>) parseMethodHead() {
 		takeSpace();
 		var returnTy = parseTy();
 		takeSpace();
 		var name = takeName();
 		takeLparen();
+
+		var selfEffect = Model.Effect.Pure;
 		Arr<Ast.Parameter> parameters;
 		if (tryTakeRparen())
 			parameters = Arr.empty<Ast.Parameter>();
 		else {
-			var first = parseJustParameter();
-			parameters = buildUntilNullWithFirst(first, parseParameter);
+			var firstStart = pos;
+			var x = parseTyOrSelfEffect();
+			if (x.isLeft) {
+				//'self'
+				selfEffect = x.left;
+				if (tryTakeRparen())
+					parameters = Arr.empty<Ast.Parameter>();
+				else {
+					var first = parseJustParameter();
+					parameters = buildUntilNullWithFirst(first, parseParameter);
+				}
+			} else {
+				var firstTy = x.right;
+				takeSpace();
+				var firstName = takeName();
+				var first = new Ast.Parameter(locFrom(firstStart), firstTy, firstName);
+				parameters = buildUntilNullWithFirst(first, parseParameter);
+			}
 		}
 
-		var effect = parseEffect();
-
-		return (returnTy, name, parameters, effect);
-	}
-
-	Model.Effect parseEffect() {
-		if (!tryTakeSpace())
-			return Model.Effect.Pure;
-
-		var start = pos;
-		var kw = this.takeKeyword();
-		switch (kw) {
-			case Token.Get:
-				return Model.Effect.Get;
-			case Token.Set:
-				return Model.Effect.Set;
-			case Token.Io:
-				return Model.Effect.Io;
-			default:
-				throw unexpected(start, "'get', 'set', or 'io'", kw);
-		}
+		return (returnTy, name, selfEffect, parameters);
 	}
 
 	Ast.Member.Method parseMethodWithBody(Pos start, bool isStatic) {

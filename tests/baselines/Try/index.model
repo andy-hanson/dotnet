@@ -5,8 +5,11 @@ Klass(
     main: MethodWithBody(
       loc: 0-135,
       isStatic: true,
-      returnTy: "Void",
+      returnTy: Id(
+        effect: "pure",
+        clsId: "Void"),
       name: "main",
+      selfEffect: "pure",
       parameters: [],
       body: Let(
         loc: 19-103,
@@ -27,7 +30,9 @@ Klass(
               value: "unreachable")),
           _catch: Catch(
             loc: 65-103,
-            exceptionTy: "Exception",
+            exceptionTy: Id(
+              effect: "pure",
+              clsId: "Exception"),
             caught: Single(
               loc: 81-82,
               name: "e"),

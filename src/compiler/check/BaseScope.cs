@@ -12,7 +12,8 @@ struct BaseScope {
 		self.membersMap.get(name, out member);
 
 	internal BaseScope(Klass self, Arr<Module> imports) {
-		this.self = self; this.imports = imports;
+		this.self = self;
+		this.imports = imports;
 		for (uint i = 0; i < imports.length; i++) {
 			var import = imports[i];
 			if (import.name == self.name)
@@ -23,12 +24,15 @@ struct BaseScope {
 		}
 	}
 
-	internal Ty getTy(Ast.Ty ast) {
+	internal Ty getTy(Ast.Ty ast) =>
+		Ty.of(ast.effect, getClsRef(ast.cls));
+
+	ClsRef getClsRef(Ast.ClsRef ast) {
 		switch (ast) {
-			case Ast.Ty.Access access:
-				return accessTy(access.loc, access.name);
-			case Ast.Ty.Inst inst:
-				var a = accessTy(inst.instantiated.loc, inst.instantiated.name);
+			case Ast.ClsRef.Access access:
+				return accessClsRef(access.loc, access.name);
+			case Ast.ClsRef.Inst inst:
+				var a = accessClsRef(inst.instantiated.loc, inst.instantiated.name);
 				var b = inst.tyArgs.map(getTy);
 				unused(a, b);
 				throw TODO(); //TODO: type instantiation
@@ -37,7 +41,7 @@ struct BaseScope {
 		}
 	}
 
-	internal Ty accessTy(Loc loc, Sym name) {
+	internal ClsRef accessClsRef(Loc loc, Sym name) {
 		if (name == self.name)
 			return self;
 

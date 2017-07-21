@@ -1,7 +1,7 @@
 "use strict";
 const _ = require("nzlib");
 module.exports = class Literals {
-	static main(){
+	static main() {
 		Literals.needs_nat(0);
 		Literals.needs_int(0);
 		Literals.needs_real(0);

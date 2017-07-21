@@ -8,9 +8,11 @@ Module(
     methods: [Method(
       loc: 0-29,
       isStatic: true,
-      returnTy: Access(
+      returnTy: Ty(
         loc: 4-8,
-        name: "Void"),
+        cls: Access(
+          loc: 4-8,
+          name: "Void")),
       name: "main",
       parameters: [],
       body: Assert(

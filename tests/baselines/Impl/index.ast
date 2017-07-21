@@ -12,9 +12,11 @@ Module(
       slots: [Slot(
         loc: 30-39,
         mutable: false,
-        ty: Access(
+        ty: Ty(
           loc: 34-37,
-          name: "Nat"),
+          cls: Access(
+            loc: 34-37,
+            name: "Nat")),
         name: "x")]),
     supers: [Super(
       loc: 40-67,
@@ -29,9 +31,11 @@ Module(
     methods: [Method(
       loc: 67-155,
       isStatic: true,
-      returnTy: Access(
+      returnTy: Ty(
         loc: 71-75,
-        name: "Void"),
+        cls: Access(
+          loc: 71-75,
+          name: "Void")),
       name: "main",
       parameters: [],
       body: Let(

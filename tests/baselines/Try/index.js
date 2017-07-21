@@ -1,8 +1,8 @@
 "use strict";
 const _ = require("nzlib");
 module.exports = class Try {
-	static main(){
-		const x = (() => {
+	static main() {
+		const x = (()  => {
 			try {
 				if (!(false))
 					throw new _.Assertion_Exception();

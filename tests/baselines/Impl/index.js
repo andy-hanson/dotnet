@@ -6,10 +6,10 @@ module.exports = class Impl extends AbstractClass {
 		super();
 		this.x = x;
 	}
-	n(){
+	n() {
 		return this.x;
 	}
-	static main(){
+	static main() {
 		const instance = new Impl(1);
 		const gotN = AbstractClass.getN(instance);
 		if (gotN !== 1)

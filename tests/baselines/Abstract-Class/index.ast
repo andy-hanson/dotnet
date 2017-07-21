@@ -9,23 +9,29 @@ Module(
     methods: [
       AbstractMethod(
         loc: 10-31,
-        returnTy: Access(
+        returnTy: Ty(
           loc: 19-25,
-          name: "String"),
+          cls: Access(
+            loc: 19-25,
+            name: "String")),
         name: "s",
         parameters: []),
       Method(
         loc: 31-84,
         isStatic: true,
-        returnTy: Access(
+        returnTy: Ty(
           loc: 35-39,
-          name: "Void"),
+          cls: Access(
+            loc: 35-39,
+            name: "Void")),
         name: "main",
         parameters: [Parameter(
           loc: 45-61,
-          ty: Access(
+          ty: Ty(
             loc: 45-59,
-            name: "Abstract-Class"),
+            cls: Access(
+              loc: 45-59,
+              name: "Abstract-Class")),
           name: "a")],
         body: Assert(
           loc: 64-84,

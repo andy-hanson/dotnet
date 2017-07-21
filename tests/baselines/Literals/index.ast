@@ -9,9 +9,11 @@ Module(
       Method(
         loc: 0-219,
         isStatic: true,
-        returnTy: Access(
+        returnTy: Ty(
           loc: 4-8,
-          name: "Void"),
+          cls: Access(
+            loc: 4-8,
+            name: "Void")),
         name: "main",
         parameters: [],
         body: Seq(
@@ -147,15 +149,19 @@ Module(
       Method(
         loc: 219-252,
         isStatic: true,
-        returnTy: Access(
+        returnTy: Ty(
           loc: 223-227,
-          name: "Void"),
+          cls: Access(
+            loc: 223-227,
+            name: "Void")),
         name: "needs-nat",
         parameters: [Parameter(
           loc: 238-243,
-          ty: Access(
+          ty: Ty(
             loc: 238-241,
-            name: "Nat"),
+            cls: Access(
+              loc: 238-241,
+              name: "Nat")),
           name: "n")],
         body: Literal(
           loc: 246-250,
@@ -163,15 +169,19 @@ Module(
       Method(
         loc: 252-285,
         isStatic: true,
-        returnTy: Access(
+        returnTy: Ty(
           loc: 256-260,
-          name: "Void"),
+          cls: Access(
+            loc: 256-260,
+            name: "Void")),
         name: "needs-int",
         parameters: [Parameter(
           loc: 271-276,
-          ty: Access(
+          ty: Ty(
             loc: 271-274,
-            name: "Int"),
+            cls: Access(
+              loc: 271-274,
+              name: "Int")),
           name: "i")],
         body: Literal(
           loc: 279-283,
@@ -179,15 +189,19 @@ Module(
       Method(
         loc: 285-319,
         isStatic: true,
-        returnTy: Access(
+        returnTy: Ty(
           loc: 289-293,
-          name: "Void"),
+          cls: Access(
+            loc: 289-293,
+            name: "Void")),
         name: "needs-real",
         parameters: [Parameter(
           loc: 305-311,
-          ty: Access(
+          ty: Ty(
             loc: 305-309,
-            name: "Real"),
+            cls: Access(
+              loc: 305-309,
+              name: "Real")),
           name: "f")],
         body: Literal(
           loc: 314-318,

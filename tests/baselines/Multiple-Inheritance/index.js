@@ -7,13 +7,13 @@ module.exports = class Multiple_Inheritance extends _.mixin(Super1, Super2) {
 		super();
 		this.x = x;
 	}
-	s1(){
+	s1() {
 		return this.x;
 	}
-	s2(){
+	s2() {
 		return this.x + 1;
 	}
-	static main(){
+	static main() {
 		const x = new Multiple_Inheritance(1);
 		if (x.s1Def() !== 10)
 			throw new _.Assertion_Exception();

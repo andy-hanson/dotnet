@@ -8,15 +8,19 @@ Module(
     methods: [Method(
       loc: 0-74,
       isStatic: true,
-      returnTy: Access(
+      returnTy: Ty(
         loc: 4-8,
-        name: "Void"),
+        cls: Access(
+          loc: 4-8,
+          name: "Void")),
       name: "main",
       parameters: [Parameter(
-        loc: 14-29,
-        ty: Access(
-          loc: 14-25,
-          name: "Console-App"),
+        loc: 14-32,
+        ty: Ty(
+          loc: 14-28,
+          cls: Access(
+            loc: 17-28,
+            name: "Console-App")),
         name: "app")],
       body: Call(
         loc: 35-74,

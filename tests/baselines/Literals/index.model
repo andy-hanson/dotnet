@@ -5,8 +5,11 @@ Klass(
     main: MethodWithBody(
       loc: 0-219,
       isStatic: true,
-      returnTy: "Void",
+      returnTy: Id(
+        effect: "pure",
+        clsId: "Void"),
       name: "main",
+      selfEffect: "pure",
       parameters: [],
       body: Seq(
         loc: 17-219,
@@ -132,11 +135,16 @@ Klass(
     needs-nat: MethodWithBody(
       loc: 219-252,
       isStatic: true,
-      returnTy: "Void",
+      returnTy: Id(
+        effect: "pure",
+        clsId: "Void"),
       name: "needs-nat",
+      selfEffect: "pure",
       parameters: [Parameter(
         loc: 238-243,
-        ty: "Nat",
+        ty: Id(
+          effect: "pure",
+          clsId: "Nat"),
         name: "n",
         index: 0)],
       body: Literal(
@@ -145,11 +153,16 @@ Klass(
     needs-int: MethodWithBody(
       loc: 252-285,
       isStatic: true,
-      returnTy: "Void",
+      returnTy: Id(
+        effect: "pure",
+        clsId: "Void"),
       name: "needs-int",
+      selfEffect: "pure",
       parameters: [Parameter(
         loc: 271-276,
-        ty: "Int",
+        ty: Id(
+          effect: "pure",
+          clsId: "Int"),
         name: "i",
         index: 0)],
       body: Literal(
@@ -158,11 +171,16 @@ Klass(
     needs-real: MethodWithBody(
       loc: 285-319,
       isStatic: true,
-      returnTy: "Void",
+      returnTy: Id(
+        effect: "pure",
+        clsId: "Void"),
       name: "needs-real",
+      selfEffect: "pure",
       parameters: [Parameter(
         loc: 305-311,
-        ty: "Real",
+        ty: Id(
+          effect: "pure",
+          clsId: "Real"),
         name: "f",
         index: 0)],
       body: Literal(

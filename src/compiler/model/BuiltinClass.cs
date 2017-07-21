@@ -126,7 +126,7 @@ namespace Model {
 		public override ClassLike.Id getId() => ClassLike.Id.ofBuiltin(name);
 
 		bool IEquatable<BuiltinClass>.Equals(BuiltinClass other) => object.ReferenceEquals(this, other);
-		public override bool deepEqual(Ty t) => throw new NotSupportedException();
+		public override bool deepEqual(ClsRef c) => throw new NotSupportedException();
 		public bool deepEqual(BuiltinClass b) => throw new NotSupportedException(); // This should never happen.
 		public override int GetHashCode() => name.GetHashCode();
 		public override Dat toDat() => Dat.of(this, nameof(name), name);

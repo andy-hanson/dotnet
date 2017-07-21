@@ -34,7 +34,7 @@ namespace Model {
 
 		public bool Equals(Klass k) => object.ReferenceEquals(this, k);
 		public override int GetHashCode() => name.GetHashCode();
-		public override bool deepEqual(Ty ty) => ty is Klass k && deepEqual(k);
+		public override bool deepEqual(ClsRef cls) => cls is Klass k && deepEqual(k);
 		public bool deepEqual(Klass k) => throw TODO();
 		public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(head), head, nameof(membersMap), Dat.dict(membersMap));
 

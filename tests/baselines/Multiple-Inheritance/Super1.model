@@ -5,14 +5,19 @@ Klass(
   membersMap: Dict<Sym, Member>(
     s1: AbstractMethod(
       loc: 10-29,
-      returnTy: "Nat",
+      returnTy: Id(
+        effect: "pure",
+        clsId: "Nat"),
       name: "s1",
       parameters: []),
     s1Def: MethodWithBody(
       loc: 29-56,
       isStatic: false,
-      returnTy: "Nat",
+      returnTy: Id(
+        effect: "pure",
+        clsId: "Nat"),
       name: "s1Def",
+      selfEffect: "pure",
       parameters: [],
       body: InstanceMethodCall(
         loc: 46-56,
