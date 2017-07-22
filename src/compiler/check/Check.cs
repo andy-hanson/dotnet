@@ -1,19 +1,24 @@
+using Diag;
 using Model;
 using static Utils;
 
 class Checker {
-	internal static Klass checkClass(Module module, Arr<Module> imports, Ast.Klass ast, Sym name) {
+	internal static (Klass, Arr<Diagnostic>) checkClass(Module module, Arr<Module> imports, Ast.Klass ast, Sym name) {
 		var klass = new Klass(module, ast.loc, name);
-		return new Checker(klass, imports).checkClass(klass, ast);
+		var ckr = new Checker(klass, imports);
+		ckr.checkClass(klass, ast);
+		var diagnostics = ckr.diagnostics.finish();
+		return (klass, diagnostics);
 	}
 
+	readonly DiagnosticBuilder diagnostics = new DiagnosticBuilder(); //TODO: useme!
 	readonly BaseScope baseScope;
 
 	Checker(Klass klass, Arr<Module> imports) {
 		this.baseScope = new BaseScope(klass, imports);
 	}
 
-	static Arr<Method> getAbstractMethods(ClsRef superClass) {
+	static Arr<AbstractMethodLike> getAbstractMethods(ClsRef superClass) {
 		if (!superClass.supers.isEmpty)
 			//TODO: also handle abstract methods in superclass of superclass
 			throw TODO();
@@ -22,7 +27,7 @@ class Checker {
 			case BuiltinClass b:
 				return b.abstractMethods;
 			case Klass k: {
-				if (!(k.head is Klass.Head.Abstract abs))
+				if (!(k.head is KlassHead.Abstract abs))
 					throw TODO();
 				return abs.abstractMethods;
 			}
@@ -32,22 +37,23 @@ class Checker {
 	}
 
 	static void addMember(Dict.Builder<Sym, Member> membersBuilder, Member member) {
-		if (!membersBuilder.tryAdd(member.name, member))
+		if (!membersBuilder.tryAdd(member.name, member)) {
 			throw TODO(); //diagnostic
+		}
 	}
 
-	Klass checkClass(Klass klass, Ast.Klass ast) {
+	void checkClass(Klass klass, Ast.Klass ast) {
 		var membersBuilder = Dict.builder<Sym, Member>();
 
-		var methods = ast.methods.map(methodAst => {
-			var e = emptyMethod(klass, methodAst);
+		var methods = ast.methods.map(m => {
+			var e = new MethodWithBody(klass, m.loc, m.isStatic, baseScope.getTy(m.returnTy), m.name, m.selfEffect, getParams(m.parameters));
 			addMember(membersBuilder, e);
 			return e;
 		});
 		klass.methods = methods;
 
 		// Adds slot
-		klass.head = checkHead(klass, ast.head, membersBuilder, methods);
+		klass.head = checkHead(klass, ast.head, membersBuilder);
 
 		klass.setMembersMap(membersBuilder.finish());
 
@@ -92,35 +98,28 @@ class Checker {
 			return super;
 		}));
 
-		// Now that all members exist, fill in the body of each member.
-		ast.methods.doZip(methods, (memberAst, member) => {
-			switch (memberAst) {
-				case Ast.Member.Method methodAst:
-					var method = (Method.MethodWithBody)member;
-					method.body = ExprChecker.checkMethod(baseScope, method, method.isStatic, method.returnTy, method.selfEffect, method.parameters, methodAst.body);
-					break;
-				case Ast.Member.AbstractMethod _:
-					break;
-				default:
-					throw unreachable();
-			}
+		// Now that all methods exist, fill in the body of each member.
+		ast.methods.doZip(methods, (methodAst, method) => {
+			method.body = ExprChecker.checkMethod(baseScope, method, method.isStatic, method.returnTy, method.selfEffect, method.parameters, methodAst.body);
 		});
-
-		return klass;
 	}
 
-	Klass.Head checkHead(Klass klass, Op<Ast.Klass.Head> ast, Dict.Builder<Sym, Member> membersBuilder, Arr<Method> methods) {
+	KlassHead checkHead(Klass klass, Op<Ast.Klass.Head> ast, Dict.Builder<Sym, Member> membersBuilder) {
 		if (!ast.get(out var h))
-			return Klass.Head.Static.instance;
+			return KlassHead.Static.instance;
 
 		switch (h) {
 			case Ast.Klass.Head.Abstract a: {
-				var abstractMethods = methods.keep(m => m is Method.AbstractMethod);
-				return new Klass.Head.Abstract(a.loc, abstractMethods);
+				var abstractMethods = a.abstractMethods.map<AbstractMethodLike>(am => {
+					var abs = new AbstractMethod(klass, am.loc, baseScope.getTy(am.returnTy), am.name, am.selfEffect, getParams(am.parameters));
+					addMember(membersBuilder, abs);
+					return abs;
+				});
+				return new KlassHead.Abstract(a.loc, abstractMethods);
 			}
 
 			case Ast.Klass.Head.Slots slotsAst: {
-				var slots = new Klass.Head.Slots(slotsAst.loc, klass);
+				var slots = new KlassHead.Slots(slotsAst.loc, klass);
 				slots.slots = slotsAst.slots.map(var => {
 					var slot = new Slot(slots, slotsAst.loc, var.mutable, baseScope.getTy(var.ty), var.name);
 					addMember(membersBuilder, slot);
@@ -129,19 +128,6 @@ class Checker {
 				return slots;
 			}
 
-			default:
-				throw unreachable();
-		}
-	}
-
-	Method emptyMethod(Klass klass, Ast.Member ast) {
-		switch (ast) {
-			case Ast.Member.Method m:
-				return new Method.MethodWithBody(
-					klass, m.loc, m.isStatic, baseScope.getTy(m.returnTy), m.name, m.selfEffect, getParams(m.parameters));
-			case Ast.Member.AbstractMethod a:
-				return new Method.AbstractMethod(
-					klass, a.loc, baseScope.getTy(a.returnTy), a.name, a.selfEffect, getParams(a.parameters));
 			default:
 				throw unreachable();
 		}

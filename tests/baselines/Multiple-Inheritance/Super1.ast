@@ -1,35 +1,24 @@
 Module(
-  loc: 0-56,
+  loc: 0-47,
   imports: [],
   klass: Klass(
-    loc: 0-56,
+    loc: 0-47,
     head: Abstract(
-      loc: 0-10),
+      loc: 0-20),
     supers: [],
-    methods: [
-      AbstractMethod(
-        loc: 10-29,
-        returnTy: Ty(
-          loc: 19-22,
-          cls: Access(
-            loc: 19-22,
-            name: "Nat")),
-        name: "s1",
-        parameters: []),
-      Method(
-        loc: 29-56,
-        isStatic: false,
-        returnTy: Ty(
-          loc: 33-36,
-          cls: Access(
-            loc: 33-36,
-            name: "Nat")),
-        name: "s1Def",
-        parameters: [],
-        body: OperatorCall(
-          loc: 46-56,
-          oper: "*",
-          right: Literal(
-            loc: 53-55,
-            value: 10)))
-    ]))
+    methods: [Method(
+      loc: 20-47,
+      isStatic: false,
+      returnTy: Ty(
+        loc: 24-27,
+        cls: Access(
+          loc: 24-27,
+          name: "Nat")),
+      name: "s1Def",
+      parameters: [],
+      body: OperatorCall(
+        loc: 37-47,
+        oper: "*",
+        right: Literal(
+          loc: 44-46,
+          value: 10)))]))

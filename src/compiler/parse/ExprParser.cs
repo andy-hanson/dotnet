@@ -1,3 +1,4 @@
+using Diag.ParseDiags;
 using static ParserExitException;
 using static Utils;
 
@@ -109,7 +110,7 @@ abstract class ExprParser : TyParser {
 					var pattern = partsToPattern(patternLoc, parts);
 					takeSpace();
 					var (value, next) = parseExpr(Ctx.Plain);
-					if (next != Next.NewlineAfterStatement) throw exit(locFrom(loopStart), Err.BlockCantEndInLet); //TODO: special error if next = Next.NewlineAfterEquals
+					if (next != Next.NewlineAfterStatement) throw exit(locFrom(loopStart), BlockCantEndInLet.instance); //TODO: special error if next = Next.NewlineAfterEquals
 					return (new Ast.Let(locFrom(loopStart), pattern, value), Next.NewlineAfterEquals);
 				}
 
@@ -220,7 +221,7 @@ abstract class ExprParser : TyParser {
 
 	Ast.Expr finishRegular(Pos exprStart, SpecialStart specialStart, Arr.Builder<Ast.Expr> parts) {
 		if (parts.curLength == 0)
-			throw exit(singleCharLoc, Err.EmptyExpression);
+			throw exit(singleCharLoc, EmptyExpression.instance);
 
 		switch (specialStart) {
 			case SpecialStart.None:
@@ -402,7 +403,7 @@ abstract class ExprParser : TyParser {
 
 	static Ast.Pattern partsToPattern(Loc loc, Arr.Builder<Ast.Expr> parts) {
 		switch (parts.curLength) {
-			case 0: throw exit(loc, Err.PrecedingEquals);
+			case 0: throw exit(loc, PrecedingEquals.instance);
 			case 1: return partToPattern(parts[0]);
 			default: return new Ast.Pattern.Destruct(loc, parts.map(partToPattern));
 		}
@@ -412,7 +413,7 @@ abstract class ExprParser : TyParser {
 				case Ast.Access a:
 					return new Ast.Pattern.Single(a.loc, a.name);
 				default:
-					throw exit(loc, Err.PrecedingEquals);
+					throw exit(loc, PrecedingEquals.instance);
 			}
 		}
 	}

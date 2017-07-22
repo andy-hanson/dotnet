@@ -86,13 +86,13 @@ sealed class ILEmitter {
 		return moduleBuilder.DefineType(klass.name.str, TypeAttributes.Public | typeFlags(klass.head), parent: null, interfaces: interfaces);
 	}
 
-	static TypeAttributes typeFlags(Klass.Head head) {
+	static TypeAttributes typeFlags(KlassHead head) {
 		switch (head) {
-			case Klass.Head.Static s:
+			case KlassHead.Static s:
 				return TypeAttributes.Sealed;
-			case Klass.Head.Abstract a:
+			case KlassHead.Abstract a:
 				return TypeAttributes.Interface | TypeAttributes.Abstract;
-			case Klass.Head.Slots s:
+			case KlassHead.Slots s:
 				return TypeAttributes.Sealed;
 			default:
 				throw unreachable();
@@ -101,15 +101,18 @@ sealed class ILEmitter {
 
 	void fillHead(TypeBuilder tb, Klass klass, LogWriter logger) {
 		switch (klass.head) {
-			case Klass.Head.Static s:
+			case KlassHead.Static s:
 				// Nothing to do for a static class.
 				return;
 
-			case Klass.Head.Abstract a:
-				// Nothing to do.
+			case KlassHead.Abstract a:
+				foreach (var abstractMethod in a.abstractMethods) {
+					var m = defineMethod(tb, abstractMethod, Attributes.@abstract, needsSyntheticThis: false, logger: logger);
+					maps.methodInfos.add(abstractMethod, m);
+				}
 				return;
 
-			case Klass.Head.Slots slots:
+			case KlassHead.Slots slots:
 				var fields = slots.slots.map<FieldInfo>(slot => {
 					var field = tb.DefineField(slot.name.str, maps.toType(slot.ty), FieldAttributes.Public);
 					maps.slotToField.add(slot, field);
@@ -142,14 +145,20 @@ sealed class ILEmitter {
 	}
 
 	void fillMethodsAndSupers(TypeBuilder tb, Klass klass, /*nullable*/ LogWriter logger) {
-		foreach (var method in klass.methods)
-			maps.methodInfos.add(method, defineMethod(tb, method, methodAttributes(method), logger));
+		foreach (var method in klass.methods) {
+			// Methods in abstract classes are implemented as static methods on interfaces.
+			// Noze abstract classes map to IL interfaces.
+			// So any instance methods on them need to become static methods.
+			var needsSyntheticThis = !method.isStatic && method.klass.isAbstract;
+			var attr = method.isStatic || needsSyntheticThis ? Attributes.@static : Attributes.instance;
+			maps.methodInfos.add(method, defineMethod(tb, method, attr, needsSyntheticThis, logger));
+		}
 
 		foreach (var super in klass.supers) {
 			foreach (var impl in super.impls) {
 				if (klass.isAbstract) throw TODO(); // Will have to define a static method and invoke it from an instance method in all implementing classes.
 
-				var mb = defineMethod(tb, impl.implemented, implAttributes, logger);
+				var mb = defineMethod(tb, impl.implemented, Attributes.impl, needsSyntheticThis: false, logger: logger);
 				logger?.beginMethod(mb);
 				ILExprEmitter.emitMethodBody(maps, mb, impl.body, logger);
 				logger?.endMethod();
@@ -157,53 +166,27 @@ sealed class ILEmitter {
 		}
 
 		foreach (var method in klass.methods) {
-			switch (method) {
-				case Method.MethodWithBody mwb:
-					var mb = (MethodBuilder)maps.methodInfos[mwb];
-					logger?.beginMethod(mb);
-					ILExprEmitter.emitMethodBody(maps, mb, mwb.body, logger);
-					logger?.endMethod();
-					break;
-				case Method.AbstractMethod a:
-					break;
-				default:
-					throw unreachable();
-			}
+			var mb = (MethodBuilder)maps.methodInfos[method];
+			logger?.beginMethod(mb);
+			ILExprEmitter.emitMethodBody(maps, mb, method.body, logger);
+			logger?.endMethod();
 		}
 	}
 
-	static bool needsSyntheticThis(Method m) =>
-		m is Method.MethodWithBody mwb && needsSyntheticThis(mwb);
-	static bool needsSyntheticThis(Method.MethodWithBody mwb) =>
-		// Noze abstract classes map to IL interfaces.
-		// So any instance methods on them need to become static methods.
-		!mwb.isStatic && mwb.klass.isAbstract;
-
-	MethodBuilder defineMethod(TypeBuilder tb, Method m, MethodAttributes attrs, /*nullable*/ LogWriter logger) {
-		var first = needsSyntheticThis(m) ? Op.Some(maps.toType(m.klass)) : Op<Type>.None;
-		var pms = m.parameters.mapToArrayWithFirst(first, p => maps.toType(p.ty));
-		var rt = maps.toType(m.returnTy);
-		logger?.methodHead(m.name.str, attrs, rt, pms);
-		return tb.DefineMethod(m.name.str, attrs, rt, pms);
+	MethodBuilder defineMethod(TypeBuilder tb, Method m, MethodAttributes attrs, bool needsSyntheticThis, /*nullable*/ LogWriter logger) {
+		var first = needsSyntheticThis ? Op.Some(maps.toType(m.klass)) : Op<Type>.None;
+		var @params = m.parameters.mapToArrayWithFirst(first, p => maps.toType(p.ty));
+		var returnTy = maps.toType(m.returnTy);
+		logger?.methodHead(m.name.str, attrs, returnTy, @params);
+		return tb.DefineMethod(m.name.str, attrs, returnTy, @params);
 	}
+}
 
-	const MethodAttributes implAttributes = MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final;
-
-	static MethodAttributes methodAttributes(Method method) {
-		var attr = MethodAttributes.Public;
-		switch (method) {
-			case Method.MethodWithBody mwb:
-				if (mwb.isStatic || needsSyntheticThis(mwb)) // Abstract methods implemented as static methods.
-					attr |= MethodAttributes.Static;
-				else
-					attr |= MethodAttributes.Final;
-				return attr;
-			case Method.AbstractMethod a:
-				return attr | MethodAttributes.Abstract | MethodAttributes.Virtual;
-			default:
-				throw unreachable();
-		}
-	}
+static class Attributes {
+	internal const MethodAttributes @static = MethodAttributes.Public | MethodAttributes.Static;
+	internal const MethodAttributes instance = MethodAttributes.Public | MethodAttributes.Final;
+	internal const MethodAttributes @abstract = MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual;
+	internal const MethodAttributes impl = MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final;
 }
 
 sealed class LogWriter : Logger {

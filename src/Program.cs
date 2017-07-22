@@ -17,7 +17,7 @@ static class Program {
 		using (var tc = new Test.TestCompile(updateBaselines: true)) {
 			tc.runAllTests();
 			//tc.runAllCompilerTests();
-			//tc.runTestNamed("Slots");
+			//tc.runTestNamed("Abstract-Class");
 		}
 	}
 
@@ -68,8 +68,8 @@ sealed class ConsoleLogger : Lsp.Server.Logger {
 class DumbSmartness : LspImplementation {
 	readonly Range dummyRange = new Range(new Position(1, 1), new Position(2, 2));
 
-	Arr<Diagnostic> LspImplementation.diagnostics(string uri) =>
-		Arr.of(new Diagnostic(dummyRange, Op.Some(Diagnostic.Severity.Error), Op.Some("code"), Op.Some("source"), "message"));
+	Arr<Lsp.Diagnostic> LspImplementation.diagnostics(string uri) =>
+		Arr.of(new Lsp.Diagnostic(dummyRange, Op.Some(Lsp.Diagnostic.Severity.Error), Op.Some("code"), Op.Some("source"), "message"));
 
 	void LspImplementation.textDocumentDidChange(string uri, uint version, string text) {
 		Console.WriteLine("text document did change");

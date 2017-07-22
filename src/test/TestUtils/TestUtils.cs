@@ -18,7 +18,7 @@ namespace Test {
 
 		static void verifyModule(Model.Module module) {
 			foreach (var method in module.klass.methods) {
-				if (method is Model.Method.MethodWithBody m)
+				if (method is Model.MethodWithBody m)
 					verifyExpr(m, m.body);
 			}
 		}

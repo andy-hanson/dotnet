@@ -1,12 +1,13 @@
+using Diag;
 using static Arr;
 using static Utils;
 
 sealed class Parser : ExprParser {
-	internal static Either<Ast.Module, CompileError> parse(string source) {
+	internal static Either<Ast.Module, Diagnostic> parse(string source) {
 		try {
-			return Either<Ast.Module, CompileError>.Left(parseOrFail(source));
+			return Either<Ast.Module, Diagnostic>.Left(parseOrFail(source));
 		} catch (ParserExitException e) {
-			return Either<Ast.Module, CompileError>.Right(e.err);
+			return Either<Ast.Module, Diagnostic>.Right(e.diagnostic);
 		}
 	}
 
@@ -59,7 +60,7 @@ sealed class Parser : ExprParser {
 	Ast.Klass parseClass(Pos start, Token kw) {
 		var (head, nextStart, nextKw) = parseHead(start, kw);
 		var (supers, nextNextStart, nextNextKw) = parseSupers(nextStart, nextKw);
-		var methods = nextNextKw == Token.EOF ? Arr.empty<Ast.Member>() : parseMethods(nextNextStart, nextNextKw);
+		var methods = nextNextKw == Token.EOF ? Arr.empty<Ast.Method>() : parseMethods(nextNextStart, nextNextKw);
 		return new Ast.Klass(locFrom(start), head, supers, methods);
 	}
 
@@ -69,8 +70,7 @@ sealed class Parser : ExprParser {
 			case Token.Fun:
 				return (Op<Ast.Klass.Head>.None, start, kw);
 			case Token.Abstract: {
-				takeNewline();
-				var head = new Ast.Klass.Head.Abstract(locFrom(start));
+				var head = parseAbstractHead(start);
 				return (Op.Some<Ast.Klass.Head>(head), pos, takeKeywordOrEof());
 			}
 			case Token.Slots: {
@@ -82,6 +82,18 @@ sealed class Parser : ExprParser {
 			default:
 				throw unexpected(start, "'abstract', 'static', 'slots' or 'enum'", kw);
 		}
+	}
+
+	Ast.Klass.Head.Abstract parseAbstractHead(Pos start) {
+		takeIndent();
+		var abstractMethods = Arr.build2(() => {
+			var methodStart = pos;
+			var (returnTy, name, selfEffect, parameters) = parseMethodHead();
+			var abs = new Ast.Klass.Head.Abstract.AbstractMethod(locFrom(methodStart), returnTy, name, selfEffect, parameters);
+			var n = takeNewlineOrDedent();
+			return (abs, n == NewlineOrDedent.Newline);
+		});
+		return new Ast.Klass.Head.Abstract(locFrom(start), abstractMethods);
 	}
 
 	(Arr<Ast.Super>, Pos, Token) parseSupers(Pos start, Token next) {
@@ -166,9 +178,9 @@ sealed class Parser : ExprParser {
 		return (slot, isNext);
 	}
 
-	Arr<Ast.Member> parseMethods(Pos start, Token next) {
+	Arr<Ast.Method> parseMethods(Pos start, Token next) {
 		//TODO: helper fn for this pattern
-		var b = Arr.builder<Ast.Member>();
+		var b = Arr.builder<Ast.Method>();
 		while (true) {
 			var m = parseMethod(start, next);
 			if (!m.get(out var mm))
@@ -181,25 +193,21 @@ sealed class Parser : ExprParser {
 		}
 	}
 
-	Op<Ast.Member> parseMethod(Pos start, Token next) {
+	Op<Ast.Method> parseMethod(Pos start, Token next) {
 		switch (next) {
-			case Token.Fun:
-				return Op.Some<Ast.Member>(parseMethodWithBody(start, isStatic: true));
 			case Token.Def:
-				return Op.Some<Ast.Member>(parseMethodWithBody(start, isStatic: false));
-			case Token.Abstract:
-				return Op.Some<Ast.Member>(parseAbstractMethod(start));
+			case Token.Fun:
+				var isStatic = next == Token.Fun;
+				takeSpace();
+				var (returnTy, name, parameters, effect) = parseMethodHead();
+				takeIndent();
+				var body = parseBlock();
+				return Op.Some(new Ast.Method(locFrom(start), isStatic, returnTy, name, parameters, effect, body));
 			case Token.EOF:
-				return Op<Ast.Member>.None;
+				return Op<Ast.Method>.None;
 			default:
 				throw unexpected(start, "'fun' or 'def' or 'abstract'", next);
 		}
-	}
-
-	Ast.Member.AbstractMethod parseAbstractMethod(Pos start) {
-		var (returnTy, name, parameters, effect) = parseMethodHead();
-		takeNewline();
-		return new Ast.Member.AbstractMethod(locFrom(start), returnTy, name, parameters, effect);
 	}
 
 	Op<Sym> parseImplParameter() {
@@ -211,7 +219,6 @@ sealed class Parser : ExprParser {
 	}
 
 	(Ast.Ty, Sym, Model.Effect selfEffect, Arr<Ast.Parameter>) parseMethodHead() {
-		takeSpace();
 		var returnTy = parseTy();
 		takeSpace();
 		var name = takeName();
@@ -237,13 +244,6 @@ sealed class Parser : ExprParser {
 		}
 
 		return (returnTy, name, selfEffect, parameters);
-	}
-
-	Ast.Member.Method parseMethodWithBody(Pos start, bool isStatic) {
-		var (returnTy, name, parameters, effect) = parseMethodHead();
-		takeIndent();
-		var body = parseBlock();
-		return new Ast.Member.Method(locFrom(start), isStatic, returnTy, name, parameters, effect, body);
 	}
 
 	Op<Ast.Parameter> parseParameter() {

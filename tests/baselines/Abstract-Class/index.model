@@ -1,17 +1,10 @@
 Klass(
-  loc: 0-84,
+  loc: 0-75,
   head: Abstract(
-    loc: 0-10),
+    loc: 0-22),
   membersMap: Dict<Sym, Member>(
-    s: AbstractMethod(
-      loc: 10-31,
-      returnTy: Id(
-        effect: "pure",
-        clsId: "String"),
-      name: "s",
-      parameters: []),
     main: MethodWithBody(
-      loc: 31-84,
+      loc: 22-75,
       isStatic: true,
       returnTy: Id(
         effect: "pure",
@@ -19,22 +12,22 @@ Klass(
       name: "main",
       selfEffect: "pure",
       parameters: [Parameter(
-        loc: 45-61,
+        loc: 36-52,
         ty: Id(
           effect: "pure",
           clsId: ""),
         name: "a",
         index: 0)],
       body: Assert(
-        loc: 64-84,
+        loc: 55-75,
         asserted: InstanceMethodCall(
-          loc: 71-84,
+          loc: 62-75,
           target: InstanceMethodCall(
-            loc: 71-74,
+            loc: 62-65,
             target: AccessParameter(
-              loc: 71-72,
+              loc: 62-63,
               param: Parameter(
-                loc: 45-61,
+                loc: 36-52,
                 ty: Id(
                   effect: "pure",
                   clsId: ""),
@@ -48,5 +41,12 @@ Klass(
             klassId: "String",
             name: "=="),
           args: [Literal(
-            loc: 80-83,
-            value: "s")])))))
+            loc: 71-74,
+            value: "s")]))),
+    s: AbstractMethod(
+      loc: 10-20,
+      returnTy: Id(
+        effect: "pure",
+        clsId: "String"),
+      name: "s",
+      parameters: [])))

@@ -30,8 +30,16 @@ sealed class EmitterMapsBuilder : EmitterMaps {
 		internal TypeBuilding withType(Type type) => new TypeBuilding(this.info, type);
 	}
 
-	MethodInfo EmitterMaps.getMethodInfo(Method method) =>
-		method is Method.BuiltinMethod b ? b.methodInfo : methodInfos[method];
+	MethodInfo EmitterMaps.getMethodInfo(Method method) {
+		switch (method) {
+			case BuiltinMethodWithBody b:
+				return b.methodInfo;
+			case BuiltinAbstractMethod b:
+				return b.methodInfo;
+			default:
+				return methodInfos[method];
+		}
+	}
 
 	ConstructorInfo EmitterMaps.getConstructorInfo(Klass klass) => classToConstructor[klass];
 	FieldInfo EmitterMaps.getFieldInfo(Slot slot) => slotToField[slot];

@@ -1,17 +1,10 @@
 Klass(
-  loc: 0-65,
+  loc: 0-56,
   head: Abstract(
-    loc: 0-10),
+    loc: 0-19),
   membersMap: Dict<Sym, Member>(
-    n: AbstractMethod(
-      loc: 10-28,
-      returnTy: Id(
-        effect: "pure",
-        clsId: "Nat"),
-      name: "n",
-      parameters: []),
     getN: MethodWithBody(
-      loc: 28-65,
+      loc: 19-56,
       isStatic: true,
       returnTy: Id(
         effect: "pure",
@@ -19,18 +12,18 @@ Klass(
       name: "getN",
       selfEffect: "pure",
       parameters: [Parameter(
-        loc: 41-56,
+        loc: 32-47,
         ty: Id(
           effect: "pure",
           clsId: "AbstractClass"),
         name: "a",
         index: 0)],
       body: InstanceMethodCall(
-        loc: 59-62,
+        loc: 50-53,
         target: AccessParameter(
-          loc: 59-60,
+          loc: 50-51,
           param: Parameter(
-            loc: 41-56,
+            loc: 32-47,
             ty: Id(
               effect: "pure",
               clsId: "AbstractClass"),
@@ -39,4 +32,11 @@ Klass(
         method: Id(
           klassId: "AbstractClass",
           name: "n"),
-        args: []))))
+        args: [])),
+    n: AbstractMethod(
+      loc: 10-17,
+      returnTy: Id(
+        effect: "pure",
+        clsId: "Nat"),
+      name: "n",
+      parameters: [])))

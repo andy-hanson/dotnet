@@ -10,11 +10,11 @@ namespace Model {
 			public Dat toDat() => Dat.of(this, nameof(klass), klass, nameof(name), name);
 		}
 
-		[ParentPointer] internal readonly Klass.Head.Slots slots;
+		[ParentPointer] internal readonly KlassHead.Slots slots;
 		internal readonly bool mutable;
 		internal readonly Ty ty;
 
-		internal Slot(Klass.Head.Slots slots, Loc loc, bool mutable, Ty ty, Sym name) : base(loc, name) {
+		internal Slot(KlassHead.Slots slots, Loc loc, bool mutable, Ty ty, Sym name) : base(loc, name) {
 			this.slots = slots;
 			this.mutable = mutable;
 			this.ty = ty;

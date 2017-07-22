@@ -1,17 +1,10 @@
 Klass(
-  loc: 0-56,
+  loc: 0-47,
   head: Abstract(
-    loc: 0-10),
+    loc: 0-20),
   membersMap: Dict<Sym, Member>(
-    s2: AbstractMethod(
-      loc: 10-29,
-      returnTy: Id(
-        effect: "pure",
-        clsId: "Nat"),
-      name: "s2",
-      parameters: []),
     s2Def: MethodWithBody(
-      loc: 29-56,
+      loc: 20-47,
       isStatic: false,
       returnTy: Id(
         effect: "pure",
@@ -20,9 +13,9 @@ Klass(
       selfEffect: "pure",
       parameters: [],
       body: InstanceMethodCall(
-        loc: 46-56,
+        loc: 37-47,
         target: MyInstanceMethodCall(
-          loc: 46-48,
+          loc: 37-39,
           method: Id(
             klassId: "Super2",
             name: "s2"),
@@ -31,5 +24,12 @@ Klass(
           klassId: "Nat",
           name: "*"),
         args: [Literal(
-          loc: 53-55,
-          value: 10)]))))
+          loc: 44-46,
+          value: 10)])),
+    s2: AbstractMethod(
+      loc: 10-18,
+      returnTy: Id(
+        effect: "pure",
+        clsId: "Nat"),
+      name: "s2",
+      parameters: [])))

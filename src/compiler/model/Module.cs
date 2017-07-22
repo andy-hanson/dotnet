@@ -1,5 +1,7 @@
 using System;
 
+using Diag;
+
 namespace Model {
 	// A module's identity is its path.
 	sealed class Module : ModelElement, IEquatable<Module>, ToData<Module>, Identifiable<Path> {
@@ -16,6 +18,8 @@ namespace Model {
 		[UpPointer] internal readonly Arr<Module> imports;
 		Late<Klass> _klass;
 		internal Klass klass { get => _klass.get; set => _klass.set(value); }
+		Late<Arr<Diagnostic>> _diagnostics;
+		internal Arr<Diagnostic> diagnostics { get => _diagnostics.get; set => _diagnostics.set(value); }
 		//TODO: does this belong here? Or somewhere else?
 		[NotData] internal readonly LineColumnGetter lineColumnGetter;
 

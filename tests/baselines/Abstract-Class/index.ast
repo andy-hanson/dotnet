@@ -1,44 +1,33 @@
 Module(
-  loc: 0-84,
+  loc: 0-75,
   imports: [],
   klass: Klass(
-    loc: 0-84,
+    loc: 0-75,
     head: Abstract(
-      loc: 0-10),
+      loc: 0-22),
     supers: [],
-    methods: [
-      AbstractMethod(
-        loc: 10-31,
-        returnTy: Ty(
-          loc: 19-25,
+    methods: [Method(
+      loc: 22-75,
+      isStatic: true,
+      returnTy: Ty(
+        loc: 26-30,
+        cls: Access(
+          loc: 26-30,
+          name: "Void")),
+      name: "main",
+      parameters: [Parameter(
+        loc: 36-52,
+        ty: Ty(
+          loc: 36-50,
           cls: Access(
-            loc: 19-25,
-            name: "String")),
-        name: "s",
-        parameters: []),
-      Method(
-        loc: 31-84,
-        isStatic: true,
-        returnTy: Ty(
-          loc: 35-39,
-          cls: Access(
-            loc: 35-39,
-            name: "Void")),
-        name: "main",
-        parameters: [Parameter(
-          loc: 45-61,
-          ty: Ty(
-            loc: 45-59,
-            cls: Access(
-              loc: 45-59,
-              name: "Abstract-Class")),
-          name: "a")],
-        body: Assert(
-          loc: 64-84,
-          asserted: OperatorCall(
-            loc: 71-84,
-            oper: "==",
-            right: Literal(
-              loc: 80-83,
-              value: "s"))))
-    ]))
+            loc: 36-50,
+            name: "Abstract-Class")),
+        name: "a")],
+      body: Assert(
+        loc: 55-75,
+        asserted: OperatorCall(
+          loc: 62-75,
+          oper: "==",
+          right: Literal(
+            loc: 71-74,
+            value: "s"))))]))

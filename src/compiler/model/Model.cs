@@ -86,7 +86,7 @@ namespace Model {
 	internal sealed class Impl : ModelElement, MethodOrImpl, ToData<Impl> {
 		internal readonly Loc loc;
 		[ParentPointer] internal readonly Super super;
-		[UpPointer] internal readonly Method implemented;
+		[UpPointer] internal readonly AbstractMethodLike implemented;
 		Late<Expr> _body;
 		internal Expr body {
 			get => _body.get;
@@ -99,7 +99,7 @@ namespace Model {
 		Klass MethodOrImpl.klass => super.containingClass;
 		Method MethodOrImpl.implementedMethod => implemented;
 
-		internal Impl(Super super, Loc loc, Method implemented) {
+		internal Impl(Super super, Loc loc, AbstractMethodLike implemented) {
 			this.super = super;
 			this.loc = loc;
 			this.implemented = implemented;
@@ -116,7 +116,7 @@ namespace Model {
 			nameof(body), body);
 	}
 
-	// Slot or Method
+	// Method, Slot, or AbstractMethod
 	abstract class Member : ModelElement, ToData<Member> {
 		internal readonly Loc loc;
 		internal readonly Sym name;

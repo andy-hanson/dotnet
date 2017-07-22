@@ -1,8 +1,10 @@
 using System;
 
-sealed class ParserExitException : Exception {
-	internal readonly CompileError err;
-	ParserExitException(Loc loc, Err err) { this.err = new CompileError(loc, err); }
+using Diag;
 
-	internal static ParserExitException exit(Loc loc, Err err) => new ParserExitException(loc, err);
+sealed class ParserExitException : Exception {
+	internal readonly Diagnostic diagnostic;
+	ParserExitException(Diagnostic diagnostic) { this.diagnostic = diagnostic; }
+
+	internal static ParserExitException exit(Loc loc, DiagnosticData diag) => new ParserExitException(new Diagnostic(loc, diag));
 }

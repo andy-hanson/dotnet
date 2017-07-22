@@ -1,6 +1,7 @@
 using System;
 using System.Text;
 
+using Diag.ParseDiags;
 using static CharUtils;
 using static ParserExitException;
 using static Utils;
@@ -182,7 +183,7 @@ abstract class Lexer : Reader {
 				}
 
 			case ' ':
-				if (peek == '\n') throw exit(singleCharLoc, Err.TrailingSpace);
+				if (peek == '\n') throw exit(singleCharLoc, TrailingSpace.instance);
 				return Token.Space;
 
 			case '\n':
@@ -246,7 +247,7 @@ abstract class Lexer : Reader {
 				return takeStringLike(Token.Operator, start, isOperatorChar);
 
 			default:
-				throw exit(singleCharLoc, new Err.UnrecognizedCharacter(ch));
+				throw exit(singleCharLoc, new UnrecognizedCharacter(ch));
 		}
 	}
 
@@ -277,14 +278,14 @@ abstract class Lexer : Reader {
 	void expectCharacter(char expected) {
 		var actual = readChar();
 		if (actual != expected)
-			throw exit(singleCharLoc, new Err.UnexpectedCharacter(actual, $"'{expected}'"));
+			throw exit(singleCharLoc, new UnexpectedCharacter(actual, $"'{expected}'"));
 	}
 
 	void expectCharacter(string expected, Func<char, bool> pred) {
 		var ch = readChar();
 		if (!pred(ch)) {
 			System.Diagnostics.Debugger.Break(); //VSCode shows an empty call stack on the below exception...
-			throw exit(singleCharLoc, new Err.UnexpectedCharacter(ch, expected));
+			throw exit(singleCharLoc, new UnexpectedCharacter(ch, expected));
 		}
 	}
 
@@ -292,7 +293,7 @@ abstract class Lexer : Reader {
 		var start = pos;
 		skipWhile(ch => ch == '\t');
 		var count = pos - start;
-		if (peek == ' ') throw exit(locFrom(start), Err.LeadingSpace);
+		if (peek == ' ') throw exit(locFrom(start), LeadingSpace.instance);
 		return count;
 	}
 
@@ -301,7 +302,7 @@ abstract class Lexer : Reader {
 		var oldIndent = indent;
 		indent = lexIndent();
 		if (indent > oldIndent) {
-			if (indent != oldIndent + 1) throw exit(singleCharLoc, Err.TooMuchIndent);
+			if (indent != oldIndent + 1) throw exit(singleCharLoc, new TooMuchIndent(oldIndent + 1, indent));
 			return Token.Indent;
 		} else if (indent == oldIndent) {
 			return Token.Newline;
@@ -437,7 +438,7 @@ abstract class Lexer : Reader {
 		unexpected(startPos, expectedDesc, TokenU.TokenName(token));
 
 	protected ParserExitException unexpected(Pos startPos, string expectedDesc, string actualDesc) =>
-		exit(locFrom(startPos), new Err.UnexpectedToken(expectedDesc, actualDesc));
+		exit(locFrom(startPos), new UnexpectedToken(expectedDesc, actualDesc));
 
 	protected Token takeKeywordOrEof() => atEOF ? Token.EOF : takeKeyword();
 

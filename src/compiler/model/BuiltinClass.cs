@@ -7,9 +7,9 @@ using static Utils;
 namespace Model {
 	sealed class BuiltinClass : ClassLike, ToData<BuiltinClass>, IEquatable<BuiltinClass> {
 		internal readonly Type dotNetType;
-		readonly Late<Arr<Method>> _abstractMethods;
-		// These will all be BuiltinMethods of course. But Arr is invariant and we want a type compatible with Klass.Head.Abstract.
-		internal Arr<Method> abstractMethods {
+		readonly Late<Arr<AbstractMethodLike>> _abstractMethods;
+		// Use AbstractMethodLike instead of BuiltinAbstractMethod so this type will be compatible with KlassHead.Abstract's abstractMethods
+		internal Arr<AbstractMethodLike> abstractMethods {
 			get { assert(isAbstract); return _abstractMethods.get; }
 			private set => _abstractMethods.set(value);
 		}
@@ -90,7 +90,7 @@ namespace Model {
 				throw TODO();
 			}
 
-			var abstracts = Arr.builder<Method>();
+			var abstracts = Arr.builder<AbstractMethodLike>();
 
 			var dotNetMethods = dotNetType.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
 			var overrides = Arr.builder<MethodInfo>();
@@ -109,9 +109,9 @@ namespace Model {
 					return Op<(Sym, Member)>.None;
 				}
 
-				var m2 = Method.BuiltinMethod.of(klass, method);
-				if (m2.isAbstract)
-					abstracts.add(m2);
+				var m2 = BuiltinMethod.of(klass, method);
+				if (m2 is BuiltinAbstractMethod b)
+					abstracts.add(b);
 				return Op.Some<(Sym, Member)>((m2.name, m2));
 			});
 

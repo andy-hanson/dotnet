@@ -117,7 +117,9 @@ sealed class Compiler {
 
 		var module = new Module(logicalPath, isIndex, documentInfo, imports);
 		var name = logicalPath.opLast.get(out var nameText) ? Sym.of(nameText) : documentProvider.rootName;
-		module.klass = Checker.checkClass(module, imports, ast.klass, name);
+		var (klass, diagnostics) = Checker.checkClass(module, imports, ast.klass, name);
+		module.klass = klass;
+		module.diagnostics = diagnostics;
 		return (module, isReused: false);
 	}
 

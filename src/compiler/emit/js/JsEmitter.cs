@@ -49,40 +49,32 @@ sealed class JsEmitter {
 
 	static readonly Estree.MemberExpression objectCreate = Estree.MemberExpression.simple(Loc.zero, "Object", "create");
 	Estree.ClassExpression emitClass(Klass klass) {
+		var loc = klass.loc;
+		var name = klass.name;
 		var body = Arr.builder<Estree.MethodDefinition>();
 
 		switch (klass.head) {
-			case Klass.Head.Static _:
-			case Klass.Head.Abstract _:
+			case KlassHead.Static _:
+			case KlassHead.Abstract _:
 				// No constructor
 				break;
-			case Klass.Head.Slots slots:
+			case KlassHead.Slots slots:
 				body.add(emitSlotsConstructor(slots, needSuperCall: klass.supers.length != 0));
 				break;
 			default:
 				throw TODO();
 		}
 
-		var superClass = super(klass.loc, klass.supers);
+		var superClass = super(loc, klass.supers);
 
 		foreach (var super in klass.supers)
 			foreach (var impl in super.impls)
-				body.add(emitMethodOrImpl(impl.loc, klass.name, impl.implemented, impl.body, isStatic: false));
+				body.add(emitMethodOrImpl(impl.loc, name, impl.implemented, impl.body, isStatic: false));
 
 		foreach (var method in klass.methods)
-			switch (method) {
-				case Method.MethodWithBody mb:
-					body.add(emitMethodOrImpl(method.loc, klass.name, method, mb.body, method.isStatic));
-					break;
-				case Method.AbstractMethod a:
-					// These compile to nothing -- they are abstract.
-					break;
-				default:
-					throw unreachable();
-			}
+			body.add(emitMethodOrImpl(method.loc, name, method, method.body, method.isStatic));
 
-		var loc = klass.loc;
-		return new Estree.ClassExpression(loc, id(loc, escapeName(klass.name)), superClass, new Estree.ClassBody(loc, body.finish()));
+		return new Estree.ClassExpression(loc, id(loc, escapeName(name)), superClass, new Estree.ClassBody(loc, body.finish()));
 	}
 
 	Op<Estree.Expression> super(Loc loc, Arr<Super> supers) {
@@ -99,7 +91,7 @@ sealed class JsEmitter {
 	static Estree.Expression superClassToExpr(Super super) =>
 		id(super.loc, escapeName(super.superClass.name));
 
-	static Estree.MethodDefinition emitSlotsConstructor(Klass.Head.Slots s, bool needSuperCall) {
+	static Estree.MethodDefinition emitSlotsConstructor(KlassHead.Slots s, bool needSuperCall) {
 		// constructor(x) { this.x = x; }
 		var patterns = s.slots.map<Estree.Pattern>(slot => id(slot.loc, escapeName(slot.name)));
 		var first = needSuperCall ? Op.Some(superCall(s.loc)) : Op<Estree.Statement>.None;

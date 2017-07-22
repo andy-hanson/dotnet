@@ -1,6 +1,5 @@
 abstract
-
-abstract String s()
+	String s()
 
 fun Void main(Abstract-Class a)
 	assert a.s() == "s"

@@ -1,6 +1,5 @@
 abstract
-
-abstract Nat s1()
+	Nat s1()
 
 def Nat s1Def()
 	s1() * 10

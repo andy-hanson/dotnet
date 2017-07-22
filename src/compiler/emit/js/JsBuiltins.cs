@@ -14,16 +14,16 @@ static class JsBuiltins {
 	delegate Estree.Expression InstanceTranslator(Loc loc, Estree.Expression target, Arr<Estree.Expression> args);
 	delegate Estree.Expression StaticTranslator(Loc loc, Arr<Estree.Expression> args);
 
-	static readonly Dict<Method.BuiltinMethod, StaticTranslator> primitiveSpecialTranslateStaticMethods;
-	static readonly Dict<Method.BuiltinMethod, InstanceTranslator> primitiveSpecialTranslateInstanceMethods;
-	static readonly Set<Method.BuiltinMethod> primitiveNzlibStaticMethods;
-	static readonly Set<Method.BuiltinMethod> primitiveNzlibInstanceMethods;
+	static readonly Dict<BuiltinMethodWithBody, StaticTranslator> primitiveSpecialTranslateStaticMethods;
+	static readonly Dict<BuiltinMethodWithBody, InstanceTranslator> primitiveSpecialTranslateInstanceMethods;
+	static readonly Set<BuiltinMethodWithBody> primitiveNzlibStaticMethods;
+	static readonly Set<BuiltinMethodWithBody> primitiveNzlibInstanceMethods;
 
 	static JsBuiltins() {
-		var primitiveSpecialTranslateStatic = Dict.builder<Method.BuiltinMethod, StaticTranslator>();
-		var primitiveSpecialTranslateInstance = Dict.builder<Method.BuiltinMethod, InstanceTranslator>();
-		var primitiveNzlibStatic = Set.builder<Method.BuiltinMethod>();
-		var primitiveNzlibInstance = Set.builder<Method.BuiltinMethod>();
+		var primitiveSpecialTranslateStatic = Dict.builder<BuiltinMethodWithBody, StaticTranslator>();
+		var primitiveSpecialTranslateInstance = Dict.builder<BuiltinMethodWithBody, InstanceTranslator>();
+		var primitiveNzlibStatic = Set.builder<BuiltinMethodWithBody>();
+		var primitiveNzlibInstance = Set.builder<BuiltinMethodWithBody>();
 
 		foreach (var k in BuiltinClass.all()) {
 			if (!k.dotNetType.hasAttribute<JsPrimitiveAttribute>())
@@ -33,7 +33,7 @@ static class JsBuiltins {
 			if (k.supers.length > 0) throw TODO(); // We would have to emit impls as well.
 
 			foreach (var method in methods.values) {
-				var builtin = (Method.BuiltinMethod)method;
+				var builtin = (BuiltinMethodWithBody)method; // Primitives should not have abstract methods, so this cast should succeed.
 				var attr = builtin.methodInfo.GetCustomAttribute<AnyJsTranslateAttribute>();
 				var isStatic = builtin.isStatic;
 
@@ -76,7 +76,7 @@ static class JsBuiltins {
 	}
 
 	internal static Estree.Expression emitStaticMethodCall(ref bool usedNzlib, Method invokedMethod, Loc loc, Arr<Estree.Expression> args) {
-		if (invokedMethod is Method.BuiltinMethod b) {
+		if (invokedMethod is BuiltinMethodWithBody b) {
 			if (primitiveSpecialTranslateStaticMethods.get(b, out var translator))
 				return translator(loc, args);
 			else if (primitiveNzlibStaticMethods.has(b)) {
@@ -90,7 +90,7 @@ static class JsBuiltins {
 	}
 
 	internal static Estree.Expression emitInstanceMethodCall(ref bool usedNzlib, Method invokedMethod, Loc loc, Estree.Expression target, Arr<Estree.Expression> args) {
-		if (invokedMethod is Method.BuiltinMethod b) {
+		if (invokedMethod is BuiltinMethodWithBody b) {
 			if (primitiveSpecialTranslateInstanceMethods.get(b, out var translator))
 				return translator(loc, target, args);
 			else if (primitiveNzlibInstanceMethods.has(b)) {
@@ -104,7 +104,7 @@ static class JsBuiltins {
 	}
 
 	internal static Estree.Expression emitMyInstanceMethodCall(ref bool usedNzlib, Method invokedMethod, Loc loc, Arr<Estree.Expression> args) {
-		if (invokedMethod is Method.BuiltinMethod) {
+		if (invokedMethod is BuiltinMethodWithBody b) {
 			unused(usedNzlib);
 			throw TODO();
 		}

@@ -1,6 +1,5 @@
 abstract
-
-abstract Nat n()
+	Nat n()
 
 fun Nat getN(AbstractClass a)
 	a.n()

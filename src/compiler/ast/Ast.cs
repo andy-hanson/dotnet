@@ -51,9 +51,9 @@ namespace Ast {
 	sealed class Klass : Node, ToData<Klass> {
 		internal readonly Op<Head> head;
 		internal readonly Arr<Super> supers;
-		internal readonly Arr<Member> methods;
+		internal readonly Arr<Method> methods;
 
-		internal Klass(Loc loc, Op<Head> head, Arr<Super> supers, Arr<Member> methods) : base(loc) {
+		internal Klass(Loc loc, Op<Head> head, Arr<Super> supers, Arr<Method> methods) : base(loc) {
 			this.head = head;
 			this.supers = supers;
 			this.methods = methods;
@@ -73,10 +73,36 @@ namespace Ast {
 			public bool deepEqual(Head h) => Equals((Node)h);
 
 			internal sealed class Abstract : Head, ToData<Abstract> {
-				internal Abstract(Loc loc) : base(loc) {}
+				internal readonly Arr<AbstractMethod> abstractMethods;
+				internal Abstract(Loc loc, Arr<AbstractMethod> abstractMethods) : base(loc) { this.abstractMethods = abstractMethods; }
 				public override bool deepEqual(Node n) => n is Abstract a && deepEqual(a);
 				public bool deepEqual(Abstract a) => locEq(a);
 				public override Dat toDat() => Dat.of(this, nameof(loc), loc);
+
+				internal sealed class AbstractMethod : Node, ToData<AbstractMethod> {
+					internal readonly Ty returnTy;
+					internal readonly Sym name;
+					internal readonly Model.Effect selfEffect;
+					internal readonly Arr<Parameter> parameters;
+					internal AbstractMethod(Loc loc, Ty returnTy, Sym name, Model.Effect selfEffect, Arr<Parameter> parameters) : base(loc) {
+						this.returnTy = returnTy;
+						this.name = name;
+						this.selfEffect = selfEffect;
+						this.parameters = parameters;
+					}
+
+					public override bool deepEqual(Node n) => n is AbstractMethod a && deepEqual(a);
+					public bool deepEqual(AbstractMethod a) =>
+						locEq(a) &&
+						returnTy.deepEqual(a.returnTy) &&
+						name.deepEqual(a.name) &&
+						parameters.deepEqual(a.parameters);
+					public override Dat toDat() => Dat.of(this,
+						nameof(loc), loc,
+						nameof(returnTy), returnTy,
+						nameof(name), name,
+						nameof(parameters), Dat.arr(parameters));
+				}
 			}
 
 			internal sealed class Slots : Head, ToData<Slots> {
@@ -151,68 +177,37 @@ namespace Ast {
 			nameof(body), body);
 	}
 
-	abstract class Member : Node, ToData<Member> {
+	internal sealed class Method : Node, ToData<Method> {
+		internal readonly bool isStatic;
+		internal readonly Ty returnTy;
 		internal readonly Sym name;
-		Member(Loc loc, Sym name) : base(loc) {
+		internal readonly Model.Effect selfEffect;
+		internal readonly Arr<Parameter> parameters;
+		internal readonly Expr body;
+		internal Method(Loc loc, bool isStatic, Ty returnTy, Sym name, Model.Effect selfEffect, Arr<Parameter> parameters, Expr body) : base(loc) {
+			this.isStatic = isStatic;
+			this.returnTy = returnTy;
 			this.name = name;
+			this.selfEffect = selfEffect;
+			this.parameters = parameters;
+			this.body = body;
 		}
 
-		public override bool deepEqual(Node n) => n is Member m && deepEqual(m);
-		public abstract bool deepEqual(Member m);
-
-		internal sealed class Method : Member, ToData<Method> {
-			internal readonly bool isStatic;
-			internal readonly Ty returnTy;
-			internal readonly Model.Effect selfEffect;
-			internal readonly Arr<Parameter> parameters;
-			internal readonly Expr body;
-			internal Method(Loc loc, bool isStatic, Ty returnTy, Sym name, Model.Effect selfEffect, Arr<Parameter> parameters, Expr body) : base(loc, name) {
-				this.isStatic = isStatic;
-				this.returnTy = returnTy;
-				this.selfEffect = selfEffect;
-				this.parameters = parameters;
-				this.body = body;
-			}
-
-			public override bool deepEqual(Member m) => m is Method me && deepEqual(me);
-			public bool deepEqual(Method m) =>
-				locEq(m) &&
-				isStatic == m.isStatic &&
-				returnTy.deepEqual(m.returnTy) &&
-				name.deepEqual(m.name) &&
-				parameters.deepEqual(m.parameters) &&
-				body.deepEqual(m.body);
-			public override Dat toDat() => Dat.of(this,
-				nameof(loc), loc,
-				nameof(isStatic), Dat.boolean(isStatic),
-				nameof(returnTy), returnTy,
-				nameof(name), name,
-				nameof(parameters), Dat.arr(parameters),
-				nameof(body), body);
-		}
-
-		internal sealed class AbstractMethod : Member, ToData<AbstractMethod> {
-			internal readonly Ty returnTy;
-			internal readonly Model.Effect selfEffect;
-			internal readonly Arr<Parameter> parameters;
-			internal AbstractMethod(Loc loc, Ty returnTy, Sym name, Model.Effect selfEffect, Arr<Parameter> parameters) : base(loc, name) {
-				this.returnTy = returnTy;
-				this.selfEffect = selfEffect;
-				this.parameters = parameters;
-			}
-
-			public override bool deepEqual(Member m) => m is AbstractMethod a && deepEqual(a);
-			public bool deepEqual(AbstractMethod a) =>
-				locEq(a) &&
-				returnTy.deepEqual(a.returnTy) &&
-				name.deepEqual(a.name) &&
-				parameters.deepEqual(a.parameters);
-			public override Dat toDat() => Dat.of(this,
-				nameof(loc), loc,
-				nameof(returnTy), returnTy,
-				nameof(name), name,
-				nameof(parameters), Dat.arr(parameters));
-		}
+		public override bool deepEqual(Node n) => n is Method m && deepEqual(m);
+		public bool deepEqual(Method m) =>
+			locEq(m) &&
+			isStatic == m.isStatic &&
+			returnTy.deepEqual(m.returnTy) &&
+			name.deepEqual(m.name) &&
+			parameters.deepEqual(m.parameters) &&
+			body.deepEqual(m.body);
+		public override Dat toDat() => Dat.of(this,
+			nameof(loc), loc,
+			nameof(isStatic), Dat.boolean(isStatic),
+			nameof(returnTy), returnTy,
+			nameof(name), name,
+			nameof(parameters), Dat.arr(parameters),
+			nameof(body), body);
 	}
 
 	internal sealed class Parameter : Node, ToData<Parameter> {

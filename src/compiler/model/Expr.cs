@@ -227,9 +227,9 @@ namespace Model {
 	}
 
 	internal sealed class StaticMethodCall : Expr, ToData<StaticMethodCall> {
-		[UpPointer] internal readonly Method method;
+		[UpPointer] internal readonly MethodWithBodyLike method;
 		internal readonly Arr<Expr> args;
-		internal StaticMethodCall(Loc loc, Method method, Arr<Expr> args) : base(loc) {
+		internal StaticMethodCall(Loc loc, MethodWithBodyLike method, Arr<Expr> args) : base(loc) {
 			assert(method.isStatic);
 			this.method = method;
 			this.args = args;
@@ -314,10 +314,10 @@ namespace Model {
 		Can't directly construct any other class.
 		Also, length must match with args.
 		*/
-		[ParentPointer] internal readonly Klass.Head.Slots slots;
+		[ParentPointer] internal readonly KlassHead.Slots slots;
 		internal readonly Arr<Expr> args;
 
-		internal New(Loc loc, Klass.Head.Slots slots, Arr<Expr> args) : base(loc) {
+		internal New(Loc loc, KlassHead.Slots slots, Arr<Expr> args) : base(loc) {
 			this.slots = slots;
 			this.args = args;
 			foreach (var arg in args)

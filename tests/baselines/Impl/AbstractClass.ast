@@ -1,45 +1,34 @@
 Module(
-  loc: 0-65,
+  loc: 0-56,
   imports: [],
   klass: Klass(
-    loc: 0-65,
+    loc: 0-56,
     head: Abstract(
-      loc: 0-10),
+      loc: 0-19),
     supers: [],
-    methods: [
-      AbstractMethod(
-        loc: 10-28,
-        returnTy: Ty(
-          loc: 19-22,
+    methods: [Method(
+      loc: 19-56,
+      isStatic: true,
+      returnTy: Ty(
+        loc: 23-26,
+        cls: Access(
+          loc: 23-26,
+          name: "Nat")),
+      name: "getN",
+      parameters: [Parameter(
+        loc: 32-47,
+        ty: Ty(
+          loc: 32-45,
           cls: Access(
-            loc: 19-22,
-            name: "Nat")),
-        name: "n",
-        parameters: []),
-      Method(
-        loc: 28-65,
-        isStatic: true,
-        returnTy: Ty(
-          loc: 32-35,
-          cls: Access(
-            loc: 32-35,
-            name: "Nat")),
-        name: "getN",
-        parameters: [Parameter(
-          loc: 41-56,
-          ty: Ty(
-            loc: 41-54,
-            cls: Access(
-              loc: 41-54,
-              name: "AbstractClass")),
-          name: "a")],
-        body: Call(
-          loc: 59-64,
-          target: GetProperty(
-            loc: 59-62,
-            target: Access(
-              loc: 59-60,
-              name: "a"),
-            propertyName: "n"),
-          args: []))
-    ]))
+            loc: 32-45,
+            name: "AbstractClass")),
+        name: "a")],
+      body: Call(
+        loc: 50-55,
+        target: GetProperty(
+          loc: 50-53,
+          target: Access(
+            loc: 50-51,
+            name: "a"),
+          propertyName: "n"),
+        args: []))]))

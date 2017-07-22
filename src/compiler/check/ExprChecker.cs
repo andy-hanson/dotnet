@@ -128,7 +128,7 @@ class ExprChecker {
 	}
 
 	Expr checkNew(ref Expected expected, Ast.New n) {
-		if (!(currentClass.head is Klass.Head.Slots slots)) {
+		if (!(currentClass.head is KlassHead.Slots slots)) {
 			throw TODO(); // Error: Can't `new` an abstract/static class
 		}
 
@@ -220,8 +220,10 @@ class ExprChecker {
 
 	Expr callStaticMethod(ref Expected expected, Loc loc, ClassLike klass, Sym methodName, Arr<Ast.Expr> argAsts) {
 		if (!klass.membersMap.get(methodName, out var member)) TODO();
-		var method = (Method)member;
-		if (!method.isStatic) throw TODO();
+		if (!(member is MethodWithBodyLike method))
+			throw TODO();
+		if (!method.isStatic)
+			throw TODO();
 		// No need to check selfEffect, because this is a static method.
 		var args = checkCall(loc, method, argAsts);
 		return handle(ref expected, new StaticMethodCall(loc, method, args));
@@ -246,7 +248,7 @@ class ExprChecker {
 		if (!isStatic && !selfEffect.contains(method.selfEffect))
 			throw TODO(); //Can't call my method with a greater effect
 		var args = checkCall(loc, method, argAsts);
-		var call = method.isStatic ? new StaticMethodCall(loc, method, args) : (Expr)new MyInstanceMethodCall(loc, method, args);
+		var call = method is MethodWithBodyLike mbl && mbl.isStatic ? new StaticMethodCall(loc, mbl, args) : (Expr)new MyInstanceMethodCall(loc, method, args);
 		return handle(ref expected, call);
 	}
 
@@ -312,7 +314,10 @@ class ExprChecker {
 				if (isStatic) throw TODO();
 				return new GetMySlot(loc, currentClass, slot);
 
-			case Method.MethodWithBody m:
+			case MethodWithBody m:
+				throw TODO();
+
+			case AbstractMethod a:
 				throw TODO();
 
 			default:
