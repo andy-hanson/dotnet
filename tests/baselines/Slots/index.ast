@@ -1,74 +1,116 @@
 Module(
-  loc: 0-103,
+  loc: 0-171,
   imports: [],
   klass: Klass(
-    loc: 0-103,
+    loc: 0-171,
     head: Slots(
-      loc: 0-18,
-      slots: [Slot(
-        loc: 7-16,
-        mutable: false,
-        ty: Ty(
-          loc: 11-14,
-          cls: Access(
+      loc: 0-29,
+      slots: [
+        Slot(
+          loc: 7-16,
+          mutable: false,
+          ty: Ty(
             loc: 11-14,
-            name: "Nat")),
-        name: "x")]),
+            cls: Access(
+              loc: 11-14,
+              name: "Nat")),
+          name: "x"),
+        Slot(
+          loc: 18-27,
+          mutable: true,
+          ty: Ty(
+            loc: 22-25,
+            cls: Access(
+              loc: 22-25,
+              name: "Nat")),
+          name: "y")
+      ]),
     supers: [],
     methods: [
       Method(
-        loc: 18-85,
+        loc: 29-131,
         isStatic: true,
         returnTy: Ty(
-          loc: 22-26,
+          loc: 33-37,
           cls: Access(
-            loc: 22-26,
+            loc: 33-37,
             name: "Void")),
         name: "main",
         parameters: [],
         body: Let(
-          loc: 39-48,
+          loc: 50-61,
           assigned: Single(
-            loc: 35-38,
+            loc: 46-49,
             name: "obj"),
           value: New(
-            loc: 41-48,
-            args: [Literal(
-              loc: 45-46,
-              value: 1)]),
-          then: Let(
-            loc: 53-67,
-            assigned: Single(
-              loc: 48-52,
-              name: "gotX"),
-            value: Call(
-              loc: 55-65,
-              target: GetProperty(
-                loc: 55-63,
-                target: Access(
-                  loc: 55-58,
-                  name: "obj"),
-                propertyName: "getX"),
-              args: []),
-            then: Assert(
-              loc: 67-85,
+            loc: 52-61,
+            args: [
+              Literal(
+                loc: 56-57,
+                value: 1),
+              Literal(
+                loc: 58-59,
+                value: 2)
+            ]),
+          then: Seq(
+            loc: 61-131,
+            first: Assert(
+              loc: 61-80,
               asserted: OperatorCall(
-                loc: 74-85,
+                loc: 68-80,
                 oper: "==",
                 right: Literal(
-                  loc: 82-83,
-                  value: 1)))))),
+                  loc: 77-78,
+                  value: 1))),
+            then: Seq(
+              loc: 80-131,
+              first: Assert(
+                loc: 80-99,
+                asserted: OperatorCall(
+                  loc: 87-99,
+                  oper: "==",
+                  right: Literal(
+                    loc: 96-97,
+                    value: 2))),
+              then: Seq(
+                loc: 99-131,
+                first: Call(
+                  loc: 99-110,
+                  target: GetProperty(
+                    loc: 99-108,
+                    target: Access(
+                      loc: 99-102,
+                      name: "obj"),
+                    propertyName: "incrY"),
+                  args: []),
+                then: Assert(
+                  loc: 112-131,
+                  asserted: OperatorCall(
+                    loc: 119-131,
+                    oper: "==",
+                    right: Literal(
+                      loc: 128-129,
+                      value: 3)))))))),
       Method(
-        loc: 85-103,
+        loc: 131-171,
         isStatic: false,
         returnTy: Ty(
-          loc: 89-92,
+          loc: 135-139,
           cls: Access(
-            loc: 89-92,
-            name: "Nat")),
-        name: "getX",
+            loc: 135-139,
+            name: "Void")),
+        name: "incrY",
         parameters: [],
-        body: Access(
-          loc: 101-102,
-          name: "x"))
+        body: SetProperty(
+          loc: 159-171,
+          propertyName: "y",
+          value: Call(
+            loc: 162-170,
+            target: GetProperty(
+              loc: 162-168,
+              target: Access(
+                loc: 162-163,
+                name: "y"),
+              propertyName: "incr"),
+            args: [])))
     ]))

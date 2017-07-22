@@ -98,6 +98,19 @@ namespace Ast {
 		public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(target), target, nameof(propertyName), propertyName);
 	}
 
+	internal sealed class SetProperty : Expr, ToData<SetProperty> {
+		internal readonly Sym propertyName;
+		internal readonly Expr value;
+		internal SetProperty(Loc loc, Sym propertyName, Expr value) : base(loc) {
+			this.propertyName = propertyName;
+			this.value = value;
+		}
+
+		public override bool deepEqual(Node n) => n is SetProperty s && deepEqual(s);
+		public bool deepEqual(SetProperty s) => locEq(s) && propertyName.deepEqual(s.propertyName) && value.deepEqual(s.value);
+		public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(propertyName), propertyName, nameof(value), value);
+	}
+
 	internal sealed class Let : Expr, ToData<Let> {
 		internal readonly Pattern assigned;
 		internal readonly Expr value;

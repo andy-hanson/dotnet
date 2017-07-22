@@ -1,7 +1,7 @@
 constructor
 	this
 	get parameter 0
-	set instance field x
+	set instance field Impl.x
 	return
 
 Void main() [PrivateScope, Public, Static]

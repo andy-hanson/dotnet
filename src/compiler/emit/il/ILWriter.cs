@@ -98,14 +98,14 @@ struct ILWriter {
 		il.Emit(OpCodes.Ldarg_0);
 	}
 
-	internal void setField(FieldInfo field) {
-		logger?.log($"set instance field {field.Name}");
-		il.Emit(OpCodes.Stfld, field);
-	}
-
 	internal void getField(FieldInfo field) {
 		logger?.log($"get instance field {field.DeclaringType.Name}.{field.Name}");
 		il.Emit(OpCodes.Ldfld, field);
+	}
+
+	internal void setField(FieldInfo field) {
+		logger?.log($"set instance field {field.DeclaringType.Name}.{field.Name}");
+		il.Emit(OpCodes.Stfld, field);
 	}
 
 	internal void goToIfFalse(Label lbl) {

@@ -1,17 +1,27 @@
 Klass(
-  loc: 0-103,
+  loc: 0-171,
   head: Slots(
-    slots: [Slot(
-      loc: 0-18,
-      name: "x",
-      mutable: false,
-      ty: Ty(
-        effect: "pure",
-        cls: BuiltinClass(
-          name: "Nat")))]),
+    slots: [
+      Slot(
+        loc: 0-29,
+        name: "x",
+        mutable: false,
+        ty: Ty(
+          effect: "pure",
+          cls: BuiltinClass(
+            name: "Nat"))),
+      Slot(
+        loc: 0-29,
+        name: "y",
+        mutable: true,
+        ty: Ty(
+          effect: "pure",
+          cls: BuiltinClass(
+            name: "Nat")))
+    ]),
   membersMap: Dict<Sym, Member>(
     main: MethodWithBody(
-      loc: 18-85,
+      loc: 29-131,
       isStatic: true,
       returnTy: Id(
         effect: "pure",
@@ -20,56 +30,120 @@ Klass(
       selfEffect: "pure",
       parameters: [],
       body: Let(
-        loc: 39-48,
+        loc: 50-61,
         assigned: Single(
-          loc: 35-38,
+          loc: 46-49,
           name: "obj"),
         value: New(
-          args: [Literal(
-            loc: 45-46,
-            value: 1)]),
-        then: Let(
-          loc: 53-67,
-          assigned: Single(
-            loc: 48-52,
-            name: "gotX"),
-          value: InstanceMethodCall(
-            loc: 55-63,
-            target: AccessLocal(
-              local: "obj"),
-            method: Id(
-              klassId: "",
-              name: "getX"),
-            args: []),
-          then: Assert(
-            loc: 67-85,
+          args: [
+            Literal(
+              loc: 56-57,
+              value: 1),
+            Literal(
+              loc: 58-59,
+              value: 2)
+          ]),
+        then: Seq(
+          loc: 61-131,
+          action: Assert(
+            loc: 61-80,
             asserted: InstanceMethodCall(
-              loc: 74-85,
-              target: AccessLocal(
-                local: "gotX"),
+              loc: 68-80,
+              target: GetSlot(
+                loc: 68-73,
+                target: AccessLocal(
+                  local: "obj"),
+                slot: Id(
+                  klass: "",
+                  name: "x")),
               method: Id(
                 klassId: "Nat",
                 name: "=="),
               args: [Literal(
-                loc: 82-83,
-                value: 1)]))))),
-    getX: MethodWithBody(
-      loc: 85-103,
+                loc: 77-78,
+                value: 1)])),
+          then: Seq(
+            loc: 80-131,
+            action: Assert(
+              loc: 80-99,
+              asserted: InstanceMethodCall(
+                loc: 87-99,
+                target: GetSlot(
+                  loc: 87-92,
+                  target: AccessLocal(
+                    local: "obj"),
+                  slot: Id(
+                    klass: "",
+                    name: "y")),
+                method: Id(
+                  klassId: "Nat",
+                  name: "=="),
+                args: [Literal(
+                  loc: 96-97,
+                  value: 2)])),
+            then: Seq(
+              loc: 99-131,
+              action: InstanceMethodCall(
+                loc: 99-108,
+                target: AccessLocal(
+                  local: "obj"),
+                method: Id(
+                  klassId: "",
+                  name: "incrY"),
+                args: []),
+              then: Assert(
+                loc: 112-131,
+                asserted: InstanceMethodCall(
+                  loc: 119-131,
+                  target: GetSlot(
+                    loc: 119-124,
+                    target: AccessLocal(
+                      local: "obj"),
+                    slot: Id(
+                      klass: "",
+                      name: "y")),
+                  method: Id(
+                    klassId: "Nat",
+                    name: "=="),
+                  args: [Literal(
+                    loc: 128-129,
+                    value: 3)]))))))),
+    incrY: MethodWithBody(
+      loc: 131-171,
       isStatic: false,
       returnTy: Id(
         effect: "pure",
-        clsId: "Nat"),
-      name: "getX",
-      selfEffect: "pure",
+        clsId: "Void"),
+      name: "incrY",
+      selfEffect: "set",
       parameters: [],
-      body: GetMySlot(
+      body: SetSlot(
+        loc: 159-171,
         slot: Id(
           klass: "",
-          name: "x"))),
+          name: "y"),
+        value: InstanceMethodCall(
+          loc: 162-168,
+          target: GetMySlot(
+            slot: Id(
+              klass: "",
+              name: "y")),
+          method: Id(
+            klassId: "Nat",
+            name: "incr"),
+          args: []))),
     x: Slot(
-      loc: 0-18,
+      loc: 0-29,
       name: "x",
       mutable: false,
+      ty: Ty(
+        effect: "pure",
+        cls: BuiltinClass(
+          name: "Nat"))),
+    y: Slot(
+      loc: 0-29,
+      name: "y",
+      mutable: true,
       ty: Ty(
         effect: "pure",
         cls: BuiltinClass(

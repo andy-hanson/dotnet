@@ -176,6 +176,10 @@ sealed class JsExprEmitter {
 				return emitRecur(r);
 			case GetSlot g:
 				return Estree.MemberExpression.simple(loc, exprToExpr(g.target), escapeName(g.slot.name));
+			case SetSlot s: {
+				var thisDotSlot = Estree.MemberExpression.simple(s.loc, new Estree.ThisExpression(s.loc), s.slot.name.str);
+				return new Estree.AssignmentExpression(s.loc, thisDotSlot, exprToExpr(s.value));
+			}
 			case GetMySlot g:
 				return Estree.MemberExpression.simple(loc, new Estree.ThisExpression(loc), escapeName(g.slot.name));
 			case WhenTest w:

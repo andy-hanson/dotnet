@@ -223,16 +223,10 @@ sealed class Parser : ExprParser {
 			parameters = Arr.empty<Ast.Parameter>();
 		else {
 			var firstStart = pos;
-			var x = parseTyOrSelfEffect();
+			var x = parseSelfEffectOrTy();
 			if (x.isLeft) {
-				//'self'
 				selfEffect = x.left;
-				if (tryTakeRparen())
-					parameters = Arr.empty<Ast.Parameter>();
-				else {
-					var first = parseJustParameter();
-					parameters = buildUntilNullWithFirst(first, parseParameter);
-				}
+				parameters = tryTakeRparen() ? Arr.empty<Ast.Parameter>() : buildUntilNull(parseParameter);
 			} else {
 				var firstTy = x.right;
 				takeSpace();

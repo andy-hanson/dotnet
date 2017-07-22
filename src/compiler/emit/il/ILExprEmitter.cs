@@ -67,6 +67,9 @@ sealed class ILExprEmitter {
 			case GetMySlot g:
 				emitGetMySlot(g);
 				return;
+			case SetSlot s:
+				emitSetSlot(s);
+				return;
 			case WhenTest w:
 				emitWhenTest(w);
 				return;
@@ -300,5 +303,12 @@ sealed class ILExprEmitter {
 	void emitGetMySlot(GetMySlot g) {
 		il.getThis();
 		il.getField(this.maps.getFieldInfo(g.slot));
+	}
+
+	void emitSetSlot(SetSlot s) {
+		il.getThis();
+		emitAny(s.value);
+		il.setField(this.maps.getFieldInfo(s.slot));
+		emitVoid();
 	}
 }

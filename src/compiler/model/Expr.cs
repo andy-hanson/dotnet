@@ -352,8 +352,8 @@ namespace Model {
 	}
 
 	internal sealed class GetSlot : Expr, ToData<GetSlot> {
-		[UpPointer] internal readonly Slot slot;
 		internal readonly Expr target;
+		[UpPointer] internal readonly Slot slot;
 		internal GetSlot(Loc loc, Expr target, Slot slot) : base(loc) {
 			this.target = target;
 			target.parent = this;
@@ -361,11 +361,40 @@ namespace Model {
 		}
 
 		internal override IEnumerable<Expr> children() { yield return target; }
-		internal override Ty ty => slot.ty;
+		internal override Ty ty => Ty.of(target.ty.effect.minCommonEffect(slot.ty.effect), slot.ty.cls);
 
 		public override bool deepEqual(Expr e) => e is GetSlot g && deepEqual(g);
-		public bool deepEqual(GetSlot g) => throw TODO(); // TODO: handle "slot" up-pointer
-		public override Dat toDat() => throw TODO();
+		public bool deepEqual(GetSlot g) =>
+			locEq(g) &&
+			target.deepEqual(g.target) &&
+			slot.equalsId<Slot, Slot.Id>(g.slot);
+		public override Dat toDat() => Dat.of(this,
+			nameof(loc), loc,
+			nameof(target), target,
+			nameof(slot), slot.getId());
+	}
+
+	internal sealed class SetSlot : Expr, ToData<SetSlot> {
+		[UpPointer] internal readonly Slot slot;
+		internal readonly Expr value;
+		internal SetSlot(Loc loc, Slot slot, Expr value) : base(loc) {
+			this.slot = slot;
+			this.value = value;
+			value.parent = this;
+		}
+
+		internal override IEnumerable<Expr> children() { yield return value; }
+		internal override Ty ty => Ty.Void;
+
+		public override bool deepEqual(Expr e) => e is SetSlot s && deepEqual(s);
+		public bool deepEqual(SetSlot s) =>
+			locEq(s) &&
+			slot.equalsId<Slot, Slot.Id>(s.slot) &&
+			value.deepEqual(s.value);
+		public override Dat toDat() => Dat.of(this,
+			nameof(loc), loc,
+			nameof(slot), slot.getId(),
+			nameof(value), value);
 	}
 
 	internal sealed class Self : Expr, ToData<Self> {

@@ -1,7 +1,7 @@
 constructor
 	this
 	get parameter 0
-	set instance field x
+	set instance field Multiple-Inheritance.x
 	return
 
 Void main() [PrivateScope, Public, Static]

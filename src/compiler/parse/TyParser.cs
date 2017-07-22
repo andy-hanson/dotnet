@@ -1,7 +1,7 @@
 abstract class TyParser : Lexer {
 	protected TyParser(string source) : base(source) {}
 
-	protected Either<Model.Effect, Ast.Ty> parseTyOrSelfEffect() {
+	protected Either<Model.Effect, Ast.Ty> parseSelfEffectOrTy() {
 		var start = pos;
 		var token = nextToken();
 		switch (token) {
@@ -33,7 +33,7 @@ abstract class TyParser : Lexer {
 
 	protected Ast.Ty parseTy() {
 		var start = pos;
-		var e = parseTyOrSelfEffect();
+		var e = parseSelfEffectOrTy();
 		if (e.isLeft)
 			throw unexpected(start, "'self' parameter must be the first", Token.Self);
 		return e.right;

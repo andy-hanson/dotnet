@@ -82,24 +82,25 @@ internal enum Token {
 	When,
 
 	// Punctuation
-	Space,
 	Backslash,
-	Underscore,
-	Equals,
-	Indent,
-	Dedent,
-	Newline,
-	Lparen,
-	Rparen,
-	Lbracket,
-	Rbracket,
-	Lcurly,
-	Rcurly,
-	EOF, //TODO: should never be reached as a token, just use unexpected() instead
+	BracketL,
+	BracketR,
 	Colon,
+	ColonEquals,
 	Comma,
+	CurlyL,
+	CurlyR,
+	Dedent,
 	Dot,
 	DotDot,
+	EOF,
+	Equals,
+	Indent,
+	Newline,
+	ParenL,
+	ParenR,
+	Space,
+	Underscore,
 }
 
 static class TokenU {
@@ -140,12 +141,12 @@ static class TokenU {
 			case Token.Indent: return "->";
 			case Token.Dedent: return "<-";
 			case Token.Newline: return "\\n";
-			case Token.Lparen: return "(";
-			case Token.Rparen: return ")";
-			case Token.Lbracket: return "[";
-			case Token.Rbracket: return "]";
-			case Token.Lcurly: return "{";
-			case Token.Rcurly: return "}";
+			case Token.ParenL: return "(";
+			case Token.ParenR: return ")";
+			case Token.BracketL: return "[";
+			case Token.BracketR: return "]";
+			case Token.CurlyL: return "{";
+			case Token.CurlyR: return "}";
 			case Token.EOF: return "EOF";
 
 			case Token.Colon: return ":";

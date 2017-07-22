@@ -95,6 +95,15 @@ abstract class ExprParser : TyParser {
 
 		while (true) {
 			switch (loopNext) {
+				case Token.Colon: {
+					takeEquals();
+					var slot = partsToSlot(parts);
+					takeSpace();
+					var (value, next) = parseExpr(Ctx.Plain);
+					if (next == Next.NewlineAfterEquals) throw TODO();
+					return (new Ast.SetProperty(locFrom(loopStart), slot, value), next);
+				}
+
 				case Token.Equals: {
 					var patternLoc = locFrom(loopStart);
 					var pattern = partsToPattern(patternLoc, parts);
@@ -162,7 +171,7 @@ abstract class ExprParser : TyParser {
 							// Continue adding parts
 							break;
 
-						case Token.Rparen:
+						case Token.ParenR:
 							return (finishRegular(exprStart, specialStart, parts), Next.Rparen);
 
 						case Token.Newline:
@@ -240,7 +249,7 @@ abstract class ExprParser : TyParser {
 					expr = new Ast.GetProperty(locFrom(start), expr, name);
 					break;
 
-				case Token.Lparen:
+				case Token.ParenL:
 					takeRparen();
 					expr = new Ast.Call(locFrom(start), expr, Arr.empty<Ast.Expr>());
 					break;
@@ -261,7 +270,7 @@ abstract class ExprParser : TyParser {
 				var staticMethodName = takeName();
 				return new Ast.StaticAccess(locFrom(pos), className, staticMethodName);
 			}
-			case Token.Lparen: {
+			case Token.ParenL: {
 				var (expr, next) = parseExpr(Ctx.Plain);
 				if (next != Next.Rparen)
 					throw TODO();
@@ -377,6 +386,18 @@ abstract class ExprParser : TyParser {
 		}
 
 		return new Ast.Try(locFrom(startPos), do_, catch_, finally_);
+	}
+
+	static Sym partsToSlot(Arr.Builder<Ast.Expr> parts) {
+		if (parts.curLength != 1)
+			throw TODO();
+
+		switch (parts[0]) {
+			case Ast.Access a:
+				return a.name;
+			default:
+				throw TODO();
+		}
 	}
 
 	static Ast.Pattern partsToPattern(Loc loc, Arr.Builder<Ast.Expr> parts) {

@@ -193,12 +193,12 @@ abstract class Lexer : Reader {
 
 			case '\\': return Token.Backslash;
 			case ':': return Token.Colon;
-			case '(': return Token.Lparen;
-			case ')': return Token.Rparen;
-			case '[': return Token.Lbracket;
-			case ']': return Token.Rbracket;
-			case '{': return Token.Lcurly;
-			case '}': return Token.Rcurly;
+			case '(': return Token.ParenL;
+			case ')': return Token.ParenR;
+			case '[': return Token.BracketL;
+			case ']': return Token.BracketR;
+			case '{': return Token.CurlyL;
+			case '}': return Token.CurlyR;
 			case '_': return Token.Underscore;
 
 			case '.':
@@ -405,6 +405,7 @@ abstract class Lexer : Reader {
 	protected void takeRparen() => expectCharacter(')');
 	protected void takeComma() => expectCharacter(',');
 	protected void takeDot() => expectCharacter('.');
+	protected void takeEquals() => expectCharacter('=');
 	protected bool tryTakeRparen() => tryTake(')');
 	protected bool tryTakeDot() => tryTake('.');
 	protected bool tryTakeColon() => tryTake(':');

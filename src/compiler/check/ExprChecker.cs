@@ -67,6 +67,8 @@ class ExprChecker {
 				return checkNew(ref e, n);
 			case Ast.GetProperty g:
 				return checkGetProperty(ref e, g);
+			case Ast.SetProperty s:
+				return checkSetProperty(ref e, s);
 			case Ast.Let l:
 				return checkLet(ref e, l);
 			case Ast.Seq s:
@@ -138,11 +140,27 @@ class ExprChecker {
 
 	Expr checkGetProperty(ref Expected expected, Ast.GetProperty g) {
 		var target = checkInfer(g.target);
-		var member = getMember(g.loc, target.ty.cls, g.propertyName);
-		var slot = (Slot)member; //TODO: error handling
-		if (slot.mutable && !target.ty.effect.contains(Effect.Get))
+		var (targetEffect, targetCls) = target.ty;
+		var member = getMember(g.loc, targetCls, g.propertyName);
+		if (!(member is Slot slot))
+			throw TODO();
+		if (slot.mutable && !targetEffect.contains(Effect.Get))
 			throw TODO(); // Tried to observe mutable state, but don't have permission.
+		// Handling of effect handled by GetSlot.ty -- this is the minimum common effect between 'target' and 'slot.ty'.
 		return handle(ref expected, new GetSlot(g.loc, target, slot));
+	}
+
+	Expr checkSetProperty(ref Expected expected, Ast.SetProperty s) {
+		if (!selfEffect.contains(Effect.Set))
+			throw TODO();
+
+		if (!baseScope.tryGetMember(s.propertyName, out var member))
+			throw TODO();
+		if (!(member is Slot slot))
+			throw TODO();
+
+		var value = checkSubtype(slot.ty, s.value);
+		return handle(ref expected, new SetSlot(s.loc, slot, value));
 	}
 
 	Expr checkLet(ref Expected expected, Ast.Let l) {
@@ -212,7 +230,8 @@ class ExprChecker {
 	Expr callMethod(ref Expected expected, Loc loc, Ast.Expr targetAst, Sym methodName, Arr<Ast.Expr> argAsts) {
 		var target = checkInfer(targetAst);
 		var member = getMember(loc, target.ty.cls, methodName);
-		var method = (Method)member; //TODO: error handling
+		if (!(member is Method method))
+			throw TODO();
 		if (method.isStatic) throw TODO(); //error
 		if (!target.ty.effect.contains(method.selfEffect))
 			throw TODO(); // Can't call a method on an object with a greater effect than we've declared for it.
@@ -222,7 +241,8 @@ class ExprChecker {
 
 	Expr callOwnMethod(ref Expected expected, Loc loc, Sym methodName, Arr<Ast.Expr> argAsts) {
 		var member = getMember(loc, currentClass, methodName);
-		var method = (Method)member; //TODO: error handling
+		if (!(member is Method method))
+			throw TODO();
 		if (!isStatic && !selfEffect.contains(method.selfEffect))
 			throw TODO(); //Can't call my method with a greater effect
 		var args = checkCall(loc, method, argAsts);
@@ -240,7 +260,7 @@ class ExprChecker {
 	}
 
 	static bool tryGetMember(ClsRef cls, Sym memberName, out Member member) {
-		var klass = (ClassLike)cls; //TODO
+		var klass = (ClassLike)cls; //TODO: support getting member of builtin class
 		if (klass.membersMap.get(memberName, out member)) {
 			return true;
 		}
