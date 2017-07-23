@@ -33,6 +33,17 @@ namespace Diag.CheckDiags {
 			nameof(abstractMethods), Dat.arrOfIds<AbstractMethodLike, AbstractMethodLike.Id>(abstractMethods));
 	}
 
+	internal sealed class DuplicateParameterName : Diag<DuplicateParameterName> {
+		internal readonly Sym name;
+		internal DuplicateParameterName(Sym name) { this.name = name; }
+
+		internal override string show() =>
+			$"There are two parameters named {name.str}";
+
+		public override bool deepEqual(DuplicateParameterName d) => name.deepEqual(d.name);
+		public override Dat toDat() => Dat.of(this, nameof(name), name);
+	}
+
 	internal sealed class WrongImplParameters : Diag<WrongImplParameters> {
 		[UpPointer] internal readonly AbstractMethodLike implemented;
 		internal WrongImplParameters(AbstractMethodLike implemented) { this.implemented = implemented; }
@@ -66,17 +77,5 @@ namespace Diag.CheckDiags {
 		public override Dat toDat() => Dat.of(this,
 			nameof(firstMember), firstMember.getMemberId(),
 			nameof(secondMember), secondMember.getMemberId());
-	}
-
-	internal sealed class CombineTypes : Diag<CombineTypes> {
-		[UpPointer] internal readonly Ty ty1;
-		[UpPointer] internal readonly Ty ty2;
-		internal CombineTypes(Ty ty1, Ty ty2) { this.ty1 = ty1; this.ty2 = ty2; }
-
-		internal override string show() =>
-			$"Mismatch in type inference: {ty1}, {ty2}";
-
-		public override bool deepEqual(CombineTypes e) => ty1.equalsId<Ty, Ty.Id>(e.ty1) && ty2.equalsId<Ty, Ty.Id>(e.ty2);
-		public override Dat toDat() => Dat.of(this, nameof(ty1), ty1.getId(), nameof(ty2), ty2.getId());
 	}
 }

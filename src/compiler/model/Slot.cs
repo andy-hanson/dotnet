@@ -24,7 +24,7 @@ namespace Model {
 		bool IEquatable<Slot>.Equals(Slot s) => deepEqual(s);
 		public override int GetHashCode() => name.GetHashCode();
 		public override bool deepEqual(Member m) => m is Slot s && deepEqual(s);
-		public bool deepEqual(Slot s) => loc.deepEqual(s.loc) && name.deepEqual(s.name) && mutable == s.mutable && ty.equalsId<Ty, Ty.Id>(s.ty);
+		public bool deepEqual(Slot s) => loc.deepEqual(s.loc) && name.deepEqual(s.name) && mutable == s.mutable && ty.equalsId<Ty, TyId>(s.ty);
 		public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(name), name, nameof(mutable), Dat.boolean(mutable), nameof(ty), ty);
 		internal override MemberId getMemberId() => getId();
 		internal override string showKind() => "slot";

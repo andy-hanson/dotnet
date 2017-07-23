@@ -58,7 +58,7 @@ sealed class EmitterMapsBuilder : EmitterMaps {
 
 	Type EmitterMaps.toType(Ty ty) => toType(ty);
 	Type EmitterMaps.toType(ClsRef cls) => toType(cls);
-	internal Type toType(Ty ty) => toType(ty.cls);
+	internal Type toType(Ty ty) => toType(((Ty.PlainTy)ty).cls);
 	internal Type toType(ClsRef cls) {
 		switch (cls) {
 			case BuiltinClass b:

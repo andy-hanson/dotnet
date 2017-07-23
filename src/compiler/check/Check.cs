@@ -13,13 +13,13 @@ sealed class Checker : DiagnosticBuilder {
 	}
 
 	readonly BaseScope baseScope;
-	Checker(BaseScope baseScope) { this.baseScope = baseScope; }
+	Checker(BaseScope baseScope) : base(Arr.builder<Diagnostic>()) { this.baseScope = baseScope; }
 
 	void checkClass(Klass klass, Ast.Klass ast) {
 		var membersBuilder = Dict.builder<Sym, Member>();
 
 		var methods = ast.methods.map(m => {
-			var e = new MethodWithBody(klass, m.loc, m.isStatic, baseScope.getTy(m.returnTy), m.name, m.selfEffect, getParams(m.parameters));
+			var e = new MethodWithBody(klass, m.loc, m.isStatic, baseScope.getTy(m.returnTy), m.name, m.selfEffect, checkParameters(m.parameters));
 			addMember(membersBuilder, e);
 			return e;
 		});
@@ -33,9 +33,10 @@ sealed class Checker : DiagnosticBuilder {
 		// Not that all members exist, we can fill in bodies.
 		klass.setSupers(ast.supers.map(superAst => checkSuper(superAst, klass)));
 
+
 		// Now that all methods exist, fill in the body of each member.
 		ast.methods.doZip(methods, (methodAst, method) => {
-			method.body = ExprChecker.checkMethod(baseScope, method, method.isStatic, method, methodAst.body);
+			method.body = ExprChecker.checkMethod(baseScope, diags, method, method.isStatic, method, methodAst.body);
 		});
 	}
 
@@ -46,7 +47,7 @@ sealed class Checker : DiagnosticBuilder {
 		switch (h) {
 			case Ast.Klass.Head.Abstract a: {
 				var abstractMethods = a.abstractMethods.map<AbstractMethodLike>(am => {
-					var abs = new AbstractMethod(klass, am.loc, baseScope.getTy(am.returnTy), am.name, am.selfEffect, getParams(am.parameters));
+					var abs = new AbstractMethod(klass, am.loc, baseScope.getTy(am.returnTy), am.name, am.selfEffect, checkParameters(am.parameters));
 					addMember(membersBuilder, abs);
 					return abs;
 				});
@@ -119,7 +120,7 @@ sealed class Checker : DiagnosticBuilder {
 			addDiagnostic(implAst.loc, new WrongImplParameters(implemented));
 
 		var impl = new Impl(super, implAst.loc, implemented);
-		impl.body = ExprChecker.checkMethod(baseScope, impl, /*isStatic*/ false, implemented, implAst.body);
+		impl.body = ExprChecker.checkMethod(baseScope, diags, impl, /*isStatic*/ false, implemented, implAst.body);
 		return impl;
 	}
 
@@ -128,6 +129,11 @@ sealed class Checker : DiagnosticBuilder {
 			addDiagnostic(member.loc, new DuplicateMember(oldMember, member));
 	}
 
-	Arr<Parameter> getParams(Arr<Ast.Parameter> pms) =>
-		pms.map((p, index) => new Parameter(p.loc, baseScope.getTy(p.ty), p.name, index));
+	Arr<Parameter> checkParameters(Arr<Ast.Parameter> paramAsts) =>
+		paramAsts.map((p, index) => {
+			for (uint j = 0; j < index; j++)
+				if (paramAsts[j].name == p.name)
+					addDiagnostic(p.loc, new DuplicateParameterName(p.name));
+			return new Parameter(p.loc, baseScope.getTy(p.ty), p.name, index);
+		});
 }

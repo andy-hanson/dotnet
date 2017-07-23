@@ -125,7 +125,7 @@ sealed class JsExprEmitter {
 		var caught = id(c.caught.loc, escapeName(c.caught.name));
 
 		// `if (!(e is ExceptionType)) throw e;`
-		var isInstance = new Estree.BinaryExpression(loc, "instanceof", caught, accessClass(loc, c.exceptionTy.cls));
+		var isInstance = new Estree.BinaryExpression(loc, "instanceof", caught, accessClass(loc, ((Ty.PlainTy)c.exceptionTy).cls));
 		var test = Estree.UnaryExpression.not(loc, isInstance);
 		var first = new Estree.IfStatement(loc, test, new Estree.ThrowStatement(c.loc, caught));
 

@@ -5,7 +5,7 @@ Klass(
       loc: 23-40,
       name: "x",
       mutable: false,
-      ty: Ty(
+      ty: PlainTy(
         effect: "pure",
         cls: BuiltinClass(
           name: "Nat")))]),
@@ -55,7 +55,7 @@ Klass(
       loc: 23-40,
       name: "x",
       mutable: false,
-      ty: Ty(
+      ty: PlainTy(
         effect: "pure",
         cls: BuiltinClass(
           name: "Nat")))))

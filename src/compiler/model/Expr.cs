@@ -31,6 +31,45 @@ namespace Model {
 		protected bool locEq(Expr e) => loc.deepEqual(e.loc);
 	}
 
+	/**
+	Expr for a badly-typed expression.
+	"casts" it to the correct type.
+	Since programs with diagnostics should not be emitted, this does not need to compile to anything.
+	*/
+	internal sealed class BogusCast : Expr, ToData<BogusCast> {
+		[UpPointer] internal readonly Ty correctTy;
+		internal readonly Expr expr;
+		internal BogusCast(Ty correctTy, Expr expr) : base(expr.loc) { this.correctTy = correctTy; this.expr = expr; }
+
+		internal override IEnumerable<Expr> children() { yield return expr; }
+		internal override Ty ty => correctTy;
+
+		public override bool deepEqual(Expr e) => e is BogusCast b && deepEqual(b);
+		public bool deepEqual(BogusCast b) =>
+			locEq(b) &&
+			correctTy.equalsId<Ty, TyId>(b.correctTy)
+			&& expr.deepEqual(b.expr);
+		public override Dat toDat() => Dat.of(this,
+			// Don't include loc, since that's identical to expr's
+			nameof(correctTy), correctTy.getTyId(),
+			nameof(expr), expr);
+	}
+
+	/**
+	We couldn't come up with a good Expr, so just use this placeholder.
+	*/
+	internal sealed class Bogus : Expr, ToData<Bogus> {
+		[UpPointer] readonly Ty _ty;
+		internal Bogus(Loc loc, Ty ty) : base(loc) { this._ty = ty; }
+
+		internal override IEnumerable<Expr> children() => noChildren;
+		internal override Ty ty => _ty;
+
+		public override bool deepEqual(Expr e) => e is Bogus b && deepEqual(b);
+		public bool deepEqual(Bogus b) => locEq(b) && ty.equalsId<Ty, TyId>(b.ty);
+		public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(ty), _ty);
+	}
+
 	internal sealed class AccessParameter : Expr, ToData<AccessParameter> {
 		[UpPointer] internal readonly Parameter param;
 		internal AccessParameter(Loc loc, Parameter param) : base(loc) {
@@ -41,7 +80,7 @@ namespace Model {
 		internal override Ty ty => param.ty;
 
 		public override bool deepEqual(Expr e) => e is AccessParameter a && deepEqual(a);
-		public bool deepEqual(AccessParameter a) => locEq(a) && a.param.equalsId<Parameter, Sym>(param);
+		public bool deepEqual(AccessParameter a) => locEq(a) && param.equalsId<Parameter, Sym>(a.param);
 		public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(param), param);
 	}
 
@@ -215,12 +254,12 @@ namespace Model {
 
 			public bool deepEqual(Catch c) =>
 				loc.deepEqual(c.loc) &&
-				exceptionTy.equalsId<Ty, Ty.Id>(c.exceptionTy) &&
+				exceptionTy.equalsId<Ty, TyId>(c.exceptionTy) &&
 				caught.deepEqual(c.caught) &&
 				then.deepEqual(c.then);
 			public Dat toDat() => Dat.of(this,
 				nameof(loc), loc,
-				nameof(exceptionTy), exceptionTy.getId(),
+				nameof(exceptionTy), exceptionTy.getTyId(),
 				nameof(caught), caught,
 				nameof(then), then);
 		}
@@ -361,7 +400,7 @@ namespace Model {
 		}
 
 		internal override IEnumerable<Expr> children() { yield return target; }
-		internal override Ty ty => Ty.of(target.ty.effect.minCommonEffect(slot.ty.effect), slot.ty.cls);
+		internal override Ty ty => TyUtils.getTyWithNarrowedEffect(target.ty.effect, slot.ty);
 
 		public override bool deepEqual(Expr e) => e is GetSlot g && deepEqual(g);
 		public bool deepEqual(GetSlot g) =>
@@ -406,7 +445,7 @@ namespace Model {
 
 		public override bool deepEqual(Expr e) => e is Self s && deepEqual(s);
 		public bool deepEqual(Self s) {
-			assert(ty.equalsId<Ty, Ty.Id>(s.ty));
+			assert(ty.equalsId<Ty, TyId>(s.ty));
 			return locEq(s);
 		}
 		public override Dat toDat() => Dat.of(this, nameof(loc), loc);

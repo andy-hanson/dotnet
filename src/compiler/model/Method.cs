@@ -176,7 +176,7 @@ namespace Model {
 		public override Dat toDat() => Dat.of(this,
 			nameof(loc), loc,
 			nameof(isStatic), Dat.boolean(isStatic),
-			nameof(returnTy), returnTy.getId(),
+			nameof(returnTy), returnTy.getTyId(),
 			nameof(name), name,
 			nameof(selfEffect), Dat.str(selfEffect.show()),
 			nameof(parameters), Dat.arr(parameters),
@@ -194,7 +194,11 @@ namespace Model {
 
 		public override bool deepEqual(Method m) => m is AbstractMethod a && deepEqual(a);
 		public bool deepEqual(AbstractMethod a) => throw TODO();
-		public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(returnTy), returnTy.getId(), nameof(name), name, nameof(parameters), Dat.arr(parameters));
+		public override Dat toDat() => Dat.of(this,
+			nameof(loc), loc,
+			nameof(returnTy), returnTy.getTyId(),
+			nameof(name), name,
+			nameof(parameters), Dat.arr(parameters));
 	}
 
 	// Since there's no shadowing allowed, parameters can be identified by just their name.
@@ -211,8 +215,16 @@ namespace Model {
 			this.index = index;
 		}
 
-		public bool deepEqual(Parameter p) => loc.deepEqual(p.loc) && ty.equalsId<Ty, Ty.Id>(p.ty) && name.deepEqual(p.name) && index == p.index;
-		public Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(ty), ty.getId(), nameof(name), name, nameof(index), Dat.nat(index));
-		Sym Identifiable<Sym>.getId() => name;
+		public bool deepEqual(Parameter p) =>
+			loc.deepEqual(p.loc) &&
+			ty.equalsId<Ty, TyId>(p.ty) &&
+			name.deepEqual(p.name) &&
+			index == p.index;
+		public Dat toDat() => Dat.of(this,
+			nameof(loc), loc,
+			nameof(ty), ty.getTyId(),
+			nameof(name), name,
+			nameof(index), Dat.nat(index));
+		public Sym getId() => name;
 	}
 }

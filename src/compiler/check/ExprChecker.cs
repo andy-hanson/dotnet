@@ -1,11 +1,14 @@
 using System.Collections.Generic;
 
+using Diag;
+using Diag.CheckExprDiags;
 using Model;
+using static TyUtils;
 using static Utils;
 
-class ExprChecker {
-	internal static Expr checkMethod(BaseScope baseScope, MethodOrImpl methodOrImpl, bool isStatic, Method implemented, Ast.Expr body) =>
-		new ExprChecker(baseScope, methodOrImpl, isStatic, implemented.selfEffect, implemented.parameters).checkReturn(implemented.returnTy, body);
+class ExprChecker : DiagnosticBuilder {
+	internal static Expr checkMethod(BaseScope baseScope, Arr.Builder<Diagnostic> diags, MethodOrImpl methodOrImpl, bool isStatic, Method implemented, Ast.Expr body) =>
+		new ExprChecker(baseScope, diags, methodOrImpl, isStatic, implemented.selfEffect, implemented.parameters).checkReturn(implemented.returnTy, body);
 
 	readonly BaseScope baseScope;
 	Klass currentClass => baseScope.self;
@@ -15,23 +18,12 @@ class ExprChecker {
 	readonly Arr<Parameter> parameters;
 	readonly Stack<Pattern.Single> locals = new Stack<Pattern.Single>();
 
-	ExprChecker(BaseScope baseScope, MethodOrImpl methodOrImpl, bool isStatic, Effect selfEffect, Arr<Parameter> parameters) {
+	ExprChecker(BaseScope baseScope, Arr.Builder<Diagnostic> diags, MethodOrImpl methodOrImpl, bool isStatic, Effect selfEffect, Arr<Parameter> parameters) : base(diags) {
 		this.baseScope = baseScope;
 		this.methodOrImpl = methodOrImpl;
 		this.isStatic = isStatic;
 		this.selfEffect = selfEffect;
 		this.parameters = parameters;
-
-		// Assert that parameters don't shadow each other.
-		for (uint i = 0; i < parameters.length; i++) {
-			var param = parameters[i];
-			//Decided to allow parameters to shadow base scope.
-			//Example where this is useful: `fun of(Int x) = new x` where `x` is the name of a slot.
-			//if (baseScope.hasMember(param.name)) throw TODO();
-			for (uint j = 0; j < i; j++)
-				if (parameters[j].name == param.name)
-					throw TODO();
-		}
 	}
 
 	Expr checkVoid(Ast.Expr a) => checkSubtype(Ty.Void, a);
@@ -91,10 +83,10 @@ class ExprChecker {
 	Expr checkAccess(ref Expected expected, Ast.Access a) =>
 		handle(ref expected, get(a.loc, a.name));
 
-	static Expr checkStaticAccess(ref Expected expected, Ast.StaticAccess s) {
-		//Not in a call, so create a callback
-		unused(expected, s);
-		throw TODO();
+	Expr checkStaticAccess(ref Expected expected, Ast.StaticAccess s) {
+		// Only get here if this is *not* the target of a call.
+		addDiagnostic(s.loc, DelegatesNotYetSupported.instance);
+		return handleBogus(ref expected, s.loc);
 	}
 
 	Expr checkOperatorCall(ref Expected expected, Ast.OperatorCall o) =>
@@ -140,14 +132,24 @@ class ExprChecker {
 
 	Expr checkGetProperty(ref Expected expected, Ast.GetProperty g) {
 		var target = checkInfer(g.target);
-		var (targetEffect, targetCls) = target.ty;
-		var member = getMember(g.loc, targetCls, g.propertyName);
-		if (!(member is Slot slot))
-			throw TODO();
-		if (slot.mutable && !targetEffect.contains(Effect.Get))
-			throw TODO(); // Tried to observe mutable state, but don't have permission.
-		// Handling of effect handled by GetSlot.ty -- this is the minimum common effect between 'target' and 'slot.ty'.
-		return handle(ref expected, new GetSlot(g.loc, target, slot));
+		switch (target.ty) {
+			case Ty.Bogus _:
+				return handleBogus(ref expected, g.loc);
+
+			case Ty.PlainTy plainTy: {
+				var (targetEffect, targetCls) = plainTy;
+				var member = getMember(g.loc, targetCls, g.propertyName);
+				if (!(member is Slot slot))
+					throw TODO();
+				if (slot.mutable && !targetEffect.contains(Effect.Get))
+					throw TODO(); // Tried to observe mutable state, but don't have permission.
+				// Handling of effect handled by GetSlot.ty -- this is the minimum common effect between 'target' and 'slot.ty'.
+				return handle(ref expected, new GetSlot(g.loc, target, slot));
+			}
+
+			default:
+				throw unreachable();
+		}
 	}
 
 	Expr checkSetProperty(ref Expected expected, Ast.SetProperty s) {
@@ -231,14 +233,26 @@ class ExprChecker {
 
 	Expr callMethod(ref Expected expected, Loc loc, Ast.Expr targetAst, Sym methodName, Arr<Ast.Expr> argAsts) {
 		var target = checkInfer(targetAst);
-		var member = getMember(loc, target.ty.cls, methodName);
-		if (!(member is Method method))
-			throw TODO();
-		if (method.isStatic) throw TODO(); //error
-		if (!target.ty.effect.contains(method.selfEffect))
-			throw TODO(); // Can't call a method on an object with a greater effect than we've declared for it.
-		var args = checkCall(loc, method, argAsts);
-		return handle(ref expected, new InstanceMethodCall(loc, target, method, args));
+		switch (target.ty) {
+			case Ty.Bogus _:
+				//Still check the methods...
+				throw TODO();
+
+			case Ty.PlainTy plainTy: {
+				var (targetEffect, targetCls) = plainTy;
+				var member = getMember(loc, targetCls, methodName);
+				if (!(member is Method method))
+					throw TODO();
+				if (method.isStatic) throw TODO(); //error
+				if (!targetEffect.contains(method.selfEffect))
+					throw TODO(); // Can't call a method on an object with a greater effect than we've declared for it.
+				var args = checkCall(loc, method, argAsts);
+				return handle(ref expected, new InstanceMethodCall(loc, target, method, args));
+			}
+
+			default:
+				throw unreachable();
+		}
 	}
 
 	Expr callOwnMethod(ref Expected expected, Loc loc, Sym methodName, Arr<Ast.Expr> argAsts) {
@@ -329,6 +343,9 @@ class ExprChecker {
 	Expr handle(ref Expected expected, Expr e) =>
 		expected.handle(e, this);
 
+	Expr handleBogus(ref Expected expected, Loc loc) =>
+		expected.handleBogus(loc);
+
 	/** PASS BY REF! */
 	struct Expected {
 		enum Kind {
@@ -364,7 +381,7 @@ class ExprChecker {
 					return c.checkType(expectedTy.force, e);
 				case Kind.Infer:
 					if (expectedTy.get(out var ety)) {
-						expectedTy = Op.Some(c.getCombinedType(ety, e.ty));
+						expectedTy = Op.Some(c.combineTypes(e.loc, ety, e.ty));
 						return e;
 					} else {
 						expectedTy = Op.Some(e.ty);
@@ -374,15 +391,34 @@ class ExprChecker {
 					throw unreachable();
 			}
 		}
+
+		internal Expr handleBogus(Loc loc) {
+			Ty ty;
+			switch (kind) {
+				case Kind.Return:
+				case Kind.SubTypeOf:
+					ty = expectedTy.force;
+					break;
+				case Kind.Infer:
+					if (!expectedTy.get(out ty)) {
+						ty = Ty.bogus;
+						expectedTy = Op.Some(ty);
+					}
+					break;
+				default:
+					throw unreachable();
+			}
+			return new Bogus(loc, ty);
+		}
 	}
 
-	Ty getCombinedType(Ty a, Ty b) {
-		var effect = a.effect.minCommonEffect(b.effect);
-		if (!a.cls.fastEquals(b.cls)) {
-			unused(this);
-			throw TODO();
-		}
-		return Ty.of(effect, a.cls);
+	Ty combineTypes(Loc loc, Ty a, Ty b) {
+		var combined = getCombinedType(a, b);
+		if (combined.get(out var c))
+			return c;
+
+		addDiagnostic(loc, new CantCombineTypes(a, b));
+		return Ty.bogus;
 	}
 
 	//mv
@@ -394,20 +430,6 @@ class ExprChecker {
 		//TODO: have a WrongCast node and issue a diagnostic.
 		unused(this);
 		throw TODO();
-	}
-
-	bool isSubtype(Ty expectedTy, Ty actualTy) =>
-		actualTy.effect.contains(expectedTy.effect) && // Pure `Foo` can't be assigned to `io Foo`.
-			isSubclass(expectedTy.cls, actualTy.cls);
-
-	bool isSubclass(ClsRef expected, ClsRef actual) {
-		if (expected.fastEquals(actual))
-			return true;
-		foreach (var s in actual.supers) {
-			if (isSubclass(expected, s.superClass))
-				return true;
-		}
-		return false;
 	}
 
 	/**
