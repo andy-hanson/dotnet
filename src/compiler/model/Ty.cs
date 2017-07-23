@@ -24,12 +24,12 @@ namespace Model {
 
 		public bool deepEqual(Ty ty) => effect == ty.effect && cls.deepEqual(ty.cls);
 		public Dat toDat() => Dat.of(this, nameof(effect), Dat.str(effect.show()), nameof(cls), cls);
-		public Id getId() => new Id(effect, cls.getId());
+		public Id getId() => new Id(effect, cls.getClsRefId());
 
 		internal struct Id : ToData<Id> {
 			internal readonly Effect effect;
-			internal readonly ClassLike.Id clsId;
-			internal Id(Effect effect, ClassLike.Id clsId) { this.effect = effect; this.clsId = clsId; }
+			internal readonly ClsRefId clsId;
+			internal Id(Effect effect, ClsRefId clsId) { this.effect = effect; this.clsId = clsId; }
 			public bool deepEqual(Id i) => effect == i.effect && clsId.deepEqual(i.clsId);
 			public Dat toDat() => Dat.of(this, nameof(effect), Dat.str(effect.show()), nameof(clsId), clsId);
 		}

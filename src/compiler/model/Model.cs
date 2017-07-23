@@ -7,7 +7,7 @@ namespace Model {
 	}
 
 	// This is always a ClassLike currently. Eventually we'll add instantiated generic classes too.
-	abstract class ClsRef : ModelElement, ToData<ClsRef>, Identifiable<ClassLike.Id> {
+	abstract class ClsRef : ModelElement, ToData<ClsRef>, Identifiable<ClsRefId> {
 		internal abstract bool isAbstract { get; } //kill
 		internal abstract Sym name { get; }
 		internal abstract Arr<Super> supers { get; }
@@ -18,12 +18,18 @@ namespace Model {
 
 		public bool fastEquals(ClsRef other) => object.ReferenceEquals(this, other);
 
-		public abstract ClassLike.Id getId();
+		ClsRefId Identifiable<ClsRefId>.getId() => getClsRefId();
+		public abstract ClsRefId getClsRefId();
+	}
+	internal struct ClsRefId : ToData<ClsRefId> {
+		//Since ClsRef == ClassLike for now...
+		readonly ClassLike.Id inner;
+		internal ClsRefId(ClassLike.Id inner) { this.inner = inner; }
+		public bool deepEqual(ClsRefId i) => inner.deepEqual(i.inner);
+		public Dat toDat() => inner.toDat();
 	}
 
 	abstract class ClassLike : ClsRef, Identifiable<ClassLike.Id> {
-		// For a builtin type, identified by the builtin name.
-		// For a
 		internal struct Id : ToData<Id> {
 			// If this is a builtin, this will be missing.
 			private readonly string id;
@@ -37,6 +43,8 @@ namespace Model {
 		readonly Sym _name;
 		internal override Sym name => _name;
 		internal abstract Dict<Sym, Member> membersMap { get; }
+		public override ClsRefId getClsRefId() => new ClsRefId(getId());
+		public abstract Id getId();
 
 		protected ClassLike(Sym name) { _name = name; }
 	}
@@ -56,15 +64,15 @@ namespace Model {
 
 		public bool deepEqual(Super s) =>
 			containingClass.equalsId<Klass, ClassLike.Id>(s.containingClass) &&
-			superClass.equalsId<ClsRef, ClassLike.Id>(s.superClass) &&
+			superClass.equalsId<ClsRef, ClsRefId>(s.superClass) &&
 			impls.deepEqual(s.impls);
-		public Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(superClass), superClass.getId(), nameof(impls), Dat.arr(impls));
-		public Id getId() => new Id(containingClass.getId(), superClass.getId());
+		public Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(superClass), superClass.getClsRefId(), nameof(impls), Dat.arr(impls));
+		public Id getId() => new Id(containingClass.getId(), superClass.getClsRefId());
 
 		internal struct Id : ToData<Id> {
 			internal readonly ClassLike.Id classId;
-			internal readonly ClassLike.Id superClassId;
-			internal Id(ClassLike.Id classId, ClassLike.Id superClassId) {
+			internal readonly ClsRefId superClassId;
+			internal Id(ClassLike.Id classId, ClsRefId superClassId) {
 				this.classId = classId;
 				this.superClassId = superClassId;
 			}
@@ -114,14 +122,5 @@ namespace Model {
 			nameof(super), super.getId(),
 			nameof(implemented), implemented.getId(),
 			nameof(body), body);
-	}
-
-	// Method, Slot, or AbstractMethod
-	abstract class Member : ModelElement, ToData<Member> {
-		internal readonly Loc loc;
-		internal readonly Sym name;
-		protected Member(Loc loc, Sym name) { this.loc = loc; this.name = name; }
-		public abstract bool deepEqual(Member m);
-		public abstract Dat toDat();
 	}
 }

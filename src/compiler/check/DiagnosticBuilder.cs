@@ -1,11 +1,11 @@
 using Diag;
 
-class DiagnosticBuilder {
+abstract class DiagnosticBuilder {
 	readonly Arr.Builder<Diagnostic> errs = Arr.builder<Diagnostic>();
 
-	void add(Loc loc, DiagnosticData diag) =>
+	internal void addDiagnostic(Loc loc, DiagnosticData diag) =>
 		errs.add(new Diagnostic(loc, diag));
 
-	internal Arr<Diagnostic> finish() =>
+	internal Arr<Diagnostic> finishDiagnostics() =>
 		errs.finish();
 }

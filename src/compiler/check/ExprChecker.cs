@@ -4,8 +4,8 @@ using Model;
 using static Utils;
 
 class ExprChecker {
-	internal static Expr checkMethod(BaseScope baseScope, MethodOrImpl methodOrImpl, bool isStatic, Ty returnTy, Effect selfEffect, Arr<Parameter> parameters, Ast.Expr body) =>
-		new ExprChecker(baseScope, methodOrImpl, isStatic, selfEffect, parameters).checkReturn(returnTy, body);
+	internal static Expr checkMethod(BaseScope baseScope, MethodOrImpl methodOrImpl, bool isStatic, Method implemented, Ast.Expr body) =>
+		new ExprChecker(baseScope, methodOrImpl, isStatic, implemented.selfEffect, implemented.parameters).checkReturn(implemented.returnTy, body);
 
 	readonly BaseScope baseScope;
 	Klass currentClass => baseScope.self;

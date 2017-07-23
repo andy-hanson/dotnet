@@ -19,7 +19,7 @@ namespace Diag {
 		public abstract bool deepEqual(DiagnosticData e);
 		public abstract Dat toDat();
 
-		internal abstract string show { get; }
+		internal abstract string show();
 	}
 
 	/** Implementation class for every DiagnosticData. */
@@ -31,6 +31,6 @@ namespace Diag {
 	abstract class NoDataDiag<Self> : Diag<Self> where Self : DiagnosticData, ToData<Self> {
 		protected NoDataDiag() {}
 		public override bool deepEqual(Self e) => object.ReferenceEquals(this, e);
-		public override Dat toDat() => Dat.str(show);
+		public override Dat toDat() => Dat.str(GetType().Name);
 	}
 }

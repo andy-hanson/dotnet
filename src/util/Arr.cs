@@ -222,6 +222,20 @@ struct Arr<T> : IEnumerable<T> {
 		return new Arr<V>(res);
 	}
 
+	/** If 'zipper' returns None even once, quits and returns None. */
+	internal Op<Arr<V>> zipOrDie<U, V>(Arr<U> b, Func<T, U, Op<V>> zipper) {
+		assert(length == b.length);
+		var res = new V[length];
+		for (uint i = 0; i < length; i++) {
+			var zipped = zipper(this[i], b[i]);
+			if (zipped.get(out var z))
+				res[i] = z;
+			else
+				return Op<Arr<V>>.None;
+		}
+		return Op.Some(new Arr<V>(res));
+	}
+
 	internal bool find(out T found, Func<T, bool> predicate) {
 		for (uint i = 0; i < length; i++) {
 			var em = this[i];
@@ -250,29 +264,43 @@ struct Arr<T> : IEnumerable<T> {
 
 	internal T[] toBuilder() => sliceToBuilder(0, length);
 
-	internal string join(string joiner) {
+	internal string join(string joiner, Func<T, string> toString) {
 		if (length == 0)
 			return string.Empty;
 
 		var res = new StringBuilder();
-		join(joiner, res);
+		join(joiner, res, toString);
 		return res.ToString();
 	}
 
-	internal void join(string joiner, StringBuilder sb) {
+	internal void join(string joiner, StringBuilder sb, Func<T, string> toString) {
 		if (length == 0)
 			return;
 
 		for (uint i = 0; i < length - 1; i++) {
-			sb.Append(this[i]);
+			sb.Append(toString(this[i]));
 			sb.Append(joiner);
 		}
 
 		sb.Append(this[this.length - 1]);
 	}
+
+	internal bool eachCorresponds<U>(Arr<U> other, Func<T, U, bool> correspond) {
+		if (length != other.length)
+			return false;
+		for (uint i = 0; i < length; i++)
+			if (!correspond(this[i], other[i]))
+				return false;
+		return true;
+	}
 }
 
 static class Arr {
+	internal static string join(this Arr<string> arr, string joiner) =>
+		arr.join(joiner, x => x);
+	internal static void join(this Arr<string> arr, string joiner, StringBuilder sb) =>
+		arr.join(joiner, sb, x => x);
+
 	internal static Arr<T> slice<T>(this T[] arr, uint low, uint high) {
 		var len = high - low;
 		var res = new T[len];

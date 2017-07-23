@@ -127,10 +127,9 @@ static class Dict {
 			return b.finish();
 		}
 
-		internal bool tryAdd(K key, V value) {
-			if (inner.ContainsKey(key)) {
+		internal bool tryAdd(K key, V value, out V oldValue) {
+			if (inner.TryGetValue(key, out oldValue))
 				return false;
-			}
 
 			inner[key] = value;
 			return true;
