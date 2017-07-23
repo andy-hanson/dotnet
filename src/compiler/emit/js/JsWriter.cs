@@ -1,10 +1,9 @@
 using System;
-using System.Text;
 
 using static Utils;
 
 class JsWriter : EmitTextWriter {
-	readonly StringBuilder sb = new StringBuilder();
+	readonly StringMaker s = StringMaker.create();
 	uint line = 0;
 	uint column = 0;
 	uint indent = 0;
@@ -15,17 +14,17 @@ class JsWriter : EmitTextWriter {
 		return j.finish();
 	}
 
-	string finish() => sb.ToString();
+	string finish() => s.finish();
 
 	uint EmitTextWriter.curLine => line;
 	uint EmitTextWriter.curColumn => column;
 
-	void writeRaw(char ch) => sb.Append(ch);
-	void writeRaw(string s) => sb.Append(s);
+	void writeRaw(char ch) => s.add(ch);
+	void writeRaw(string str) => s.add(str);
 
 	void writeLine() {
-		sb.Append('\n');
-		doTimes(indent, () => sb.Append('\t'));
+		s.add('\n');
+		doTimes(indent, () => s.add('\t'));
 		line++;
 		column = 0;
 	}

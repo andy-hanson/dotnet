@@ -23,6 +23,11 @@ namespace Model {
 	}
 
 	internal static class EffectUtils {
+		internal static bool deepEqual(this Effect a, Effect b) =>
+			a == b;
+
+		internal static Dat toDat(this Effect e) => Dat.str(show(e));
+
 		/** E.g., a `set` method is allowed to `get`. */
 		internal static bool contains(this Effect a, Effect b) =>
 			a >= b;
@@ -39,5 +44,8 @@ namespace Model {
 				default: throw unreachable();
 			}
 		}
+
+		internal static bool canGet(this Effect e) =>
+			e.contains(Effect.Get);
 	}
 }

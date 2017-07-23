@@ -1,13 +1,11 @@
-using System.Text;
-
 using static Utils;
 
 abstract class Writer {
-	readonly StringBuilder sw = new StringBuilder();
+	readonly StringMaker s = StringMaker.create();
 
-	internal void writeRaw(string str) => sw.Append(str);
-	internal void writeRaw(char ch) => sw.Append(ch);
-	protected string finish() => sw.ToString();
+	internal void writeRaw(string str) => s.add(str);
+	internal void writeRaw(char ch) => s.add(ch);
+	protected string finish() => s.finish();
 
 	protected abstract void writeObj<T>(T value) where T : ToData<T>; // May handle special writes
 

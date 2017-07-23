@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Text;
 
 using static Utils;
 
@@ -35,11 +34,9 @@ struct Sym : ToData<Sym>, IEquatable<Sym> {
 		}
 	}
 
-	internal static Sym of(StringBuilder sb) => of(sb.ToString());
-
 	internal string str => symToString[this];
 
-	public override string ToString() => str;
+	public override string ToString() => throw new NotSupportedException();
 	public override bool Equals(object o) => throw new NotSupportedException();
 	public override int GetHashCode() => id;
 	public bool deepEqual(Sym s) => Equals(s);

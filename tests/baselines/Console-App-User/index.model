@@ -18,9 +18,9 @@ Klass(
         name: "app",
         index: 0)],
       body: InstanceMethodCall(
-        loc: 35-58,
+        loc: 35-74,
         target: InstanceMethodCall(
-          loc: 35-45,
+          loc: 35-47,
           target: AccessParameter(
             loc: 35-38,
             param: Parameter(

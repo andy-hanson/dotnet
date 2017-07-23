@@ -37,7 +37,7 @@ Klass(
               loc: 81-82,
               name: "e"),
             then: InstanceMethodCall(
-              loc: 86-99,
+              loc: 86-101,
               target: AccessLocal(
                 local: "e"),
               method: Id(

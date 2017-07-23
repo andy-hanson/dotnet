@@ -88,7 +88,7 @@ struct ILWriter {
 		new Label(il.DefineLabel(), name);
 
 	internal void markLabel(Label l) {
-		logger?.log($"{l.name}:");
+		logger?.log($"{l.name.str}:");
 		il.MarkLabel(l.__inner);
 	}
 
@@ -109,17 +109,17 @@ struct ILWriter {
 	}
 
 	internal void goToIfFalse(Label lbl) {
-		logger?.log($"goto if false: {lbl.name}");
+		logger?.log($"goto if false: {lbl.name.str}");
 		il.Emit(OpCodes.Brfalse, lbl.__inner);
 	}
 
 	internal void goToIfTrue(Label lbl) {
-		logger?.log($"goto if true: {lbl.name}");
+		logger?.log($"goto if true: {lbl.name.str}");
 		il.Emit(OpCodes.Brtrue, lbl.__inner);
 	}
 
 	internal void goTo(Label l) {
-		logger?.log($"goto {l.name}");
+		logger?.log($"goto {l.name.str}");
 		il.Emit(OpCodes.Br, l.__inner);
 	}
 
@@ -168,7 +168,7 @@ struct ILWriter {
 	}
 
 	internal Local declareLocal(Type type, Sym name) {
-		logger?.log($"declare local {name}");
+		logger?.log($"declare local {name.str}");
 		return new Local(il.DeclareLocal(type), name);
 	}
 
@@ -180,12 +180,12 @@ struct ILWriter {
 	}
 
 	internal void getLocal(Local local) {
-		logger?.log($"get local {local.name}");
+		logger?.log($"get local {local.name.str}");
 		il.Emit(OpCodes.Ldloc, local.__builder);
 	}
 
 	internal void setLocal(Local local) {
-		logger?.log($"set local {local.name}");
+		logger?.log($"set local {local.name.str}");
 		il.Emit(OpCodes.Stloc, local.__builder);
 	}
 

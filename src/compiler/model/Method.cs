@@ -24,7 +24,8 @@ namespace Model {
 		bool IEquatable<Method>.Equals(Method m) => object.ReferenceEquals(this, m);
 		public sealed override int GetHashCode() => name.GetHashCode();
 
-		[ParentPointer] internal readonly ClassLike klass;
+		[ParentPointer] readonly ClassLike _klass;
+		internal override ClassLike klass => _klass;
 		internal abstract bool isAbstract { get; }
 		internal abstract bool isStatic { get; }
 		[UpPointer] internal readonly Ty returnTy;
@@ -36,7 +37,7 @@ namespace Model {
 		public Id getId() => new Id(klass.getId(), name);
 
 		protected Method(ClassLike klass, Loc loc, Ty returnTy, Sym name, Effect selfEffect, Arr<Parameter> parameters) : base(loc, name) {
-			this.klass = klass;
+			this._klass = klass;
 			this.returnTy = returnTy;
 			this.selfEffect = selfEffect;
 			this.parameters = parameters;

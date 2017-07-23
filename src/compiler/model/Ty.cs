@@ -21,7 +21,7 @@ namespace Model {
 		internal abstract Effect effect { get; }
 
 		internal sealed class PlainTy : Ty, ToData<PlainTy>, Identifiable<PlainTy.Id> {
-			internal readonly Effect _effect;
+			readonly Effect _effect;
 			internal override Effect effect => _effect;
 			internal readonly ClsRef cls;
 			internal PlainTy(Effect effect, ClsRef cls) {
@@ -57,11 +57,13 @@ namespace Model {
 			internal override Effect effect => Effect.Pure;
 
 			public override bool deepEqual(Ty t) => object.ReferenceEquals(this, t);
-			public override Dat toDat() => Dat.str("Bogus");
+			public override Dat toDat() => Dat.str(nameof(Bogus));
 			public override TyId getTyId() => Id.instance;
 
 			internal sealed class Id : TyId {
+				#pragma warning disable S3218 // Allow shadow
 				internal static readonly Id instance = new Id();
+				#pragma warning disable
 				Id() {}
 				public override bool deepEqual(TyId t) => object.ReferenceEquals(this, t);
 				public override Dat toDat() => Dat.str("Bogus");

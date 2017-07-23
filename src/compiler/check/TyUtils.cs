@@ -27,7 +27,7 @@ static class TyUtils {
 		return a.cls.fastEquals(b.cls) ? Op.Some<Ty>(Ty.of(effect, a.cls)) : Op<Ty>.None;
 	}
 
-	internal static bool isSubtype(Ty expectedTy, Ty actualTy) {
+	internal static bool isAssignable(Ty expectedTy, Ty actualTy) {
 		switch (expectedTy) {
 			case Ty.Bogus _:
 				return true;

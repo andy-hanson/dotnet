@@ -176,7 +176,7 @@ Klass(
           loc: 247-273,
           args: [
             InstanceMethodCall(
-              loc: 253-259,
+              loc: 253-261,
               target: AccessParameter(
                 loc: 253-254,
                 param: Parameter(
@@ -377,7 +377,7 @@ Klass(
           loc: 464-498,
           args: [
             InstanceMethodCall(
-              loc: 470-476,
+              loc: 470-478,
               target: AccessParameter(
                 loc: 470-471,
                 param: Parameter(

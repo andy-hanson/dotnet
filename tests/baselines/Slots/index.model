@@ -84,7 +84,7 @@ Klass(
             then: Seq(
               loc: 99-131,
               action: InstanceMethodCall(
-                loc: 99-108,
+                loc: 99-110,
                 target: AccessLocal(
                   local: "obj"),
                 method: Id(
@@ -123,7 +123,7 @@ Klass(
           klass: "",
           name: "y"),
         value: InstanceMethodCall(
-          loc: 162-168,
+          loc: 162-170,
           target: GetMySlot(
             slot: Id(
               klass: "",

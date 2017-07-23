@@ -80,8 +80,42 @@ class ExprChecker : DiagnosticBuilder {
 		}
 	}
 
-	Expr checkAccess(ref Expected expected, Ast.Access a) =>
-		handle(ref expected, get(a.loc, a.name));
+	Expr checkAccess(ref Expected expected, Ast.Access a) {
+		var loc = a.loc; var name = a.name; //TODO:destructuring
+
+		if (locals.find(out var local, l => l.name == name))
+			return handle(ref expected, new AccessLocal(loc, local));
+
+		if (parameters.find(out var param, p => p.name == name))
+			return handle(ref expected, new AccessParameter(loc, param));
+
+		if (!baseScope.tryGetMember(name, out var member)) {
+			addDiagnostic(loc, new MemberNotFound(currentClass, name));
+			return handleBogus(ref expected, loc);
+		}
+
+		switch (member) {
+			case Slot slot:
+				if (isStatic) {
+					addDiagnostic(loc, new CantAccessSlotFromStaticMethod(slot));
+					return handleBogus(ref expected, loc);
+				}
+
+				if (slot.mutable && selfEffect.canGet())
+					addDiagnostic(loc, new MissingEffectToGetSlot(slot));
+
+				return handle(ref expected, new GetMySlot(loc, currentClass, slot));
+
+			case MethodWithBody _:
+			case AbstractMethod _:
+				addDiagnostic(loc, DelegatesNotYetSupported.instance);
+				return handleBogus(ref expected, loc);
+
+			default:
+				// Not possible for this to be a BuiltinMethod, because it's a method on myself
+				throw unreachable();
+		}
+	}
 
 	Expr checkStaticAccess(ref Expected expected, Ast.StaticAccess s) {
 		// Only get here if this is *not* the target of a call.
@@ -93,58 +127,75 @@ class ExprChecker : DiagnosticBuilder {
 		callMethod(ref expected, o.loc, o.left, o.oper, Arr.of(o.right));
 
 	Expr checkCallAst(ref Expected expected, Ast.Call call) {
+		var loc = call.loc;
 		switch (call.target) {
 			case Ast.StaticAccess sa:
-				var ty = baseScope.accessClsRef(call.loc, sa.className);
-				var klass = ty as ClassLike ?? throw TODO();
-				return callStaticMethod(ref expected, sa.loc, klass, sa.staticMethodName, call.args);
+				var cls = baseScope.accessClsRef(call.loc, sa.className);
+				return callStaticMethod(ref expected, loc, cls, sa.staticMethodName, call.args);
 
 			case Ast.GetProperty gp:
-				return callMethod(ref expected, gp.loc, gp.target, gp.propertyName, call.args);
+				return callMethod(ref expected, loc, gp.target, gp.propertyName, call.args);
 
 			case Ast.Access ac:
-				return callOwnMethod(ref expected, ac.loc, ac.name, call.args);
+				return callOwnMethod(ref expected, loc, ac.name, call.args);
 
 			default:
-				// Diagnostic -- can't call anything else.
-				throw TODO();
+				addDiagnostic(loc, DelegatesNotYetSupported.instance);
+				return handleBogus(ref expected, loc);
 		}
 	}
 
 	Expr checkRecur(ref Expected expected, Ast.Recur r) {
-		if (!expected.inTailCallPosition)
-			throw TODO(); //compile error
+		var loc = r.loc;
 
-		var args = this.checkCallArguments(r.loc, parameters, r.args);
-		return handle(ref expected, new Recur(r.loc, methodOrImpl, args));
+		if (!expected.inTailCallPosition)
+			addDiagnostic(loc, NotATailCall.instance);
+
+		if (!this.checkCallArguments(loc, methodOrImpl.implementedMethod, parameters, r.args, out var args))
+			return handleBogus(ref expected, loc);
+
+		return handle(ref expected, new Recur(loc, methodOrImpl, args));
 	}
 
 	Expr checkNew(ref Expected expected, Ast.New n) {
+		var loc = n.loc; var argAsts = n.args; //TODO:destructure
+
 		if (!(currentClass.head is KlassHead.Slots slots)) {
-			throw TODO(); // Error: Can't `new` an abstract/static class
+			addDiagnostic(loc, new NewInvalid(currentClass));
+			return handleBogus(ref expected, loc);
 		}
 
-		if (n.args.length != slots.slots.length)
-			throw TODO(); // Not enough / too many fields
-		var args = n.args.zip(slots.slots, (arg, slot) => checkSubtype(slot.ty, arg));
-		return handle(ref expected, new New(n.loc, slots, args));
+		if (argAsts.length != slots.slots.length) {
+			addDiagnostic(loc, new NewArgumentCountMismatch(slots, argAsts.length));
+			return handleBogus(ref expected, loc);
+		}
+
+		var args = argAsts.zip(slots.slots, (arg, slot) => checkSubtype(slot.ty, arg));
+		return handle(ref expected, new New(loc, slots, args));
 	}
 
 	Expr checkGetProperty(ref Expected expected, Ast.GetProperty g) {
+		var loc = g.loc;
 		var target = checkInfer(g.target);
 		switch (target.ty) {
 			case Ty.Bogus _:
-				return handleBogus(ref expected, g.loc);
+				return handleBogus(ref expected, loc);
 
 			case Ty.PlainTy plainTy: {
 				var (targetEffect, targetCls) = plainTy;
-				var member = getMember(g.loc, targetCls, g.propertyName);
-				if (!(member is Slot slot))
-					throw TODO();
-				if (slot.mutable && !targetEffect.contains(Effect.Get))
-					throw TODO(); // Tried to observe mutable state, but don't have permission.
+				if (!getMember(loc, targetCls, g.propertyName, out var member))
+					return handleBogus(ref expected, loc);
+
+				if (!(member is Slot slot)) {
+					addDiagnostic(loc, DelegatesNotYetSupported.instance);
+					return handleBogus(ref expected, loc);
+				}
+
+				if (slot.mutable && !targetEffect.canGet())
+					addDiagnostic(loc, new MissingEffectToGetSlot(slot));
+
 				// Handling of effect handled by GetSlot.ty -- this is the minimum common effect between 'target' and 'slot.ty'.
-				return handle(ref expected, new GetSlot(g.loc, target, slot));
+				return handle(ref expected, new GetSlot(loc, target, slot));
 			}
 
 			default:
@@ -153,21 +204,31 @@ class ExprChecker : DiagnosticBuilder {
 	}
 
 	Expr checkSetProperty(ref Expected expected, Ast.SetProperty s) {
-		if (!selfEffect.contains(Effect.Set))
-			throw TODO();
+		var loc = s.loc;
 
-		if (!baseScope.tryGetMember(s.propertyName, out var member))
-			throw TODO();
-		if (!(member is Slot slot))
-			throw TODO();
+		if (!baseScope.tryGetMember(s.propertyName, out var member)) {
+			addDiagnostic(loc, new MemberNotFound(currentClass, s.propertyName));
+			return handleBogus(ref expected, loc);
+		}
+
+		if (!(member is Slot slot)) {
+			addDiagnostic(loc, new CantSetNonSlot(member));
+			return handleBogus(ref expected, loc);
+		}
+
+		if (!slot.mutable)
+			addDiagnostic(loc, new SlotNotMutable(slot));
+
+		if (!selfEffect.contains(Effect.Set))
+			addDiagnostic(loc, new MissingEffectToSetSlot(slot));
 
 		var value = checkSubtype(slot.ty, s.value);
-		return handle(ref expected, new SetSlot(s.loc, slot, value));
+		return handle(ref expected, new SetSlot(loc, slot, value));
 	}
 
 	Expr checkLet(ref Expected expected, Ast.Let l) {
 		var value = checkInfer(l.value);
-		var pattern = startCheckPattern(value.ty, l.assigned, out var nAdded);
+		var (pattern, nAdded) = startCheckPattern(value.ty, l.assigned);
 		var expr = checkExpr(ref expected, l.then);
 		endCheckPattern(nAdded);
 		return new Let(l.loc, pattern, value, expr);
@@ -220,14 +281,19 @@ class ExprChecker : DiagnosticBuilder {
 		return new Try.Catch(c.loc, caught, then);
 	}
 
-	Expr callStaticMethod(ref Expected expected, Loc loc, ClassLike klass, Sym methodName, Arr<Ast.Expr> argAsts) {
-		if (!klass.membersMap.get(methodName, out var member)) TODO();
-		if (!(member is MethodWithBodyLike method))
-			throw TODO();
-		if (!method.isStatic)
-			throw TODO();
+	Expr callStaticMethod(ref Expected expected, Loc loc, ClsRef cls, Sym methodName, Arr<Ast.Expr> argAsts) {
+		if (!cls.getMember(methodName, out var member)) { // No need to look in superclasses because this is a static method.
+			addDiagnostic(loc, new MemberNotFound(cls, methodName));
+			return handleBogus(ref expected, loc);
+		}
+		if (!(member is MethodWithBodyLike method) || !method.isStatic) {
+			addDiagnostic(loc, DelegatesNotYetSupported.instance);
+			return handleBogus(ref expected, loc);
+		}
+
 		// No need to check selfEffect, because this is a static method.
-		var args = checkCall(loc, method, argAsts);
+		if (!checkCall(loc, method, argAsts, out var args))
+			return handleBogus(ref expected, loc);
 		return handle(ref expected, new StaticMethodCall(loc, method, args));
 	}
 
@@ -235,18 +301,29 @@ class ExprChecker : DiagnosticBuilder {
 		var target = checkInfer(targetAst);
 		switch (target.ty) {
 			case Ty.Bogus _:
-				//Still check the methods...
-				throw TODO();
+				// Already issued an error, don't need another.
+				return handleBogus(ref expected, loc);
 
 			case Ty.PlainTy plainTy: {
 				var (targetEffect, targetCls) = plainTy;
-				var member = getMember(loc, targetCls, methodName);
-				if (!(member is Method method))
-					throw TODO();
-				if (method.isStatic) throw TODO(); //error
+				if (!getMember(loc, targetCls, methodName, out var member))
+					return handleBogus(ref expected, loc);
+
+				if (!(member is Method method)) {
+					addDiagnostic(loc, DelegatesNotYetSupported.instance);
+					return handleBogus(ref expected, loc);
+				}
+
+				if (method.isStatic) {
+					addDiagnostic(loc, new CantAccessStaticMethodThroughInstance(method));
+					return handleBogus(ref expected, loc);
+				}
+
 				if (!targetEffect.contains(method.selfEffect))
-					throw TODO(); // Can't call a method on an object with a greater effect than we've declared for it.
-				var args = checkCall(loc, method, argAsts);
+					addDiagnostic(loc, new IllegalEffect(targetEffect, method.selfEffect));
+
+				if (!checkCall(loc, method, argAsts, out var args))
+					return handleBogus(ref expected, loc);
 				return handle(ref expected, new InstanceMethodCall(loc, target, method, args));
 			}
 
@@ -256,23 +333,46 @@ class ExprChecker : DiagnosticBuilder {
 	}
 
 	Expr callOwnMethod(ref Expected expected, Loc loc, Sym methodName, Arr<Ast.Expr> argAsts) {
-		var member = getMember(loc, currentClass, methodName);
-		if (!(member is Method method))
-			throw TODO();
-		if (!isStatic && !selfEffect.contains(method.selfEffect))
-			throw TODO(); //Can't call my method with a greater effect
-		var args = checkCall(loc, method, argAsts);
-		var call = method is MethodWithBodyLike mbl && mbl.isStatic ? new StaticMethodCall(loc, mbl, args) : (Expr)new MyInstanceMethodCall(loc, method, args);
+		if (!getMember(loc, currentClass, methodName, out Member member))
+			return handleBogus(ref expected, loc);
+
+		if (!(member is Method method)) {
+			addDiagnostic(loc, DelegatesNotYetSupported.instance);
+			return handleBogus(ref expected, loc);
+		}
+
+		if (!checkCall(loc, method, argAsts, out var args))
+			return handleBogus(ref expected, loc);
+
+		Expr call;
+		if (method is MethodWithBodyLike mbl && mbl.isStatic) {
+			// Calling a static method. OK whether we're in an instance or static context.
+			call = new StaticMethodCall(loc, mbl, args);
+		} else {
+			if (isStatic) {
+				addDiagnostic(loc, new CantCallInstanceMethodFromStaticMethod(method));
+				return handleBogus(ref expected, loc);
+			}
+
+			if (!selfEffect.contains(method.selfEffect))
+				addDiagnostic(loc, new IllegalEffect(selfEffect, method.selfEffect));
+
+			call = new MyInstanceMethodCall(loc, method, args);
+		}
+
 		return handle(ref expected, call);
 	}
 
-	//Caller is responsible for checking that we can access this member's effect.
-	static Member getMember(Loc loc, ClsRef cls, Sym memberName) {
-		if (tryGetMember(cls, memberName, out var member))
-			return member;
+	/**
+	NOTE: Caller is responsible for checking that we can access this member's effect!
+	If this returns "false", we've already handled the error reporting, so just call handleBogus.
+	*/
+	bool getMember(Loc loc, ClsRef cls, Sym memberName, out Member member) {
+		if (tryGetMember(cls, memberName, out member))
+			return true;
 
-		unused(loc);
-		throw TODO(); //error
+		addDiagnostic(loc, new MemberNotFound(cls, memberName));
+		return false;
 	}
 
 	static bool tryGetMember(ClsRef cls, Sym memberName, out Member member) {
@@ -290,60 +390,42 @@ class ExprChecker : DiagnosticBuilder {
 	}
 
 	// Note: Caller is responsible for checking selfEffect
-	Arr<Expr> checkCall(Loc callLoc, Method method, Arr<Ast.Expr> argAsts) =>
-		checkCallArguments(callLoc, method.parameters, argAsts);
+	bool checkCall(Loc callLoc, Method method, Arr<Ast.Expr> argAsts, out Arr<Expr> args) =>
+		checkCallArguments(callLoc, method, method.parameters, argAsts, out args);
 
-	// Used by normal calls and by 'recur' (which doesn't need an effect check)
-	Arr<Expr> checkCallArguments(Loc loc, Arr<Parameter> parameters, Arr<Ast.Expr> argAsts) {
+	/**
+	Returns None on error.
+	Used by normal calls and by 'recur' (which doesn't need an effect check)
+	*/
+	bool checkCallArguments(Loc loc, Method method, Arr<Parameter> parameters, Arr<Ast.Expr> argAsts, out Arr<Expr> args) {
 		if (parameters.length != argAsts.length) {
-			unused(loc);
-			throw TODO();
+			addDiagnostic(loc, new ArgumentCountMismatch(method, argAsts.length));
+			args = default(Arr<Expr>); // Caller shouldn't look at this.
+			return false;
 		}
-		return parameters.zip(argAsts, (parameter, argAst) => checkSubtype(parameter.ty, argAst));
+		args = parameters.zip(argAsts, (parameter, argAst) => checkSubtype(parameter.ty, argAst));
+		return true;
 	}
 
 	void addToScope(Pattern.Single local) {
+		// It's important that we push even in the presence of errors, because we will always pop.
+
 		if (parameters.find(out var param, p => p.name == local.name))
-			throw TODO(); //Illegal shadowing.
-		if (locals.find(out var shadowedLocal, l => l.name == local.name))
-			throw TODO(); //Illegal shadowing.
+			addDiagnostic(local.loc, new CantReassignParameter(param));
+
+		if (locals.find(out var oldLocal, l => l.name == local.name))
+			addDiagnostic(local.loc, new CantReassignLocal(oldLocal));
+
 		locals.Push(local);
 	}
 	void popFromScope() {
 		locals.Pop();
 	}
 
-	Expr get(Loc loc, Sym name) {
-		if (locals.find(out var local, l => l.name == name))
-			return new AccessLocal(loc, local);
-
-		if (parameters.find(out var param, p => p.name == name))
-			return new AccessParameter(loc, param);
-
-		if (!baseScope.tryGetMember(name, out var member))
-			throw TODO(); //error: cannot find name...
-
-		switch (member) {
-			case Slot slot:
-				if (isStatic) throw TODO();
-				return new GetMySlot(loc, currentClass, slot);
-
-			case MethodWithBody m:
-				throw TODO();
-
-			case AbstractMethod a:
-				throw TODO();
-
-			default:
-				// Not possible for this to be a BuiltinMethod, because it's a method on myself
-				throw unreachable();
-		}
-	}
-
 	Expr handle(ref Expected expected, Expr e) =>
 		expected.handle(e, this);
 
-	Expr handleBogus(ref Expected expected, Loc loc) =>
+	static Expr handleBogus(ref Expected expected, Loc loc) =>
 		expected.handleBogus(loc);
 
 	/** PASS BY REF! */
@@ -421,15 +503,12 @@ class ExprChecker : DiagnosticBuilder {
 		return Ty.bogus;
 	}
 
-	//mv
 	Expr checkType(Ty expectedTy, Expr e) {
-		//TODO: subtyping!
-		if (isSubtype(expectedTy, e.ty))
+		if (isAssignable(expectedTy, e.ty))
 			return e;
 
-		//TODO: have a WrongCast node and issue a diagnostic.
-		unused(this);
-		throw TODO();
+		addDiagnostic(e.loc, new NotAssignable(expectedTy, e.ty));
+		return new BogusCast(expectedTy, e);
 	}
 
 	/**
@@ -438,16 +517,14 @@ class ExprChecker : DiagnosticBuilder {
 	 * ...do things with pattern variables in scope...
 	 * endCheckPattern(nAdded); // Removes them from scope
 	 */
-	Pattern startCheckPattern(Ty ty, Ast.Pattern ast, out uint nAdded) {
+	(Pattern, uint nAdded) startCheckPattern(Ty ty, Ast.Pattern ast) {
 		switch (ast) {
 			case Ast.Pattern.Ignore i:
-				nAdded = 0;
-				return new Pattern.Ignore(i.loc);
+				return (new Pattern.Ignore(i.loc), 0);
 			case Ast.Pattern.Single p:
 				var s = new Pattern.Single(p.loc, ty, p.name);
-				nAdded = 1;
 				addToScope(s);
-				return s;
+				return (s, 1);
 			case Ast.Pattern.Destruct d:
 				throw TODO();
 			default:

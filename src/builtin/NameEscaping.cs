@@ -1,5 +1,3 @@
-using System.Text;
-
 using static CharUtils;
 using static Utils;
 
@@ -17,38 +15,38 @@ static class NameEscaping {
 		if (operatorEscapes.get(name, out var sym))
 			return sym;
 
-		var sb = new StringBuilder();
+		var sb = StringMaker.create();
 		foreach (var ch in name.str) {
 			if (ch == '-')
-				sb.Append('_');
+				sb.add('_');
 			else {
 				assert(isNameChar(ch));
-				sb.Append(ch);
+				sb.add(ch);
 			}
 		}
-		return sb.ToString();
+		return sb.finish();
 	}
 
 	// Should look like `Foo-Bar`. Forbid `FooBar` or `Foo-bar`.
 	internal static Sym unescapeTypeName(string name) {
 		assert(isUpperCaseLetter(name[0]));
 
-		var sb = new StringBuilder();
-		sb.Append(name[0]);
+		var sb = StringMaker.create();
+		sb.add(name[0]);
 		for (uint i = 1; i < name.Length; i++) {
 			var ch = name.at(i);
 			if (ch == '_') {
-				sb.Append('-');
+				sb.add('-');
 				i++;
 				var ch2 = name.at(i);
 				assert(isUpperCaseLetter(ch2));
-				sb.Append(ch2);
+				sb.add(ch2);
 			} else {
 				assert(isLowerCaseLetter(ch));
-				sb.Append(ch);
+				sb.add(ch);
 			}
 		}
-		return Sym.of(sb);
+		return sb.finishSym();
 	}
 
 	// Should look like `foo-bar`. Forbid `fooBar`.
@@ -56,15 +54,15 @@ static class NameEscaping {
 		if (operatorUnescapes.get(name, out var v))
 			return v;
 
-		var sb = new StringBuilder();
+		var sb = StringMaker.create();
 		foreach (var ch in name) {
 			if (ch == '_')
-				sb.Append('-');
+				sb.add('-');
 			else {
 				assert(isLowerCaseLetter(ch));
-				sb.Append(ch);
+				sb.add(ch);
 			}
 		}
-		return Sym.of(sb);
+		return sb.finishSym();
 	}
 }

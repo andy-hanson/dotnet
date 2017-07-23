@@ -67,7 +67,7 @@ namespace Model {
 			public override Dat toDat() => Dat.of(this, nameof(loc), loc);
 		}
 
-		internal class Slots : KlassHead, ToData<Slots> {
+		internal class Slots : KlassHead, ToData<Slots>, Identifiable<Klass.Id> {
 			internal readonly Loc loc;
 			[ParentPointer] internal readonly Klass klass;
 			Late<Arr<Slot>> _slots;
@@ -81,6 +81,7 @@ namespace Model {
 			public override bool deepEqual(KlassHead h) => h is Slots s && deepEqual(s);
 			public bool deepEqual(Slots s) => slots.deepEqual(s.slots);
 			public override Dat toDat() => Dat.of(this, nameof(slots), Dat.arr(slots));
+			public Klass.Id getId() => klass.getId();
 		}
 	}
 }

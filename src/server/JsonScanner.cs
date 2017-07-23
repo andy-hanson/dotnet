@@ -1,5 +1,4 @@
 using System;
-using System.Text;
 
 using static Utils;
 
@@ -199,16 +198,16 @@ namespace Json {
 		}
 
 		string readStrBody() {
-			var s = new StringBuilder();
+			var s = StringMaker.create();
 			while (true) {
 				var ch = readNoWhitespace();
 				switch (ch) {
 					case '\\': {
 							var escaped = readNoWhitespace();
 							switch (escaped) {
-								case 'n': s.Append('\n'); break;
-								case 't': s.Append('\t'); break;
-								case '"': s.Append('"'); break;
+								case 'n': s.add('\n'); break;
+								case 't': s.add('\t'); break;
+								case '"': s.add('"'); break;
 								default: throw TODO();
 							}
 							break;
@@ -216,7 +215,7 @@ namespace Json {
 					case '"':
 						return s.ToString();
 					default:
-						s.Append(ch);
+						s.add(ch);
 						break;
 				}
 			}

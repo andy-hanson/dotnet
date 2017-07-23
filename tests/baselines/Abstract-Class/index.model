@@ -23,7 +23,7 @@ Klass(
         asserted: InstanceMethodCall(
           loc: 62-75,
           target: InstanceMethodCall(
-            loc: 62-65,
+            loc: 62-67,
             target: AccessParameter(
               loc: 62-63,
               param: Parameter(

@@ -16,6 +16,8 @@ namespace Model {
 		public override abstract int GetHashCode();
 		public abstract Dat toDat();
 
+		internal abstract bool getMember(Sym name, out Member member);
+
 		public bool fastEquals(ClsRef other) => object.ReferenceEquals(this, other);
 
 		ClsRefId Identifiable<ClsRefId>.getId() => getClsRefId();
@@ -43,6 +45,7 @@ namespace Model {
 		readonly Sym _name;
 		internal override Sym name => _name;
 		internal abstract Dict<Sym, Member> membersMap { get; }
+		internal override bool getMember(Sym name, out Member member) => membersMap.get(name, out member);
 		public override ClsRefId getClsRefId() => new ClsRefId(getId());
 		public abstract Id getId();
 

@@ -1,5 +1,4 @@
 using System;
-using System.Text;
 
 using static Utils;
 
@@ -40,7 +39,7 @@ struct SourceMapDataBuilder {
 	//internal Op<Arr<string>> sourceMapSourcesContent; // Source map's sourcesContent field - list of the sources' text to be embedded in the source map
 	internal Arr<string> inputSourceFileNames; // Input source file (which one can use on program to get the file), 1:1 mapping with the sourceMapSources list
 	internal Arr.Builder<string> sourceMapNames; // Source map's names field - list of names that can be indexed in this source map
-	internal StringBuilder sourceMapMappings; // Source map's mapping field - encoded source map spans
+	internal StringMaker sourceMapMappings; // Source map's mapping field - encoded source map spans
 }
 
 interface EmitTextWriter {
@@ -103,7 +102,7 @@ class SourceMapWriter {
 			sourceMapSources = Arr.of(fileText),
 			inputSourceFileNames = Arr.of(filePath.toPathString()),
 			sourceMapNames = Arr.builder<string>(),
-			sourceMapMappings = new StringBuilder()
+			sourceMapMappings = StringMaker.create()
 		};
 
 		sourceMapDir = filePath.directory().toPathString();
@@ -122,11 +121,11 @@ class SourceMapWriter {
 		var prevEncodedEmittedColumn = lastEncoded.emittedColumn;
 		// Line/Comma delimiters
 		if (lastEncoded.emittedLine == lastRecorded.emittedLine)
-			smd.sourceMapMappings.Append(',');
+			smd.sourceMapMappings.add(',');
 		else {
 			// Emit line delimiters
 			for (var encodedLine = lastEncoded.emittedLine; encodedLine < lastRecorded.emittedLine; encodedLine++)
-				smd.sourceMapMappings.Append(';');
+				smd.sourceMapMappings.add(';');
 			prevEncodedEmittedColumn = 1;
 		}
 
@@ -205,7 +204,7 @@ class SourceMapWriter {
 		return base64Chars.at(inValue);
 	}
 
-	static void base64VLQFormatEncode(StringBuilder output, uint inValue) {
+	static void base64VLQFormatEncode(StringMaker output, uint inValue) {
 		// Add a new least significant bit that has the sign of the value.
 		// if negative number the least significant bit that gets added to the number has value 1
 		// else least significant bit value that gets added is 0
@@ -221,7 +220,7 @@ class SourceMapWriter {
 				// There are still more digits to decode, set the msb (6th bit)
 				currentDigit = currentDigit | 0b100000;
 			}
-			output.Append(base64FormatEncode(currentDigit));
+			output.add(base64FormatEncode(currentDigit));
 		} while (inValue != 0);
 	}
 
@@ -231,7 +230,7 @@ class SourceMapWriter {
 	}
 
 	static string convertToBase64(string input) {
-		var result = new StringBuilder();
+		var result = StringMaker.create();
 		var charCodes = getExpandedCharCodes(input);
 		uint i = 0;
 		var length = charCodes.length;
@@ -255,10 +254,10 @@ class SourceMapWriter {
 			}
 
 			// Write to the output
-			result.Append(base64Digit(byte1));
-			result.Append(base64Digit(byte2));
-			result.Append(base64Digit(byte3));
-			result.Append(base64Digit(byte4));
+			result.add(base64Digit(byte1));
+			result.add(base64Digit(byte2));
+			result.add(base64Digit(byte3));
+			result.add(base64Digit(byte4));
 
 			i += 3;
 		}

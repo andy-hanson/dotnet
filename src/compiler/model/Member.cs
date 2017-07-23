@@ -4,6 +4,8 @@ namespace Model {
 		internal readonly Loc loc;
 		internal readonly Sym name;
 		protected Member(Loc loc, Sym name) { this.loc = loc; this.name = name; }
+
+		internal abstract ClassLike klass { get; }
 		public abstract bool deepEqual(Member m);
 		public abstract Dat toDat();
 		MemberId Identifiable<MemberId>.getId() => getMemberId();

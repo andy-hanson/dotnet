@@ -1,5 +1,4 @@
 using System;
-using System.Text;
 
 using Diag.ParseDiags;
 using static CharUtils;
@@ -90,7 +89,7 @@ abstract class Lexer : Reader {
 	}
 
 	protected QuoteEnd nextQuotePart() {
-		var s = new StringBuilder();
+		var s = StringMaker.create();
 		var isEnd = false;
 		while (true) {
 			var ch = readChar();
@@ -104,15 +103,15 @@ abstract class Lexer : Reader {
 				case '\n':
 					throw TODO(); // unterminated quote
 				case '\\':
-					s.Append(escape(ch));
+					s.add(escape(ch));
 					break;
 				default:
-					s.Append(ch);
+					s.add(ch);
 					break;
 			}
 		}
 		done:
-		this.tokenValue = s.ToString();
+		this.tokenValue = s.finish();
 		return isEnd ? QuoteEnd.QuoteEnd : QuoteEnd.QuoteInterpolation;
 	}
 

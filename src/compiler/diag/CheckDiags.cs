@@ -1,5 +1,3 @@
-using System.Text;
-
 using Model;
 
 namespace Diag.CheckDiags {
@@ -7,8 +5,8 @@ namespace Diag.CheckDiags {
 		[UpPointer] internal readonly ClsRef cls;
 		internal NotAnAbstractClass(ClsRef cls) { this.cls = cls; }
 
-		internal override string show() =>
-			$"Can't extend non-abstract class ${cls.name.str}";
+		internal override void show(StringMaker s) =>
+			s.add("Can't extend non-abstract class ").add(cls.name.str);
 
 		public override bool deepEqual(NotAnAbstractClass n) =>
 			cls.equalsId<ClsRef, ClsRefId>(n.cls);
@@ -20,11 +18,9 @@ namespace Diag.CheckDiags {
 		[UpPointer] internal readonly Arr<AbstractMethodLike> abstractMethods;
 		internal ImplsMismatch(Arr<AbstractMethodLike> abstractMethods) { this.abstractMethods = abstractMethods; }
 
-		internal override string show() {
-			var sb = new StringBuilder();
-			sb.Append("Abstract method implementations must be exactly, in order: ");
-			abstractMethods.join(", ", a => a.name.str);
-			return sb.ToString();
+		internal override void show(StringMaker s) {
+			s.add("Abstract method implementations must be exactly, in order: ");
+			abstractMethods.join(", ", s, a => a.name.str);
 		}
 
 		public override bool deepEqual(ImplsMismatch w) =>
@@ -37,8 +33,8 @@ namespace Diag.CheckDiags {
 		internal readonly Sym name;
 		internal DuplicateParameterName(Sym name) { this.name = name; }
 
-		internal override string show() =>
-			$"There are two parameters named {name.str}";
+		internal override void show(StringMaker s) =>
+			s.add("There are two parameters named ").add(name.str);
 
 		public override bool deepEqual(DuplicateParameterName d) => name.deepEqual(d.name);
 		public override Dat toDat() => Dat.of(this, nameof(name), name);
@@ -48,13 +44,11 @@ namespace Diag.CheckDiags {
 		[UpPointer] internal readonly AbstractMethodLike implemented;
 		internal WrongImplParameters(AbstractMethodLike implemented) { this.implemented = implemented; }
 
-		internal override string show() {
-			var sb = new StringBuilder();
-			sb.Append("Parameters for implementation of ");
-			sb.Append(implemented.name.str);
-			sb.Append(" must be exactly, in order: ");
-			implemented.parameters.join(", ", p => p.name.str);
-			return sb.ToString();
+		internal override void show(StringMaker s) {
+			s.add("Parameters for implementation of ");
+			s.add(implemented.name.str);
+			s.add(" must be exactly, in order: ");
+			implemented.parameters.join(", ", s, p => p.name.str);
 		}
 
 		public override bool deepEqual(WrongImplParameters w) =>
@@ -68,8 +62,12 @@ namespace Diag.CheckDiags {
 		[UpPointer] internal readonly Member secondMember;
 		internal DuplicateMember(Member firstMember, Member secondMember) { this.firstMember = firstMember; this.secondMember = secondMember; }
 
-		internal override string show() =>
-			$"Duplicate members. First member: ${firstMember.showKind()}, second: ${secondMember.showKind()}";
+		internal override void show(StringMaker s) {
+			s.add("Duplicate members. First member: ");
+			s.add(firstMember.showKind());
+			s.add("second: ");
+			s.add(secondMember.showKind());
+		}
 
 		public override bool deepEqual(DuplicateMember d) =>
 			firstMember.equalsId<Member, MemberId>(d.firstMember) &&

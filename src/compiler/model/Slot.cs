@@ -2,15 +2,6 @@ using System;
 
 namespace Model {
 	sealed class Slot : Member, ToData<Slot>, Identifiable<Slot.Id>, IEquatable<Slot> {
-		internal class Id : MemberId, ToData<Id> {
-			internal readonly ClassLike.Id klass;
-			internal readonly Sym name;
-			internal Id(ClassLike.Id klass, Sym name) { this.klass = klass; this.name = name; }
-			public override bool deepEqual(MemberId m) => m is Id i && deepEqual(i);
-			public bool deepEqual(Id i) => klass.deepEqual(i.klass) && name.deepEqual(i.name);
-			public override Dat toDat() => Dat.of(this, nameof(klass), klass, nameof(name), name);
-		}
-
 		[ParentPointer] internal readonly KlassHead.Slots slots;
 		internal readonly bool mutable;
 		internal readonly Ty ty;
@@ -21,6 +12,8 @@ namespace Model {
 			this.ty = ty;
 		}
 
+		internal override ClassLike klass => slots.klass;
+
 		bool IEquatable<Slot>.Equals(Slot s) => deepEqual(s);
 		public override int GetHashCode() => name.GetHashCode();
 		public override bool deepEqual(Member m) => m is Slot s && deepEqual(s);
@@ -29,5 +22,14 @@ namespace Model {
 		internal override MemberId getMemberId() => getId();
 		internal override string showKind() => "slot";
 		public Id getId() => new Id(slots.klass.getId(), name);
+
+		internal class Id : MemberId, ToData<Id> {
+			internal readonly ClassLike.Id klass;
+			internal readonly Sym name;
+			internal Id(ClassLike.Id klass, Sym name) { this.klass = klass; this.name = name; }
+			public override bool deepEqual(MemberId m) => m is Id i && deepEqual(i);
+			public bool deepEqual(Id i) => klass.deepEqual(i.klass) && name.deepEqual(i.name);
+			public override Dat toDat() => Dat.of(this, nameof(klass), klass, nameof(name), name);
+		}
 	}
 }

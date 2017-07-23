@@ -35,7 +35,7 @@ Klass(
             asserted: InstanceMethodCall(
               loc: 121-138,
               target: InstanceMethodCall(
-                loc: 121-128,
+                loc: 121-130,
                 target: AccessLocal(
                   local: "x"),
                 method: Id(
@@ -53,7 +53,7 @@ Klass(
             asserted: InstanceMethodCall(
               loc: 145-162,
               target: InstanceMethodCall(
-                loc: 145-152,
+                loc: 145-154,
                 target: AccessLocal(
                   local: "x"),
                 method: Id(

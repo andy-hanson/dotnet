@@ -27,7 +27,7 @@ Klass(
               klassId: "",
               name: "needs-int"),
             args: [InstanceMethodCall(
-              loc: 40-48,
+              loc: 40-50,
               target: Literal(
                 loc: 40-41,
                 value: 0),
@@ -42,7 +42,7 @@ Klass(
                 klassId: "",
                 name: "needs-real"),
               args: [InstanceMethodCall(
-                loc: 63-72,
+                loc: 63-74,
                 target: Literal(
                   loc: 63-64,
                   value: 0),
@@ -57,7 +57,7 @@ Klass(
                   klassId: "",
                   name: "needs-nat"),
                 args: [InstanceMethodCall(
-                  loc: 87-96,
+                  loc: 87-98,
                   target: Literal(
                     loc: 87-89,
                     value: 0),
@@ -81,7 +81,7 @@ Klass(
                       klassId: "",
                       name: "needs-real"),
                     args: [InstanceMethodCall(
-                      loc: 125-135,
+                      loc: 125-137,
                       target: Literal(
                         loc: 125-127,
                         value: 0),
@@ -96,9 +96,9 @@ Klass(
                         klassId: "",
                         name: "needs-nat"),
                       args: [InstanceMethodCall(
-                        loc: 150-173,
+                        loc: 150-175,
                         target: InstanceMethodCall(
-                          loc: 150-164,
+                          loc: 150-166,
                           target: Literal(
                             loc: 150-153,
                             value: 0),
@@ -117,7 +117,7 @@ Klass(
                           klassId: "",
                           name: "needs-int"),
                         args: [InstanceMethodCall(
-                          loc: 187-199,
+                          loc: 187-201,
                           target: Literal(
                             loc: 187-190,
                             value: 0),

@@ -15,7 +15,7 @@ Klass(
       body: InstanceMethodCall(
         loc: 37-47,
         target: MyInstanceMethodCall(
-          loc: 37-39,
+          loc: 37-41,
           method: Id(
             klassId: "Super1",
             name: "s1"),

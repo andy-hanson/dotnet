@@ -16,12 +16,4 @@ static class StringUtils {
 
 	internal static string withoutEndIfEndsWith(this string s, string end) =>
 		s.EndsWith(end) ? s.slice(0, unsigned(s.Length) - unsigned(end.Length)) : s;
-
-	internal static string showChar(char ch) {
-		switch (ch) {
-			case '\n': return "'\\n'";
-			case '\t': return "'\\t'";
-			default: return $"'{ch}'";
-		}
-	}
 }

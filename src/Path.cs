@@ -1,6 +1,5 @@
 using System;
 using System.Diagnostics;
-using System.Text;
 using static System.Math;
 
 using static Utils;
@@ -109,7 +108,7 @@ struct Path : ToData<Path>, IEquatable<Path> {
 	public bool deepEqual(Path p) => parts.deepEqual(p.parts);
 	public override int GetHashCode() => parts.GetHashCode();
 	internal string toPathString() => parts.join("/");
-	internal void toPathString(StringBuilder sb) => parts.join("/", sb);
+	internal void toPathString(StringMaker s) => parts.join("/", s);
 	public static bool operator ==(Path a, Path b) => a.deepEqual(b);
 	public static bool operator !=(Path a, Path b) => !a.deepEqual(b);
 
@@ -129,13 +128,17 @@ struct RelPath : ToData<RelPath> {
 	internal string last => relToParent.last;
 
 	internal string toPathString() {
-		var s = new StringBuilder();
+		var s = StringMaker.create();
+		toPathString(s);
+		return s.finish();
+	}
+
+	internal void toPathString(StringMaker s) {
 		if (nParents == 0)
-			s.Append("./");
+			s.add("./");
 		else
-			doTimes(nParents, () => s.Append("../"));
+			doTimes(nParents, () => s.add("../"));
 		relToParent.toPathString(s);
-		return s.ToString();
 	}
 
 	internal RelPath withoutExtension(string extension) =>

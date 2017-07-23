@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Text;
 
 using Model;
 using static Utils;
@@ -190,36 +189,30 @@ static class Attributes {
 }
 
 sealed class LogWriter : Logger {
-	readonly StringBuilder sb = new StringBuilder();
+	readonly StringMaker s = StringMaker.create();
 
 	internal void beginConstructor() =>
-		sb.Append("constructor");
+		s.add("constructor");
 
 	internal void endConstructor() =>
-		sb.Append("\n\n");
+		s.add("\n\n");
 
 	internal void methodHead(string name, MethodAttributes attrs, Type returnType, Type[] parameters) {
-		sb.Append(returnType.Name);
-		sb.Append(' ');
-		sb.Append(name);
-		sb.Append('(');
-		sb.Append(string.Join<string>(", ", parameters.mapToArray(p => p.Name)));
-		sb.Append(") [");
-		sb.Append(attrs);
-		sb.Append("]\n\n");
+		s.add(returnType.Name).add(' ').add(name).add('(');
+		new Arr<Type>(parameters).join(", ", s, (ss, p) => ss.add(p.Name));
+		s.add(") [");
+		s.add(attrs.ToString());
+		s.add("]\n\n");
 	}
 
-	internal void beginMethod(MethodBuilder m) {
-		sb.Append(m.Name);
-	}
+	internal void beginMethod(MethodBuilder m) =>
+		s.add(m.Name);
 	internal void endMethod() =>
-		sb.Append("\n\n");
+		s.add("\n\n");
 
-	void Logger.log(string s) {
-		sb.Append("\n\t");
-		sb.Append(s);
-	}
+	void Logger.log(string str) =>
+		s.add("\n\t").add(str);
 
 	internal string finish() =>
-		sb.ToString();
+		s.finish();
 }
