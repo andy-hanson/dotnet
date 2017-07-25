@@ -2,7 +2,7 @@ Klass(
   loc: 23-155,
   head: Slots(
     slots: [Slot(
-      loc: 23-40,
+      loc: 30-39,
       name: "x",
       mutable: false,
       ty: PlainTy(
@@ -52,7 +52,7 @@ Klass(
                 loc: 153-154,
                 value: 1)]))))),
     x: Slot(
-      loc: 23-40,
+      loc: 30-39,
       name: "x",
       mutable: false,
       ty: PlainTy(

@@ -32,19 +32,25 @@ struct BaseScope {
 		}
 	}
 
-	internal Ty getTy(Ast.Ty ast, Arr.Builder<Diagnostic> diags) =>
-		getClsRef(ast.cls, diags, out var cls) ? Ty.of(ast.effect, cls) : Ty.bogus;
+	internal Ty getTy(Ast.Ty ast, Arr.Builder<Diagnostic> diags) {
+		var (_, effect, clsAst) = ast;
+		return getClsRef(clsAst, diags, out var cls) ? Ty.of(effect, cls) : Ty.bogus;
+	}
 
 	bool getClsRef(Ast.ClsRef ast, Arr.Builder<Diagnostic> diags, out ClsRef cls) {
 		switch (ast) {
-			case Ast.ClsRef.Access access:
-				return accessClsRefOrAddDiagnostic(access.loc, access.name, diags, out cls);
+			case Ast.ClsRef.Access access: {
+				var (loc, name) = access;
+				return accessClsRefOrAddDiagnostic(loc, name, diags, out cls);
+			}
 
 			case Ast.ClsRef.Inst inst: {
-				var self = this;
-				var tyArgs = inst.tyArgs.map(x => self.getTy(x, diags));
+				var (loc, (instantiatedLoc, instantiatedName), tyArgAsts) = inst;
 
-				if (!accessClsRefOrAddDiagnostic(inst.instantiated.loc, inst.instantiated.name, diags, out var gen)) {
+				var self = this;
+				var tyArgs = tyArgAsts.map(x => self.getTy(x, diags));
+
+				if (!accessClsRefOrAddDiagnostic(instantiatedLoc, instantiatedName, diags, out var gen)) {
 					cls = default(ClsRef);
 					return false;
 				}

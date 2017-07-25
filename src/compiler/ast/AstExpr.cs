@@ -8,6 +8,7 @@ namespace Ast {
 	internal sealed class Access : Expr, ToData<Access> {
 		internal readonly Sym name;
 		internal Access(Loc loc, Sym name) : base(loc) { this.name = name; }
+		internal void Deconstruct(out Loc loc, out Sym name) { loc = this.loc; name = this.name; }
 
 		public override bool deepEqual(Node n) => n is Access a && deepEqual(a);
 		public bool deepEqual(Access a) => locEq(a) && name.deepEqual(a.name);
@@ -20,6 +21,9 @@ namespace Ast {
 		internal StaticAccess(Loc loc, Sym className, Sym staticMethodName) : base(loc) {
 			this.className = className;
 			this.staticMethodName = staticMethodName;
+		}
+		internal void Deconstruct(out Loc loc, out Sym className, out Sym staticMethodName) {
+			loc = this.loc; className = this.className; staticMethodName = this.staticMethodName;
 		}
 
 		public override bool deepEqual(Node n) => n is StaticAccess s && deepEqual(s);
@@ -42,6 +46,9 @@ namespace Ast {
 			this.oper = oper;
 			this.right = right;
 		}
+		internal void Deconstruct(out Loc loc, out Expr left, out Sym oper, out Expr right) {
+			loc = this.loc; left = this.left; oper = this.oper; right = this.right;
+		}
 
 		public override bool deepEqual(Node n) => n is OperatorCall o && deepEqual(o);
 		public bool deepEqual(OperatorCall o) =>
@@ -59,6 +66,9 @@ namespace Ast {
 			this.target = target;
 			this.args = args;
 		}
+		internal void Deconstruct(out Loc loc, out Expr target, out Arr<Expr> args) {
+			loc = this.loc; target = this.target; args = this.args;
+		}
 
 		public override bool deepEqual(Node n) => n is Call c && deepEqual(c);
 		public bool deepEqual(Call c) => locEq(c) && target.deepEqual(c.target) && args.deepEqual(c.args);
@@ -68,6 +78,7 @@ namespace Ast {
 	internal sealed class Recur : Expr, ToData<Recur> {
 		internal readonly Arr<Expr> args;
 		internal Recur(Loc loc, Arr<Expr> args) : base(loc) { this.args = args; }
+		internal void Deconstruct(out Loc loc, out Arr<Expr> args) { loc = this.loc; args = this.args; }
 
 		public override bool deepEqual(Node n) => n is Recur r && deepEqual(r);
 		public bool deepEqual(Recur r) => locEq(r) && args.deepEqual(r.args);
@@ -79,6 +90,7 @@ namespace Ast {
 		internal New(Loc loc, Arr<Expr> args) : base(loc) {
 			this.args = args;
 		}
+		internal void Deconstruct(out Loc loc, out Arr<Expr> args) { loc = this.loc; args = this.args; }
 
 		public override bool deepEqual(Node n) => n is New ne && deepEqual(ne);
 		public bool deepEqual(New n) => locEq(n) && args.deepEqual(n.args);
@@ -92,6 +104,9 @@ namespace Ast {
 			this.target = target;
 			this.propertyName = propertyName;
 		}
+		internal void Deconstruct(out Loc loc, out Expr target, out Sym propertyName) {
+			loc = this.loc; target = this.target; propertyName = this.propertyName;
+		}
 
 		public override bool deepEqual(Node n) => n is GetProperty g && deepEqual(g);
 		public bool deepEqual(GetProperty g) => locEq(g) && target.deepEqual(g.target) && propertyName.deepEqual(g.propertyName);
@@ -104,6 +119,9 @@ namespace Ast {
 		internal SetProperty(Loc loc, Sym propertyName, Expr value) : base(loc) {
 			this.propertyName = propertyName;
 			this.value = value;
+		}
+		internal void Deconstruct(out Loc loc, out Sym propertyName, out Expr value) {
+			loc = this.loc; propertyName = this.propertyName; value = this.value;
 		}
 
 		public override bool deepEqual(Node n) => n is SetProperty s && deepEqual(s);
@@ -120,6 +138,9 @@ namespace Ast {
 		internal Let(Loc loc, Pattern assigned, Expr value) : base(loc) {
 			this.assigned = assigned;
 			this.value = value;
+		}
+		internal void Deconstruct(out Loc loc, out Pattern assigned, out Expr value, out Expr then) {
+			loc = this.loc; assigned = this.assigned; value = this.value; then = this.then;
 		}
 
 		public override bool deepEqual(Node n) => n is Let l && deepEqual(l);
@@ -138,6 +159,9 @@ namespace Ast {
 			this.first = first;
 			this.then = then;
 		}
+		internal void Deconstruct(out Loc loc, out Expr first, out Expr then) {
+			loc = this.loc; first = this.first; then = this.then;
+		}
 
 		public override bool deepEqual(Node n) => n is Seq s && deepEqual(s);
 		public bool deepEqual(Seq s) => locEq(s) && first.deepEqual(s.first) && then.deepEqual(s.then);
@@ -147,6 +171,7 @@ namespace Ast {
 	internal sealed class Literal : Expr, ToData<Literal> {
 		internal readonly LiteralValue value;
 		internal Literal(Loc loc, LiteralValue value) : base(loc) { this.value = value; }
+		internal void Deconstruct(out Loc loc, out LiteralValue value) { loc = this.loc; value = this.value; }
 
 		public override bool deepEqual(Node n) => n is Literal l && deepEqual(l);
 		public bool deepEqual(Literal l) => locEq(l) && value.deepEqual(l.value);
@@ -165,6 +190,9 @@ namespace Ast {
 		internal readonly Arr<Case> cases;
 		internal readonly Expr elseResult;
 		internal WhenTest(Loc loc, Arr<Case> cases, Expr elseResult) : base(loc) { this.cases = cases; this.elseResult = elseResult; }
+		internal void Deconstruct(out Loc loc, out Arr<Case> cases, out Expr elseResult) {
+			loc = this.loc; cases = this.cases; elseResult = this.elseResult;
+		}
 
 		public override bool deepEqual(Node n) => n is WhenTest w && deepEqual(w);
 		public bool deepEqual(WhenTest w) => locEq(w) && cases.deepEqual(w.cases) && elseResult.deepEqual(w.elseResult);
@@ -184,6 +212,7 @@ namespace Ast {
 	internal sealed class Assert : Expr, ToData<Assert> {
 		internal readonly Expr asserted;
 		internal Assert(Loc loc, Expr asserted) : base(loc) { this.asserted = asserted; }
+		internal void Deconstruct(out Loc loc, out Expr asserted) { loc = this.loc; asserted = this.asserted; }
 
 		public override bool deepEqual(Node n) => n is Assert a && deepEqual(a);
 		public bool deepEqual(Assert a) => locEq(a) && asserted.deepEqual(a.asserted);
@@ -200,6 +229,9 @@ namespace Ast {
 			this._do = _do;
 			this._catch = _catch;
 			this._finally = _finally;
+		}
+		internal void Deconstruct(out Loc loc, out Expr _do, out Op<Catch> _catch, out Op<Expr> _finally) {
+			loc = this.loc; _do = this._do; _catch = this._catch; _finally = this._finally;
 		}
 
 		public override bool deepEqual(Node n) => n is Try t && deepEqual(t);
@@ -219,11 +251,14 @@ namespace Ast {
 			internal readonly Loc exceptionNameLoc;
 			internal readonly Sym exceptionName;
 			internal readonly Expr then;
-			internal Catch(Loc loc, Ty ty, Loc nameLoc, Sym name, Expr then) : base(loc) {
-				this.exceptionTy = ty;
-				this.exceptionNameLoc = nameLoc;
-				this.exceptionName = name;
+			internal Catch(Loc loc, Ty exceptionTy, Loc exceptionNameLoc, Sym exceptionName, Expr then) : base(loc) {
+				this.exceptionTy = exceptionTy;
+				this.exceptionNameLoc = exceptionNameLoc;
+				this.exceptionName = exceptionName;
 				this.then = then;
+			}
+			internal void Deconstruct(out Loc loc, out Ty exceptionTy, out Loc exceptionNameLoc, out Sym exceptionName, out Expr then) {
+				loc = this.loc; exceptionTy = this.exceptionTy; exceptionNameLoc = this.exceptionNameLoc; exceptionName = this.exceptionName; then = this.then;
 			}
 
 			public override bool deepEqual(Node n) => n is Catch c && deepEqual(c);

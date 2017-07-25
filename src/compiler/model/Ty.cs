@@ -24,15 +24,8 @@ namespace Model {
 			readonly Effect _effect;
 			internal override Effect effect => _effect;
 			internal readonly ClsRef cls;
-			internal PlainTy(Effect effect, ClsRef cls) {
-				this._effect = effect;
-				this.cls = cls;
-			}
-
-			internal void Deconstruct(out Effect effect, out ClsRef cls) {
-				effect = this.effect;
-				cls = this.cls;
-			}
+			internal PlainTy(Effect effect, ClsRef cls) { this._effect = effect; this.cls = cls; }
+			internal void Deconstruct(out Effect effect, out ClsRef cls) { effect = this.effect; cls = this.cls; }
 
 			public override bool deepEqual(Ty ty) => ty is PlainTy && deepEqual(ty);
 			public bool deepEqual(PlainTy ty) => effect == ty.effect && cls.deepEqual(ty.cls);

@@ -32,7 +32,7 @@ Module(
         impls: [Impl(
           loc: 52-61,
           name: "s1",
-          parameters: [],
+          parameterNames: [],
           body: Access(
             loc: 59-60,
             name: "x"))]),
@@ -42,7 +42,7 @@ Module(
         impls: [Impl(
           loc: 72-86,
           name: "s2",
-          parameters: [],
+          parameterNames: [],
           body: OperatorCall(
             loc: 79-86,
             oper: "+",

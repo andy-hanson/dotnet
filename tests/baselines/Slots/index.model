@@ -3,7 +3,7 @@ Klass(
   head: Slots(
     slots: [
       Slot(
-        loc: 0-29,
+        loc: 7-16,
         name: "x",
         mutable: false,
         ty: PlainTy(
@@ -11,7 +11,7 @@ Klass(
           cls: BuiltinClass(
             name: "Nat"))),
       Slot(
-        loc: 0-29,
+        loc: 18-27,
         name: "y",
         mutable: true,
         ty: PlainTy(
@@ -133,7 +133,7 @@ Klass(
             name: "incr"),
           args: []))),
     x: Slot(
-      loc: 0-29,
+      loc: 7-16,
       name: "x",
       mutable: false,
       ty: PlainTy(
@@ -141,7 +141,7 @@ Klass(
         cls: BuiltinClass(
           name: "Nat"))),
     y: Slot(
-      loc: 0-29,
+      loc: 18-27,
       name: "y",
       mutable: true,
       ty: PlainTy(

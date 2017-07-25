@@ -15,28 +15,33 @@ sealed class Checker : CheckerCommon {
 	Checker(BaseScope baseScope, Arr.Builder<Diagnostic> diags) : base(baseScope, diags) {}
 
 	void checkClass(Klass klass, Ast.Klass ast) {
+		var (loc, headAst, superAsts, methodAsts) = ast;
+
 		var membersBuilder = Dict.builder<Sym, Member>();
 
-		var methods = ast.methods.map(m => {
-			var e = new MethodWithBody(klass, m.loc, m.isStatic, getTy(m.returnTy), m.name, m.selfEffect, checkParameters(m.parameters));
-			addMember(membersBuilder, e);
-			return e;
-		});
+		var methods = methodAsts.map(m => checkMethodInitial(m, klass, membersBuilder));
 		klass.methods = methods;
 
 		// Adds slot
-		klass.head = checkHead(klass, ast.head, membersBuilder);
+		klass.head = checkHead(klass, headAst, membersBuilder);
 
 		klass.setMembersMap(membersBuilder.finish());
 
 		// Not that all members exist, we can fill in bodies.
-		klass.setSupers(ast.supers.mapDefinedProbablyAll(superAst => checkSuper(superAst, klass)));
-
+		klass.setSupers(superAsts.mapDefinedProbablyAll(superAst => checkSuper(superAst, klass)));
 
 		// Now that all methods exist, fill in the body of each member.
-		ast.methods.doZip(methods, (methodAst, method) => {
+		methodAsts.doZip(methods, (methodAst, method) => {
 			method.body = ExprChecker.checkMethod(baseScope, diags, method, method.isStatic, method, methodAst.body);
 		});
+	}
+
+	MethodWithBody checkMethodInitial(Ast.Method m, Klass klass, Dict.Builder<Sym, Member> membersBuilder) {
+		// Not checking body yet -- fill in all method heads first.
+		var (mloc, isStatic, returnTyAst, name, selfEffect, parameterAsts, _) = m;
+		var e = new MethodWithBody(klass, mloc, isStatic, getTy(returnTyAst), name, selfEffect, checkParameters(parameterAsts));
+		addMember(membersBuilder, e);
+		return e;
 	}
 
 	KlassHead checkHead(Klass klass, Op<Ast.Klass.Head> ast, Dict.Builder<Sym, Member> membersBuilder) {
@@ -55,11 +60,7 @@ sealed class Checker : CheckerCommon {
 
 			case Ast.Klass.Head.Slots slotsAst: {
 				var slots = new KlassHead.Slots(slotsAst.loc, klass);
-				slots.slots = slotsAst.slots.map(var => {
-					var slot = new Slot(slots, slotsAst.loc, var.mutable, getTy(var.ty), var.name);
-					addMember(membersBuilder, slot);
-					return slot;
-				});
+				slots.slots = slotsAst.slots.map(slot => checkSlot(slot, slots, membersBuilder));
 				return slots;
 			}
 
@@ -68,13 +69,21 @@ sealed class Checker : CheckerCommon {
 		}
 	}
 
+	Slot checkSlot(Ast.Slot slotAst, KlassHead.Slots slots, Dict.Builder<Sym, Member> membersBuilder) {
+		var (loc, mutable, tyAst, name) = slotAst;
+		var slot = new Slot(slots, loc, mutable, getTy(tyAst), name);
+		addMember(membersBuilder, slot);
+		return slot;
+	}
+
 	Op<Super> checkSuper(Ast.Super superAst, Klass klass) {
-		if (!baseScope.accessClsRefOrAddDiagnostic(superAst.loc, superAst.name, diags, out var superClass))
+		var (loc, name, implAsts) = superAst;
+		if (!baseScope.accessClsRefOrAddDiagnostic(loc, name, diags, out var superClass))
 			return Op<Super>.None;
 
-		var super = new Super(superAst.loc, klass, superClass);
+		var super = new Super(loc, klass, superClass);
 		var abstractMethods = getAbstractMethods(super.loc, super.superClass);
-		super.impls = getImpls(abstractMethods, superAst.impls, super);
+		super.impls = getImpls(abstractMethods, implAsts, super);
 		return Op.Some(super);
 	}
 
@@ -115,13 +124,15 @@ sealed class Checker : CheckerCommon {
 	}
 
 	Impl checkImpl(Ast.Impl implAst, AbstractMethodLike implemented, Super super) {
+		var (loc, name, parameterNames, bodyAst) = implAst;
+
 		// implAst.parameters is just for show -- we already have the real list of parameters.
 		// So we just issue diagnostics if `impl.parameters` doesn't match `implemented.parameters`, otherwise we ignore it.
-		if (!implemented.parameters.eachCorresponds(implAst.parameters, (implementedParam, implParam) => implParam.deepEqual(implementedParam.name)))
-			addDiagnostic(implAst.loc, new WrongImplParameters(implemented));
+		if (!implemented.parameters.eachCorresponds(parameterNames, (implementedParam, implParam) => implParam.deepEqual(implementedParam.name)))
+			addDiagnostic(loc, new WrongImplParameters(implemented));
 
-		var impl = new Impl(super, implAst.loc, implemented);
-		impl.body = ExprChecker.checkMethod(baseScope, diags, impl, /*isStatic*/ false, implemented, implAst.body);
+		var impl = new Impl(super, loc, implemented);
+		impl.body = ExprChecker.checkMethod(baseScope, diags, impl, /*isStatic*/ false, implemented, bodyAst);
 		return impl;
 	}
 
@@ -131,10 +142,11 @@ sealed class Checker : CheckerCommon {
 	}
 
 	Arr<Parameter> checkParameters(Arr<Ast.Parameter> paramAsts) =>
-		paramAsts.map((p, index) => {
+		paramAsts.map((parameter, index) => {
+			var (loc, tyAst, name) = parameter;
 			for (uint j = 0; j < index; j++)
-				if (paramAsts[j].name == p.name)
-					addDiagnostic(p.loc, new DuplicateParameterName(p.name));
-			return new Parameter(p.loc, getTy(p.ty), p.name, index);
+				if (paramAsts[j].name == name)
+					addDiagnostic(loc, new DuplicateParameterName(name));
+			return new Parameter(loc, getTy(tyAst), name, index);
 		});
 }

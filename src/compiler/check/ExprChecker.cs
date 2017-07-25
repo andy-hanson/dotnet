@@ -79,8 +79,8 @@ class ExprChecker : CheckerCommon {
 		}
 	}
 
-	Expr checkAccess(ref Expected expected, Ast.Access a) {
-		var loc = a.loc; var name = a.name; //TODO:destructuring
+	Expr checkAccess(ref Expected expected, Ast.Access access) {
+		var (loc, name) = access;
 
 		if (locals.find(out var local, l => l.name == name))
 			return handle(ref expected, new AccessLocal(loc, local));
@@ -114,52 +114,58 @@ class ExprChecker : CheckerCommon {
 		}
 	}
 
-	Expr checkStaticAccess(ref Expected expected, Ast.StaticAccess s) {
+	Expr checkStaticAccess(ref Expected expected, Ast.StaticAccess ast) {
 		// Only get here if this is *not* the target of a call.
-		addDiagnostic(s.loc, DelegatesNotYetSupported.instance);
-		return handleBogus(ref expected, s.loc);
+		var (loc, className, staticMethodName) = ast;
+		unused(className, staticMethodName);
+		addDiagnostic(ast.loc, DelegatesNotYetSupported.instance);
+		return handleBogus(ref expected, ast.loc);
 	}
 
-	Expr checkOperatorCall(ref Expected expected, Ast.OperatorCall o) =>
-		callMethod(ref expected, o.loc, o.left, o.oper, Arr.of(o.right));
+	Expr checkOperatorCall(ref Expected expected, Ast.OperatorCall ast) {
+		var (loc, left, oper, right) = ast;
+		return callMethod(ref expected, loc, left, oper, Arr.of(right));
+	}
 
 	Expr checkCallAst(ref Expected expected, Ast.Call call) {
-		var loc = call.loc;
-		switch (call.target) {
+		var (callLoc, target, args) = call;
+		switch (target) {
 			case Ast.StaticAccess sa: {
-				if (!baseScope.accessClsRef(sa.className, out var cls)) {
-					addDiagnostic(sa.loc, new ClassNotFound(sa.className));
-					return handleBogus(ref expected, loc);
+				var (accessLoc, className, staticMethodName) = sa;
+				if (!baseScope.accessClsRef(className, out var cls)) {
+					addDiagnostic(accessLoc, new ClassNotFound(className));
+					return handleBogus(ref expected, accessLoc);
 				}
-				return callStaticMethod(ref expected, loc, cls, sa.staticMethodName, call.args);
+				return callStaticMethod(ref expected, callLoc, cls, staticMethodName, args);
 			}
 
-			case Ast.GetProperty gp:
-				return callMethod(ref expected, loc, gp.target, gp.propertyName, call.args);
+			case Ast.GetProperty getProp:
+				var (_, propTarget, propertyName) = getProp;
+				return callMethod(ref expected, callLoc, propTarget, propertyName, args);
 
 			case Ast.Access ac:
-				return callOwnMethod(ref expected, loc, ac.name, call.args);
+				return callOwnMethod(ref expected, callLoc, ac.name, args);
 
 			default:
-				addDiagnostic(loc, DelegatesNotYetSupported.instance);
-				return handleBogus(ref expected, loc);
+				addDiagnostic(callLoc, DelegatesNotYetSupported.instance);
+				return handleBogus(ref expected, callLoc);
 		}
 	}
 
-	Expr checkRecur(ref Expected expected, Ast.Recur r) {
-		var loc = r.loc;
+	Expr checkRecur(ref Expected expected, Ast.Recur ast) {
+		var (loc, argAsts) = ast;
 
 		if (!expected.inTailCallPosition)
 			addDiagnostic(loc, NotATailCall.instance);
 
-		if (!this.checkCallArguments(loc, methodOrImpl.implementedMethod, parameters, r.args, out var args))
+		if (!this.checkCallArguments(loc, methodOrImpl.implementedMethod, parameters, argAsts, out var args))
 			return handleBogus(ref expected, loc);
 
 		return handle(ref expected, new Recur(loc, methodOrImpl, args));
 	}
 
-	Expr checkNew(ref Expected expected, Ast.New n) {
-		var loc = n.loc; var argAsts = n.args; //TODO:destructure
+	Expr checkNew(ref Expected expected, Ast.New ast) {
+		var (loc, argAsts) = ast;
 
 		if (!(currentClass.head is KlassHead.Slots slots)) {
 			addDiagnostic(loc, new NewInvalid(currentClass));
@@ -175,16 +181,17 @@ class ExprChecker : CheckerCommon {
 		return handle(ref expected, new New(loc, slots, args));
 	}
 
-	Expr checkGetProperty(ref Expected expected, Ast.GetProperty g) {
-		var loc = g.loc;
-		var target = checkInfer(g.target);
+	Expr checkGetProperty(ref Expected expected, Ast.GetProperty ast) {
+		var (loc, targetAst, propertyName) = ast;
+
+		var target = checkInfer(targetAst);
 		switch (target.ty) {
 			case Ty.Bogus _:
 				return handleBogus(ref expected, loc);
 
 			case Ty.PlainTy plainTy: {
 				var (targetEffect, targetCls) = plainTy;
-				if (!getMember(loc, targetCls, g.propertyName, out var member))
+				if (!getMember(loc, targetCls, propertyName, out var member))
 					return handleBogus(ref expected, loc);
 
 				if (!(member is Slot slot)) {
@@ -204,10 +211,10 @@ class ExprChecker : CheckerCommon {
 		}
 	}
 
-	Expr checkSetProperty(ref Expected expected, Ast.SetProperty s) {
-		var loc = s.loc;
+	Expr checkSetProperty(ref Expected expected, Ast.SetProperty ast) {
+		var (loc, propertyName, valueAst) = ast;
 
-		if (!baseScope.tryGetOwnMember(loc, s.propertyName, diags, out var member))
+		if (!baseScope.tryGetOwnMember(loc, propertyName, diags, out var member))
 			return handleBogus(ref expected, loc);
 
 		if (!(member is Slot slot)) {
@@ -221,63 +228,75 @@ class ExprChecker : CheckerCommon {
 		if (!selfEffect.contains(Effect.Set))
 			addDiagnostic(loc, new MissingEffectToSetSlot(slot));
 
-		var value = checkSubtype(slot.ty, s.value);
+		var value = checkSubtype(slot.ty, valueAst);
 		return handle(ref expected, new SetSlot(loc, slot, value));
 	}
 
-	Expr checkLet(ref Expected expected, Ast.Let l) {
-		var value = checkInfer(l.value);
-		var (pattern, nAdded) = startCheckPattern(value.ty, l.assigned);
-		var expr = checkExpr(ref expected, l.then);
+	Expr checkLet(ref Expected expected, Ast.Let ast) {
+		var (loc, assigned, valueAst, thenAst) = ast;
+		var value = checkInfer(valueAst);
+		var (pattern, nAdded) = startCheckPattern(value.ty, assigned);
+		var then = checkExpr(ref expected, thenAst);
 		endCheckPattern(nAdded);
-		return new Let(l.loc, pattern, value, expr);
+		return new Let(ast.loc, pattern, value, then);
 	}
 
-	Expr checkSeq(ref Expected expected, Ast.Seq s) {
-		var first = checkVoid(s.first);
-		var then = checkExpr(ref expected, s.then);
-		return new Seq(s.loc, first, then);
+	Expr checkSeq(ref Expected expected, Ast.Seq ast) {
+		var (loc, firstAst, thenAst) = ast;
+		var first = checkVoid(firstAst);
+		var then = checkExpr(ref expected, thenAst);
+		return handle(ref expected, new Seq(ast.loc, first, then));
 	}
 
-	Expr checkLiteral(ref Expected expected, Ast.Literal l) =>
-		handle(ref expected, new Literal(l.loc, l.value));
+	Expr checkLiteral(ref Expected expected, Ast.Literal ast) {
+		var (loc, value) = ast;
+		return handle(ref expected, new Literal(loc, value));
+	}
 
 	Expr checkSelf(ref Expected expected, Ast.Self s) =>
 		new Self(s.loc, Ty.of(selfEffect, currentClass));
 
-	Expr checkWhenTest(ref Expected expected, Ast.WhenTest w) {
-		//Can't use '.map' because of the ref parameter
-		var casesBuilder = w.cases.mapBuilder<WhenTest.Case>();
+	Expr checkWhenTest(ref Expected expected, Ast.WhenTest ast) {
+		var (loc, caseAsts, elseResultAst) = ast;
+
+		//Can't use '.map' because of the `ref expected` parameter
+		var casesBuilder = caseAsts.mapBuilder<WhenTest.Case>();
 		for (uint i = 0; i < casesBuilder.Length; i++) {
-			var kase = w.cases[i];
+			var kase = caseAsts[i];
 			var test = checkSubtype(Ty.Bool, kase.test);
 			var result = checkExpr(ref expected, kase.result);
 			casesBuilder[i] = new WhenTest.Case(kase.loc, test, result);
 		}
 		var cases = new Arr<WhenTest.Case>(casesBuilder);
 
-		var elseResult = checkExpr(ref expected, w.elseResult);
+		var elseResult = checkExpr(ref expected, elseResultAst);
 
-		return new WhenTest(w.loc, cases, elseResult, expected.inferredType);
+		return new WhenTest(loc, cases, elseResult, expected.inferredType);
 	}
 
-	Expr checkAssert(ref Expected expected, Ast.Assert a) =>
-		handle(ref expected, new Assert(a.loc, checkSubtype(Ty.Bool, a.asserted)));
-
-	Expr checkTry(ref Expected expected, Ast.Try t) {
-		var doo = checkExpr(ref expected, t._do);
-		var katch = t._catch.get(out var c) ? Op.Some(checkCatch(ref expected, c)) : Op<Try.Catch>.None;
-		var finallee = t._finally.get(out var f) ? Op.Some(checkVoid(f)) : Op<Expr>.None;
-		return new Try(t.loc, doo, katch, finallee, expected.inferredType);
+	Expr checkAssert(ref Expected expected, Ast.Assert ast) {
+		var (loc, asserted) = ast;
+		return handle(ref expected, new Assert(loc, checkSubtype(Ty.Bool, asserted)));
 	}
 
-	Try.Catch checkCatch(ref Expected expected, Ast.Try.Catch c) {
-		var exceptionTy = getTy(c.exceptionTy);
-		var caught = new Pattern.Single(c.exceptionNameLoc, exceptionTy, c.exceptionName);
+	Expr checkTry(ref Expected expected, Ast.Try ast) {
+		var (loc, doAst, catchAst, finallyAst) = ast;
+		var doo = checkExpr(ref expected, doAst);
+		var katch = catchAst.get(out var c) ? Op.Some(checkCatch(ref expected, c)) : Op<Try.Catch>.None;
+		var finallee = finallyAst.get(out var f) ? Op.Some(checkVoid(f)) : Op<Expr>.None;
+		return new Try(loc, doo, katch, finallee, expected.inferredType);
+	}
+
+	Try.Catch checkCatch(ref Expected expected, Ast.Try.Catch ast) {
+		//out Loc loc, out Ty ty, out Loc exceptionNameLoc, out Sym exceptionName, out Expr then) {
+		var (loc, exceptionTyAst, exceptionNameLoc, exceptionName, thenAst) = ast;
+
+		var exceptionTy = getTy(exceptionTyAst);
+		var caught = new Pattern.Single(exceptionNameLoc, exceptionTy, exceptionName);
 		addToScope(caught);
-		var then = checkExpr(ref expected, c.then);
+		var then = checkExpr(ref expected, thenAst);
 		popFromScope();
-		return new Try.Catch(c.loc, caught, then);
+		return new Try.Catch(loc, caught, then);
 	}
 
 	Expr callStaticMethod(ref Expected expected, Loc loc, ClsRef cls, Sym methodName, Arr<Ast.Expr> argAsts) {
@@ -517,11 +536,12 @@ class ExprChecker : CheckerCommon {
 	 * endCheckPattern(nAdded); // Removes them from scope
 	 */
 	(Pattern, uint nAdded) startCheckPattern(Ty ty, Ast.Pattern ast) {
+		var loc = ast.loc;
 		switch (ast) {
 			case Ast.Pattern.Ignore i:
-				return (new Pattern.Ignore(i.loc), 0);
+				return (new Pattern.Ignore(loc), 0);
 			case Ast.Pattern.Single p:
-				var s = new Pattern.Single(p.loc, ty, p.name);
+				var s = new Pattern.Single(loc, ty, p.name);
 				addToScope(s);
 				return (s, 1);
 			case Ast.Pattern.Destruct d:

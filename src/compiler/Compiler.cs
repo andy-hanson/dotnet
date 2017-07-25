@@ -123,12 +123,15 @@ sealed class Compiler {
 		return (module, isReused: false);
 	}
 
-	static Path importPath(Path importerPath, Ast.Module.Import import) {
+	static Path importPath(Path importerPath, Ast.Import import) {
 		switch (import) {
-			case Ast.Module.Import.Global g:
+			case Ast.Import.Global g:
 				throw TODO();
-			case Ast.Module.Import.Relative rel:
-				return importerPath.resolve(rel.path);
+			case Ast.Import.Relative rel: {
+				var (loc, path) = rel;
+				unused(loc); //TODO: error message should use loc
+				return importerPath.resolve(path);
+			}
 			default:
 				throw unreachable();
 		}

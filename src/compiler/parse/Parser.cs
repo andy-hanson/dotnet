@@ -19,7 +19,7 @@ sealed class Parser : ExprParser {
 		var start = pos;
 		var kw = nextToken();
 
-		Arr<Ast.Module.Import> imports;
+		Arr<Ast.Import> imports;
 		var classStart = start;
 		Token nextKw;
 		if (kw == Token.Import) {
@@ -27,7 +27,7 @@ sealed class Parser : ExprParser {
 			classStart = pos;
 			nextKw = nextToken();
 		} else {
-			imports = Arr.empty<Ast.Module.Import>();
+			imports = Arr.empty<Ast.Import>();
 			nextKw = kw;
 		}
 
@@ -36,9 +36,9 @@ sealed class Parser : ExprParser {
 	}
 
 	//`import foo .bar ..baz`
-	Op<Ast.Module.Import> parseImport() {
+	Op<Ast.Import> parseImport() {
 		if (tryTakeNewline())
-			return Op<Ast.Module.Import>.None;
+			return Op<Ast.Import>.None;
 
 		takeSpace();
 
@@ -53,9 +53,9 @@ sealed class Parser : ExprParser {
 
 		var path = new Path(pathParts.finish());
 		var loc = locFrom(startPos);
-		return Op.Some<Ast.Module.Import>(leadingDots == 0
-			? (Ast.Module.Import)new Ast.Module.Import.Global(loc, path)
-			: (Ast.Module.Import)new Ast.Module.Import.Relative(loc, new RelPath(leadingDots, path)));
+		return Op.Some<Ast.Import>(leadingDots == 0
+			? new Ast.Import.Global(loc, path).upcast<Ast.Import>()
+			: new Ast.Import.Relative(loc, new RelPath(leadingDots, path)));
 	}
 
 	Ast.Klass parseClass(Pos start, Token kw) {

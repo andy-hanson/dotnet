@@ -24,7 +24,7 @@ Module(
       impls: [Impl(
         loc: 58-67,
         name: "n",
-        parameters: [],
+        parameterNames: [],
         body: Access(
           loc: 64-65,
           name: "x"))])],

@@ -23,28 +23,32 @@ namespace Ast {
 		public override bool deepEqual(Node n) => n is Module m && deepEqual(m);
 		public bool deepEqual(Module m) => locEq(m) && imports.deepEqual(m.imports) && klass.deepEqual(m.klass);
 		public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(imports), Dat.arr(imports), nameof(klass), klass);
+	}
 
-		internal abstract class Import : Node, ToData<Import> {
-			Import(Loc loc) : base(loc) {}
-			public abstract bool deepEqual(Import o);
+	internal abstract class Import : Node, ToData<Import> {
+		Import(Loc loc) : base(loc) {}
+		public abstract bool deepEqual(Import o);
 
-			internal sealed class Global : Import, ToData<Global> {
-				internal readonly Path path;
-				internal Global(Loc loc, Path path) : base(loc) { this.path = path; }
-				public override bool deepEqual(Node n) => n is Global g && deepEqual(g);
-				public override bool deepEqual(Import o) => o is Global g && deepEqual(g);
-				public bool deepEqual(Global g) => locEq(g) && path == g.path;
-				public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(path), path);
-			}
+		internal sealed class Global : Import, ToData<Global> {
+			internal readonly Path path;
+			internal Global(Loc loc, Path path) : base(loc) { this.path = path; }
+			internal void Deconstruct(out Loc loc, out Path path) { loc = this.loc; path = this.path; }
 
-			internal sealed class Relative : Import, ToData<Relative> {
-				internal readonly RelPath path;
-				internal Relative(Loc loc, RelPath path) : base(loc) { this.path = path; }
-				public override bool deepEqual(Node n) => n is Relative r && deepEqual(r);
-				public override bool deepEqual(Import o) => o is Relative r && deepEqual(r);
-				public bool deepEqual(Relative r) => locEq(r) && path == r.path;
-				public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(path), path);
-			}
+			public override bool deepEqual(Node n) => n is Global g && deepEqual(g);
+			public override bool deepEqual(Import o) => o is Global g && deepEqual(g);
+			public bool deepEqual(Global g) => locEq(g) && path == g.path;
+			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(path), path);
+		}
+
+		internal sealed class Relative : Import, ToData<Relative> {
+			internal readonly RelPath path;
+			internal Relative(Loc loc, RelPath path) : base(loc) { this.path = path; }
+			internal void Deconstruct(out Loc loc, out RelPath path) { loc = this.loc; path = this.path; }
+
+			public override bool deepEqual(Node n) => n is Relative r && deepEqual(r);
+			public override bool deepEqual(Import o) => o is Relative r && deepEqual(r);
+			public bool deepEqual(Relative r) => locEq(r) && path == r.path;
+			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(path), path);
 		}
 	}
 
@@ -57,6 +61,9 @@ namespace Ast {
 			this.head = head;
 			this.supers = supers;
 			this.methods = methods;
+		}
+		internal void Deconstruct(out Loc loc, out Op<Head> head, out Arr<Super> supers, out Arr<Method> methods) {
+			loc = this.loc; head = this.head; supers = this.supers; methods = this.methods;
 		}
 
 		public override bool deepEqual(Node n) => n is Klass k && deepEqual(k);
@@ -125,6 +132,9 @@ namespace Ast {
 			this.ty = ty;
 			this.name = name;
 		}
+		internal void Deconstruct(out Loc loc, out bool mutable, out Ty ty, out Sym name) {
+			loc = this.loc; mutable = this.mutable; ty = this.ty; name = this.name;
+		}
 
 		public override bool deepEqual(Node n) => n is Slot s && deepEqual(s);
 		public bool deepEqual(Slot s) => locEq(s) && mutable == s.mutable && ty.deepEqual(s.ty) && name.deepEqual(s.name);
@@ -142,6 +152,9 @@ namespace Ast {
 			this.name = name;
 			this.impls = impls;
 		}
+		internal void Deconstruct(out Loc loc, out Sym name, out Arr<Impl> impls) {
+			loc = this.loc; name = this.name; impls = this.impls;
+		}
 
 		public override bool deepEqual(Node n) => n is Super i && deepEqual(i);
 		public bool deepEqual(Super i) =>
@@ -156,24 +169,27 @@ namespace Ast {
 
 	internal sealed class Impl : Node, ToData<Impl> {
 		internal readonly Sym name;
-		internal readonly Arr<Sym> parameters;
+		internal readonly Arr<Sym> parameterNames;
 		internal readonly Expr body;
-		internal Impl(Loc loc, Sym name, Arr<Sym> parameters, Expr body) : base(loc) {
+		internal Impl(Loc loc, Sym name, Arr<Sym> parameterNames, Expr body) : base(loc) {
 			this.name = name;
-			this.parameters = parameters;
+			this.parameterNames = parameterNames;
 			this.body = body;
+		}
+		internal void Deconstruct(out Loc loc, out Sym name, out Arr<Sym> parameterNames, out Expr body) {
+			loc = this.loc; name = this.name; parameterNames = this.parameterNames; body = this.body;
 		}
 
 		public override bool deepEqual(Node n) => n is Impl i && deepEqual(i);
 		public bool deepEqual(Impl i) =>
 			locEq(i) &&
 			name.deepEqual(i.name) &&
-			parameters.deepEqual(i.parameters) &&
+			parameterNames.deepEqual(i.parameterNames) &&
 			body.deepEqual(i.body);
 		public override Dat toDat() => Dat.of(this,
 			nameof(loc), loc,
 			nameof(name), name,
-			nameof(parameters), Dat.arr(parameters),
+			nameof(parameterNames), Dat.arr(parameterNames),
 			nameof(body), body);
 	}
 
@@ -191,6 +207,15 @@ namespace Ast {
 			this.selfEffect = selfEffect;
 			this.parameters = parameters;
 			this.body = body;
+		}
+		internal void Deconstruct(out Loc loc, out bool isStatic, out Ty returnTy, out Sym name, out Model.Effect selfEffect, out Arr<Parameter> parameters, out Expr body) {
+			loc = this.loc;
+			isStatic = this.isStatic;
+			returnTy = this.returnTy;
+			name = this.name;
+			selfEffect = this.selfEffect;
+			parameters = this.parameters;
+			body = this.body;
 		}
 
 		public override bool deepEqual(Node n) => n is Method m && deepEqual(m);
@@ -217,6 +242,7 @@ namespace Ast {
 			this.ty = ty;
 			this.name = name;
 		}
+		internal void Deconstruct(out Loc loc, out Ty ty, out Sym name) { loc = this.loc; ty = this.ty; name = this.name; }
 
 		public override bool deepEqual(Node n) => n is Parameter p && deepEqual(p);
 		public bool deepEqual(Parameter p) => locEq(p) && ty.deepEqual(p.ty) && name.deepEqual(p.name);
@@ -230,6 +256,7 @@ namespace Ast {
 			this.effect = effect;
 			this.cls = cls;
 		}
+		internal void Deconstruct(out Loc loc, out Model.Effect effect, out ClsRef cls) { loc = this.loc; effect = this.effect; cls = this.cls; }
 
 		public override bool deepEqual(Node n) => n is Ty t && deepEqual(t);
 		public bool deepEqual(Ty t) => locEq(t) && effect == t.effect && cls.deepEqual(t.cls);
@@ -243,6 +270,7 @@ namespace Ast {
 		internal sealed class Access : ClsRef, ToData<Access> {
 			internal readonly Sym name;
 			internal Access(Loc loc, Sym name) : base(loc) { this.name = name; }
+			internal void Deconstruct(out Loc loc, out Sym name) { loc = this.loc; name = this.name; }
 
 			public override bool deepEqual(Node n) => n is Access a && deepEqual(a);
 			public bool deepEqual(Access a) => locEq(a) && name.deepEqual(a.name);
@@ -255,6 +283,9 @@ namespace Ast {
 			internal Inst(Loc loc, Access instantiated, Arr<Ty> tyArgs) : base(loc) {
 				this.instantiated = instantiated;
 				this.tyArgs = tyArgs;
+			}
+			internal void Deconstruct(out Loc loc, out Access instantiated, out Arr<Ty> tyArgs) {
+				loc = this.loc; instantiated = this.instantiated; tyArgs = this.tyArgs;
 			}
 
 			public override bool deepEqual(Node n) => n is Inst i && deepEqual(i);
