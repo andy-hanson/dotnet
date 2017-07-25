@@ -4,7 +4,7 @@ namespace Diag.ParseDiags {
 		internal readonly uint actual;
 		internal TooMuchIndent(uint expected, uint actual) { this.expected = expected; this.actual = actual; }
 
-		internal override void show(StringMaker s) =>
+		public override void show(StringMaker s) =>
 			s.add("Too much indent. Expected at most ").add(expected).add(", got ").add(actual).add('.');
 
 		public override bool deepEqual(TooMuchIndent e) => true;
@@ -48,7 +48,7 @@ namespace Diag.ParseDiags {
 		internal readonly char ch;
 		internal UnrecognizedCharacter(char ch) { this.ch = ch; }
 
-		internal override void show(StringMaker s) =>
+		public override void show(StringMaker s) =>
 			s.add("Unrecognized character ").showChar(ch).add('.');
 
 		public override bool deepEqual(UnrecognizedCharacter e) => ch == e.ch;
@@ -60,7 +60,7 @@ namespace Diag.ParseDiags {
 		internal readonly string expected;
 		internal UnexpectedCharacter(char actual, string expected) { this.actual = actual; this.expected = expected; }
 
-		internal override void show(StringMaker s) =>
+		public override void show(StringMaker s) =>
 			s.add("Expected character to be ").add(expected).add(", got ").showChar(actual).add('.');
 
 		public override bool deepEqual(UnexpectedCharacter e) => actual == e.actual && expected == e.expected;
@@ -72,7 +72,7 @@ namespace Diag.ParseDiags {
 		internal readonly string actual;
 		internal UnexpectedToken(string expected, string actual) { this.expected = expected; this.actual = actual; }
 
-		internal override void show(StringMaker s) =>
+		public override void show(StringMaker s) =>
 			s.add("Unexpected token ").add(actual).add(", expecting ").add(expected);
 
 		public override bool deepEqual(UnexpectedToken e) => expected == e.expected && actual == e.actual;

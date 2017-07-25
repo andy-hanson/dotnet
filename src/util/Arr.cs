@@ -145,6 +145,30 @@ struct Arr<T> : IEnumerable<T> {
 		return b;
 	}
 
+	/** Like `mapDefined`, but preallocates a full output array because we expect all outputs to be defined. */
+	internal Arr<U> mapDefinedProbablyAll<U>(Func<T, Op<U>> mapper) {
+		var b = new U[length];
+		for (uint i = 0; i < length; i++) {
+			var op = mapper(this[i]);
+			if (op.get(out var x))
+				b[i] = x;
+			else
+				return mapDefinedProbablyAllFinish(b, mapper, i + 1);
+		}
+		return new Arr<U>(b);
+	}
+	Arr<U> mapDefinedProbablyAllFinish<U>(U[] b, Func<T, Op<U>> mapper, uint i) {
+		var outIdx = i;
+		for (i++; i < length; i++) {
+			var op = mapper(this[i]);
+			if (op.get(out var x)) {
+				b[outIdx] = x;
+				outIdx++;
+			}
+		}
+		return b.slice(0, outIdx);
+	}
+
 	internal Arr<U> mapDefined<U>(Func<T, Op<U>> mapper) => mapDefinedToBuilder(mapper).finish();
 
 	internal U[] mapDefinedToArray<U>(Func<T, Op<U>> mapper) => mapDefinedToBuilder(mapper).finishToArray();
@@ -245,6 +269,20 @@ struct Arr<T> : IEnumerable<T> {
 		}
 
 		found = default(T);
+		return false;
+	}
+
+	internal bool findMap<U>(out U found, Func<T, Op<U>> predicate) {
+		for (uint i = 0; i < length; i++) {
+			var em = this[i];
+			var res = predicate(em);
+			if (res.get(out var v)) {
+				found = v;
+				return true;
+			}
+		}
+
+		found = default(U);
 		return false;
 	}
 

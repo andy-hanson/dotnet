@@ -10,7 +10,7 @@ namespace Model {
 		public abstract Dat toDat();
 		MemberId Identifiable<MemberId>.getId() => getMemberId();
 		internal abstract MemberId getMemberId();
-		internal abstract string showKind();
+		internal abstract string showKind(bool upper);
 	}
 
 	abstract class MemberId : ToData<MemberId> {

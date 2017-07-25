@@ -157,7 +157,6 @@ sealed class ILExprEmitter {
 
 	static readonly Sym symElse = Sym.of("else");
 	static readonly Sym symEndWhen = Sym.of("endWhen");
-	//static readonly Arr<Sym> caseSyms = Arr.buildWithIndex<Sym>(8, i => Sym.of($"case{i}"));
 	static readonly List<Sym> caseSyms = new List<Sym>();
 	static Sym caseSym(uint idx) {
 		while (caseSyms.Count <= idx)

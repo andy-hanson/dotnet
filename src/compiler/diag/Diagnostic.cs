@@ -12,14 +12,14 @@ namespace Diag {
 		public Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(err), err);
 	}
 
-	abstract class DiagnosticData : ToData<DiagnosticData> {
+	abstract class DiagnosticData : ToData<DiagnosticData>, Show {
 		public sealed override bool Equals(object o) => throw new NotSupportedException();
 		public sealed override int GetHashCode() => throw new NotSupportedException();
 
 		public abstract bool deepEqual(DiagnosticData e);
 		public abstract Dat toDat();
 
-		internal abstract void show(StringMaker sm);
+		public abstract void show(StringMaker s);
 	}
 
 	/** Implementation class for every DiagnosticData. */
@@ -32,7 +32,7 @@ namespace Diag {
 		protected NoDataDiag() {}
 		public override bool deepEqual(Self e) => object.ReferenceEquals(this, e);
 		public override Dat toDat() => Dat.str(GetType().Name);
-		internal sealed override void show(StringMaker s) => s.add(str);
+		public sealed override void show(StringMaker s) => s.add(str);
 		protected abstract string str { get; }
 	}
 }

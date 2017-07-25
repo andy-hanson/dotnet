@@ -45,6 +45,7 @@ struct Loc : ToData<Loc>, Test.ToCsonSpecial {
 		this.end = end;
 	}
 
+	public override string ToString() => throw new NotSupportedException();
 	public override bool Equals(object o) => throw new NotSupportedException();
 	public override int GetHashCode() => throw new NotSupportedException();
 	public bool deepEqual(Loc l) => start == l.start && end == l.end;
@@ -57,7 +58,7 @@ struct Loc : ToData<Loc>, Test.ToCsonSpecial {
 	}
 }
 
-struct LineAndColumn : ToData<LineAndColumn> {
+struct LineAndColumn : ToData<LineAndColumn>, Show {
 	internal readonly uint line;
 	internal readonly uint column;
 	internal LineAndColumn(uint line, uint column) {
@@ -65,14 +66,15 @@ struct LineAndColumn : ToData<LineAndColumn> {
 		this.column = column;
 	}
 
-	public override string ToString() => $"{line}:{column}";
+	public void show(StringMaker s) => s.add(line).add(':').add(column);
+	public override string ToString() => throw new NotSupportedException();
 	public override bool Equals(object o) => throw new NotSupportedException();
 	public override int GetHashCode() => throw new NotSupportedException();
 	public bool deepEqual(LineAndColumn l) => line == l.line && column == l.column;
 	public Dat toDat() => Dat.of(this, nameof(line), Dat.nat(line), nameof(column), Dat.nat(column));
 }
 
-struct LineAndColumnLoc : ToData<LineAndColumnLoc> {
+struct LineAndColumnLoc : ToData<LineAndColumnLoc>, Show {
 	internal readonly LineAndColumn start;
 	internal readonly LineAndColumn end;
 	internal LineAndColumnLoc(LineAndColumn start, LineAndColumn end) {
@@ -80,7 +82,8 @@ struct LineAndColumnLoc : ToData<LineAndColumnLoc> {
 		this.end = end;
 	}
 
-	public override string ToString() => $"{start}-{end}";
+	public void show(StringMaker s) => s.add(start).add('-').add(end);
+	public override string ToString() => throw new NotSupportedException();
 	public override bool Equals(object o) => throw new NotSupportedException();
 	public override int GetHashCode() => throw new NotSupportedException();
 	public bool deepEqual(LineAndColumnLoc l) => start.deepEqual(l.start) && end.deepEqual(l.end);

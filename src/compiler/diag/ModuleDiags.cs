@@ -3,7 +3,7 @@ namespace Diag.ModuleDiag {
 		internal readonly Path path;
 		internal CircularDependency(Path path) { this.path = path; }
 
-		internal override void show(StringMaker s) =>
+		public override void show(StringMaker s) =>
 			s.add("Circular dependency at module ").add(path.toPathString());
 
 		public override bool deepEqual(CircularDependency c) => path.deepEqual(c.path);
@@ -14,7 +14,7 @@ namespace Diag.ModuleDiag {
 		internal readonly Path logicalPath;
 		internal CantFindLocalModule(Path logicalPath) { this.logicalPath = logicalPath; }
 
-		internal override void show(StringMaker s) {
+		public override void show(StringMaker s) {
 			s.add("Can't find module '");
 			s.add(logicalPath.toPathString());
 			s.add("'.\nTried ");

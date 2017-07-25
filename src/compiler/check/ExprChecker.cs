@@ -1,16 +1,16 @@
 using System.Collections.Generic;
 
 using Diag;
+using Diag.CheckDiags;
 using Diag.CheckExprDiags;
 using Model;
 using static TyUtils;
 using static Utils;
 
-class ExprChecker : DiagnosticBuilder {
+class ExprChecker : CheckerCommon {
 	internal static Expr checkMethod(BaseScope baseScope, Arr.Builder<Diagnostic> diags, MethodOrImpl methodOrImpl, bool isStatic, Method implemented, Ast.Expr body) =>
 		new ExprChecker(baseScope, diags, methodOrImpl, isStatic, implemented.selfEffect, implemented.parameters).checkReturn(implemented.returnTy, body);
 
-	readonly BaseScope baseScope;
 	Klass currentClass => baseScope.self;
 	readonly MethodOrImpl methodOrImpl;
 	readonly bool isStatic;
@@ -18,8 +18,7 @@ class ExprChecker : DiagnosticBuilder {
 	readonly Arr<Parameter> parameters;
 	readonly Stack<Pattern.Single> locals = new Stack<Pattern.Single>();
 
-	ExprChecker(BaseScope baseScope, Arr.Builder<Diagnostic> diags, MethodOrImpl methodOrImpl, bool isStatic, Effect selfEffect, Arr<Parameter> parameters) : base(diags) {
-		this.baseScope = baseScope;
+	ExprChecker(BaseScope baseScope, Arr.Builder<Diagnostic> diags, MethodOrImpl methodOrImpl, bool isStatic, Effect selfEffect, Arr<Parameter> parameters) : base(baseScope, diags) {
 		this.methodOrImpl = methodOrImpl;
 		this.isStatic = isStatic;
 		this.selfEffect = selfEffect;
@@ -89,10 +88,8 @@ class ExprChecker : DiagnosticBuilder {
 		if (parameters.find(out var param, p => p.name == name))
 			return handle(ref expected, new AccessParameter(loc, param));
 
-		if (!baseScope.tryGetMember(name, out var member)) {
-			addDiagnostic(loc, new MemberNotFound(currentClass, name));
+		if (!baseScope.tryGetOwnMember(loc, name, diags, out var member))
 			return handleBogus(ref expected, loc);
-		}
 
 		switch (member) {
 			case Slot slot:
@@ -129,9 +126,13 @@ class ExprChecker : DiagnosticBuilder {
 	Expr checkCallAst(ref Expected expected, Ast.Call call) {
 		var loc = call.loc;
 		switch (call.target) {
-			case Ast.StaticAccess sa:
-				var cls = baseScope.accessClsRef(call.loc, sa.className);
+			case Ast.StaticAccess sa: {
+				if (!baseScope.accessClsRef(sa.className, out var cls)) {
+					addDiagnostic(sa.loc, new ClassNotFound(sa.className));
+					return handleBogus(ref expected, loc);
+				}
 				return callStaticMethod(ref expected, loc, cls, sa.staticMethodName, call.args);
+			}
 
 			case Ast.GetProperty gp:
 				return callMethod(ref expected, loc, gp.target, gp.propertyName, call.args);
@@ -206,10 +207,8 @@ class ExprChecker : DiagnosticBuilder {
 	Expr checkSetProperty(ref Expected expected, Ast.SetProperty s) {
 		var loc = s.loc;
 
-		if (!baseScope.tryGetMember(s.propertyName, out var member)) {
-			addDiagnostic(loc, new MemberNotFound(currentClass, s.propertyName));
+		if (!baseScope.tryGetOwnMember(loc, s.propertyName, diags, out var member))
 			return handleBogus(ref expected, loc);
-		}
 
 		if (!(member is Slot slot)) {
 			addDiagnostic(loc, new CantSetNonSlot(member));
@@ -273,7 +272,7 @@ class ExprChecker : DiagnosticBuilder {
 	}
 
 	Try.Catch checkCatch(ref Expected expected, Ast.Try.Catch c) {
-		var exceptionTy = baseScope.getTy(c.exceptionTy);
+		var exceptionTy = getTy(c.exceptionTy);
 		var caught = new Pattern.Single(c.exceptionNameLoc, exceptionTy, c.exceptionName);
 		addToScope(caught);
 		var then = checkExpr(ref expected, c.then);

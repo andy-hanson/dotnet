@@ -1,6 +1,10 @@
 using System;
 using System.Text;
 
+interface Show {
+	void show(StringMaker s);
+}
+
 struct StringMaker {
 	readonly StringBuilder sb;
 	StringMaker(StringBuilder sb) { this.sb = sb; }
@@ -12,6 +16,11 @@ struct StringMaker {
 
 	internal StringMaker add(uint u) {
 		sb.Append(u);
+		return this;
+	}
+
+	internal StringMaker add<T>(T t) where T : Show {
+		t.show(this);
 		return this;
 	}
 

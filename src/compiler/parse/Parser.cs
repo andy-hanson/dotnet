@@ -17,17 +17,18 @@ sealed class Parser : ExprParser {
 
 	Ast.Module parseModule() {
 		var start = pos;
-		var kw = takeKeywordOrEof();
+		var kw = nextToken();
 
 		Arr<Ast.Module.Import> imports;
 		var classStart = start;
-		var nextKw = kw;
+		Token nextKw;
 		if (kw == Token.Import) {
 			imports = buildUntilNull(parseImport);
 			classStart = pos;
-			nextKw = takeKeywordOrEof();
+			nextKw = nextToken();
 		} else {
 			imports = Arr.empty<Ast.Module.Import>();
+			nextKw = kw;
 		}
 
 		var klass = parseClass(classStart, nextKw);
@@ -60,22 +61,22 @@ sealed class Parser : ExprParser {
 	Ast.Klass parseClass(Pos start, Token kw) {
 		var (head, nextStart, nextKw) = parseHead(start, kw);
 		var (supers, nextNextStart, nextNextKw) = parseSupers(nextStart, nextKw);
-		var methods = nextNextKw == Token.EOF ? Arr.empty<Ast.Method>() : parseMethods(nextNextStart, nextNextKw);
+		var methods = parseMethods(nextNextStart, nextNextKw);
 		return new Ast.Klass(locFrom(start), head, supers, methods);
 	}
 
-	(Op<Ast.Klass.Head> head, Pos nextStart, Token nextKeyword) parseHead(Pos start, Token kw) {
+	(Op<Ast.Klass.Head> head, Pos nextStart, MethodKw nextKeyword) parseHead(Pos start, Token kw) {
 		switch (kw) {
 			case Token.EOF:
 			case Token.Fun:
-				return (Op<Ast.Klass.Head>.None, start, kw);
+				return (Op<Ast.Klass.Head>.None, start, kw == Token.EOF ? MethodKw.Eof : MethodKw.Fun);
 			case Token.Abstract: {
 				var head = parseAbstractHead(start);
-				return (Op.Some<Ast.Klass.Head>(head), pos, takeKeywordOrEof());
+				return (Op.Some<Ast.Klass.Head>(head), pos, takeMethodKeywordOrEof());
 			}
 			case Token.Slots: {
 				var head = parseSlots(start);
-				return (Op.Some<Ast.Klass.Head>(head), pos, takeKeywordOrEof());
+				return (Op.Some<Ast.Klass.Head>(head), pos, takeMethodKeywordOrEof());
 			}
 			case Token.Enum:
 				throw TODO();
@@ -96,16 +97,16 @@ sealed class Parser : ExprParser {
 		return new Ast.Klass.Head.Abstract(locFrom(start), abstractMethods);
 	}
 
-	(Arr<Ast.Super>, Pos, Token) parseSupers(Pos start, Token next) {
+	(Arr<Ast.Super>, Pos, MethodKw) parseSupers(Pos start, MethodKw next) {
 		var supers = Arr.builder<Ast.Super>();
 		while (true) {
-			if (next != Token.Is)
+			if (next != MethodKw.Is)
 				return (supers.finish(), start, next);
 
 			supers.add(parseSuper(start));
 
 			start = pos;
-			next = takeKeywordOrEof();
+			next = takeMethodKeywordOrEof();
 		}
 	}
 
@@ -156,17 +157,17 @@ sealed class Parser : ExprParser {
 
 	(Ast.Slot, bool isNext) parseSlot() {
 		var start = pos;
-		var next = takeKeyword();
+		var next = takeSlotKeyword();
 		bool mutable;
 		switch (next) {
-			case Token.Var:
-				mutable = true;
-				break;
-			case Token.Val:
+			case SlotKw.Val:
 				mutable = false;
 				break;
+			case SlotKw.Var:
+				mutable = true;
+				break;
 			default:
-				throw unexpected(start, "'var' or 'val'", next);
+				throw unreachable();
 		}
 
 		takeSpace();
@@ -178,7 +179,7 @@ sealed class Parser : ExprParser {
 		return (slot, isNext);
 	}
 
-	Arr<Ast.Method> parseMethods(Pos start, Token next) {
+	Arr<Ast.Method> parseMethods(Pos start, MethodKw next) {
 		//TODO: helper fn for this pattern
 		var b = Arr.builder<Ast.Method>();
 		while (true) {
@@ -189,24 +190,26 @@ sealed class Parser : ExprParser {
 			b.add(mm);
 
 			start = pos;
-			next = takeKeywordOrEof();
+			next = takeMethodKeywordOrEof();
 		}
 	}
 
-	Op<Ast.Method> parseMethod(Pos start, Token next) {
+	Op<Ast.Method> parseMethod(Pos start, MethodKw next) {
 		switch (next) {
-			case Token.Def:
-			case Token.Fun:
-				var isStatic = next == Token.Fun;
+			case MethodKw.Def:
+			case MethodKw.Fun:
+				var isStatic = next == MethodKw.Fun;
 				takeSpace();
 				var (returnTy, name, parameters, effect) = parseMethodHead();
 				takeIndent();
 				var body = parseBlock();
 				return Op.Some(new Ast.Method(locFrom(start), isStatic, returnTy, name, parameters, effect, body));
-			case Token.EOF:
+			case MethodKw.Eof:
 				return Op<Ast.Method>.None;
+			case MethodKw.Is:
+				throw unexpected(start, "'def' or 'fun'", Token.Is);
 			default:
-				throw unexpected(start, "'fun' or 'def' or 'abstract'", next);
+				throw unreachable();
 		}
 	}
 

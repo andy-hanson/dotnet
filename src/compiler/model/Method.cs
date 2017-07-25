@@ -126,7 +126,7 @@ namespace Model {
 		internal override bool isAbstract => methodInfo.IsAbstract;
 
 		internal override MemberId getMemberId() => throw new NotSupportedException();
-		internal override string showKind() => throw new NotSupportedException();
+		internal override string showKind(bool upper) => throw new NotSupportedException();
 		bool IEquatable<BuiltinMethodWithBody>.Equals(BuiltinMethodWithBody other) => object.ReferenceEquals(this, other);
 		public override bool deepEqual(Method m) => m is BuiltinMethodWithBody b && deepEqual(b);
 		public bool deepEqual(BuiltinMethodWithBody m) => throw new NotSupportedException();
@@ -146,7 +146,7 @@ namespace Model {
 		internal override bool isAbstract => true;
 
 		internal override MemberId getMemberId() => throw new NotSupportedException();
-		internal override string showKind() => throw new NotSupportedException();
+		internal override string showKind(bool upper) => throw new NotSupportedException();
 		public override bool deepEqual(Method m) => m is BuiltinAbstractMethod b && deepEqual(b);
 		public bool deepEqual(BuiltinAbstractMethod b) => throw new NotSupportedException();
 		public override Dat toDat() => throw new NotSupportedException();
@@ -171,7 +171,7 @@ namespace Model {
 		}
 
 		internal override MemberId getMemberId() => throw TODO();
-		internal override string showKind() => "method";
+		internal override string showKind(bool upper) => isStatic ? (upper ? "Function" : "function") : (upper ? nameof(Method) : "method");
 		public override bool deepEqual(Method m) => m is MethodWithBody mb && deepEqual(mb);
 		public bool deepEqual(MethodWithBody m) => throw TODO(); // TODO: should methods with different (reference identity) parent be not equal?
 		public override Dat toDat() => Dat.of(this,
@@ -189,7 +189,7 @@ namespace Model {
 		internal override bool isStatic => false;
 
 		internal override MemberId getMemberId() => throw TODO();
-		internal override string showKind() => "abstract method";
+		internal override string showKind(bool upper) => upper ? "Abstract method" : "abstract method";
 		internal AbstractMethod(Klass klass, Loc loc, Ty returnTy, Sym name, Effect selfEffect, Arr<Parameter> parameters)
 			: base(klass, loc, returnTy, name, selfEffect, parameters) {}
 

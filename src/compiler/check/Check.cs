@@ -3,23 +3,22 @@ using Diag.CheckDiags;
 using Model;
 using static Utils;
 
-sealed class Checker : DiagnosticBuilder {
+sealed class Checker : CheckerCommon {
 	internal static (Klass, Arr<Diagnostic>) checkClass(Module module, Arr<Module> imports, Ast.Klass ast, Sym name) {
 		var klass = new Klass(module, ast.loc, name);
-		var ckr = new Checker(new BaseScope(klass, imports));
+		var diags = Arr.builder<Diagnostic>();
+		var ckr = new Checker(new BaseScope(klass, imports), diags);
 		ckr.checkClass(klass, ast);
-		var diagnostics = ckr.finishDiagnostics();
-		return (klass, diagnostics);
+		return (klass, diags.finish());
 	}
 
-	readonly BaseScope baseScope;
-	Checker(BaseScope baseScope) : base(Arr.builder<Diagnostic>()) { this.baseScope = baseScope; }
+	Checker(BaseScope baseScope, Arr.Builder<Diagnostic> diags) : base(baseScope, diags) {}
 
 	void checkClass(Klass klass, Ast.Klass ast) {
 		var membersBuilder = Dict.builder<Sym, Member>();
 
 		var methods = ast.methods.map(m => {
-			var e = new MethodWithBody(klass, m.loc, m.isStatic, baseScope.getTy(m.returnTy), m.name, m.selfEffect, checkParameters(m.parameters));
+			var e = new MethodWithBody(klass, m.loc, m.isStatic, getTy(m.returnTy), m.name, m.selfEffect, checkParameters(m.parameters));
 			addMember(membersBuilder, e);
 			return e;
 		});
@@ -31,7 +30,7 @@ sealed class Checker : DiagnosticBuilder {
 		klass.setMembersMap(membersBuilder.finish());
 
 		// Not that all members exist, we can fill in bodies.
-		klass.setSupers(ast.supers.map(superAst => checkSuper(superAst, klass)));
+		klass.setSupers(ast.supers.mapDefinedProbablyAll(superAst => checkSuper(superAst, klass)));
 
 
 		// Now that all methods exist, fill in the body of each member.
@@ -47,7 +46,7 @@ sealed class Checker : DiagnosticBuilder {
 		switch (h) {
 			case Ast.Klass.Head.Abstract a: {
 				var abstractMethods = a.abstractMethods.map<AbstractMethodLike>(am => {
-					var abs = new AbstractMethod(klass, am.loc, baseScope.getTy(am.returnTy), am.name, am.selfEffect, checkParameters(am.parameters));
+					var abs = new AbstractMethod(klass, am.loc, getTy(am.returnTy), am.name, am.selfEffect, checkParameters(am.parameters));
 					addMember(membersBuilder, abs);
 					return abs;
 				});
@@ -57,7 +56,7 @@ sealed class Checker : DiagnosticBuilder {
 			case Ast.Klass.Head.Slots slotsAst: {
 				var slots = new KlassHead.Slots(slotsAst.loc, klass);
 				slots.slots = slotsAst.slots.map(var => {
-					var slot = new Slot(slots, slotsAst.loc, var.mutable, baseScope.getTy(var.ty), var.name);
+					var slot = new Slot(slots, slotsAst.loc, var.mutable, getTy(var.ty), var.name);
 					addMember(membersBuilder, slot);
 					return slot;
 				});
@@ -69,12 +68,14 @@ sealed class Checker : DiagnosticBuilder {
 		}
 	}
 
-	Super checkSuper(Ast.Super superAst, Klass klass) {
-		var superClass = (Klass)baseScope.accessClsRef(superAst.loc, superAst.name); //TODO: handle builtin
+	Op<Super> checkSuper(Ast.Super superAst, Klass klass) {
+		if (!baseScope.accessClsRefOrAddDiagnostic(superAst.loc, superAst.name, diags, out var superClass))
+			return Op<Super>.None;
+
 		var super = new Super(superAst.loc, klass, superClass);
 		var abstractMethods = getAbstractMethods(super.loc, super.superClass);
 		super.impls = getImpls(abstractMethods, superAst.impls, super);
-		return super;
+		return Op.Some(super);
 	}
 
 	Arr<AbstractMethodLike> getAbstractMethods(Loc loc, ClsRef superClass) {
@@ -134,6 +135,6 @@ sealed class Checker : DiagnosticBuilder {
 			for (uint j = 0; j < index; j++)
 				if (paramAsts[j].name == p.name)
 					addDiagnostic(p.loc, new DuplicateParameterName(p.name));
-			return new Parameter(p.loc, baseScope.getTy(p.ty), p.name, index);
+			return new Parameter(p.loc, getTy(p.ty), p.name, index);
 		});
 }

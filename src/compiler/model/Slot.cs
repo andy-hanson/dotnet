@@ -20,7 +20,7 @@ namespace Model {
 		public bool deepEqual(Slot s) => loc.deepEqual(s.loc) && name.deepEqual(s.name) && mutable == s.mutable && ty.equalsId<Ty, TyId>(s.ty);
 		public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(name), name, nameof(mutable), Dat.boolean(mutable), nameof(ty), ty);
 		internal override MemberId getMemberId() => getId();
-		internal override string showKind() => "slot";
+		internal override string showKind(bool upper) => upper ? "Slot" : "slot";
 		public Id getId() => new Id(slots.klass.getId(), name);
 
 		internal class Id : MemberId, ToData<Id> {

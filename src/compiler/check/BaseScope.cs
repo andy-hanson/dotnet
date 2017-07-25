@@ -1,3 +1,6 @@
+using Diag;
+using Diag.CheckDiags;
+using Diag.CheckExprDiags;
 using Model;
 using static Utils;
 
@@ -8,8 +11,13 @@ struct BaseScope {
 	internal bool hasMember(Sym name) =>
 		self.membersMap.has(name);
 
-	internal bool tryGetMember(Sym name, out Member member) =>
-		self.membersMap.get(name, out member);
+	internal bool tryGetOwnMember(Loc loc, Sym name, Arr.Builder<Diagnostic> diags, out Member member) {
+		if (!self.membersMap.get(name, out member)) {
+			diags.add(new Diagnostic(loc, new MemberNotFound(self, name)));
+			return false;
+		}
+		return true;
+	}
 
 	internal BaseScope(Klass self, Arr<Module> imports) {
 		this.self = self;
@@ -24,34 +32,57 @@ struct BaseScope {
 		}
 	}
 
-	internal Ty getTy(Ast.Ty ast) =>
-		Ty.of(ast.effect, getClsRef(ast.cls));
+	internal Ty getTy(Ast.Ty ast, Arr.Builder<Diagnostic> diags) =>
+		getClsRef(ast.cls, diags, out var cls) ? Ty.of(ast.effect, cls) : Ty.bogus;
 
-	ClsRef getClsRef(Ast.ClsRef ast) {
+	bool getClsRef(Ast.ClsRef ast, Arr.Builder<Diagnostic> diags, out ClsRef cls) {
 		switch (ast) {
 			case Ast.ClsRef.Access access:
-				return accessClsRef(access.loc, access.name);
-			case Ast.ClsRef.Inst inst:
-				var a = accessClsRef(inst.instantiated.loc, inst.instantiated.name);
-				var b = inst.tyArgs.map(getTy);
-				unused(a, b);
+				return accessClsRefOrAddDiagnostic(access.loc, access.name, diags, out cls);
+
+			case Ast.ClsRef.Inst inst: {
+				var self = this;
+				var tyArgs = inst.tyArgs.map(x => self.getTy(x, diags));
+
+				if (!accessClsRefOrAddDiagnostic(inst.instantiated.loc, inst.instantiated.name, diags, out var gen)) {
+					cls = default(ClsRef);
+					return false;
+				}
+
+				unused(gen, tyArgs);
 				throw TODO(); //TODO: type instantiation
+			}
+
 			default:
 				throw unreachable();
 		}
 	}
 
-	internal ClsRef accessClsRef(Loc loc, Sym name) {
-		if (name == self.name)
-			return self;
+	internal bool accessClsRefOrAddDiagnostic(Loc loc, Sym name, Arr.Builder<Diagnostic> diags, out ClsRef cls) {
+		if (!accessClsRef(name, out cls)) {
+			diags.add(new Diagnostic(loc, new ClassNotFound(name)));
+			return false;
+		}
+		return true;
+	}
 
-		if (imports.find(out var found, i => i.name == name))
-			return found.klass;
+	internal bool accessClsRef(Sym name, out ClsRef cls) {
+		if (name == self.name) {
+			cls = self;
+			return true;
+		}
 
-		if (BuiltinClass.tryGet(name, out var builtin))
-			return builtin;
+		if (imports.findMap(out cls, i => i.name == name ? Op.Some<ClsRef>(i.klass) : Op<ClsRef>.None))
+			return true;
 
-		unused(loc);
-		throw TODO(); //Return dummy Ty and issue diagnostic
+		if (BuiltinClass.tryGet(name, out var builtin)) {
+			// out parameters are invariant, so need this line
+			// https://stackoverflow.com/questions/527758/in-c-sharp-4-0-why-cant-an-out-parameter-in-a-method-be-covariant
+			cls = builtin;
+			return true;
+		}
+
+		cls = default(ClsRef);
+		return false;
 	}
 }

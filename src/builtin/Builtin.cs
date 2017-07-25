@@ -124,8 +124,6 @@ public static class Builtins {
 
 		[Hid] public static Nat of(uint value) => new Nat(value);
 
-		[Hid] public override string ToString() => value.ToString();
-
 		bool DeepEqual<Nat>.deepEqual(Nat n) => value == n.value;
 		Dat ToData<Nat>.toDat() => Dat.nat(value);
 
@@ -172,8 +170,6 @@ public static class Builtins {
 
 		[Hid] public static Int of(int value) => new Int(value);
 
-		[Hid] public override string ToString() => value.ToString();
-
 		bool DeepEqual<Int>.deepEqual(Int i) => value == i.value;
 		Dat ToData<Int>.toDat() => Dat.@int(value);
 
@@ -213,8 +209,6 @@ public static class Builtins {
 		Real(double value) { this.value = value; }
 
 		[Hid] public static Real of(double d) => new Real(d);
-
-		[Hid] public override string ToString() => value.ToString();
 
 		bool DeepEqual<Real>.deepEqual(Real f) => value == f.value;
 		Dat ToData<Real>.toDat() => Dat.realDat(value);

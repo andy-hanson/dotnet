@@ -410,10 +410,11 @@ abstract class Lexer : Reader {
 	protected bool tryTakeDot() => tryTake('.');
 	protected bool tryTakeColon() => tryTake(':');
 
-	protected void takeSpecificKeyword(Token kw) {
+	protected void takeSpecificKeyword(string kw) {
 		var startPos = pos;
-		var actual = takeKeyword();
-		if (actual != kw) throw unexpected(startPos, TokenU.TokenName(kw), TokenU.TokenName(actual));
+		var actual = takeWord();
+		if (actual != kw)
+			throw unexpected(startPos, kw, actual);
 	}
 
 	protected string takeTyNameString() {
@@ -436,18 +437,60 @@ abstract class Lexer : Reader {
 	protected ParserExitException unexpected(Pos startPos, string expectedDesc, Token token) =>
 		unexpected(startPos, expectedDesc, TokenU.TokenName(token));
 
-	protected ParserExitException unexpected(Pos startPos, string expectedDesc, string actualDesc) =>
+	ParserExitException unexpected(Pos startPos, string expectedDesc, string actualDesc) =>
 		exit(locFrom(startPos), new UnexpectedToken(expectedDesc, actualDesc));
 
-	protected Token takeKeywordOrEof() => atEOF ? Token.EOF : takeKeyword();
+	protected enum CatchOrFinally { Catch, Finally }
+	protected CatchOrFinally takeCatchOrFinally() {
+		var startPos = pos;
+		var word = takeWord();
+		switch (word) {
+			case "catch":
+				return CatchOrFinally.Catch;
+			case "finally":
+				return CatchOrFinally.Finally;
+			default:
+				throw unexpected(startPos, "'catch' or 'finally'", word);
+		}
+	}
 
-	protected Token takeKeyword() {
+	protected enum SlotKw { Val, Var }
+	protected SlotKw takeSlotKeyword() {
+		var startPos = pos;
+		var word = takeWord();
+		switch (word) {
+			case "val":
+				return SlotKw.Val;
+			case "var":
+				return SlotKw.Var;
+			default:
+				throw unexpected(startPos, "'catch' or 'finally'", word);
+		}
+	}
+
+	protected enum MethodKw { Def, Fun, Is, Eof }
+	protected MethodKw takeMethodKeywordOrEof() {
+		if (atEOF)
+			return MethodKw.Eof;
+
+		var startPos = pos;
+		var word = takeWord();
+		switch (word) {
+			case "def":
+				return MethodKw.Def;
+			case "fun":
+				return MethodKw.Fun;
+			case "is":
+				return MethodKw.Is;
+			default:
+				throw unexpected(startPos, "'def' or 'fun'", word);
+		}
+	}
+
+	string takeWord() {
 		var startPos = pos;
 		expectCharacter("keyword", isLowerCaseLetter);
 		skipWhile(isNameChar);
-		var name = sliceFrom(startPos);
-		if (TokenU.keywordFromName(name, out var kw))
-			return kw;
-		throw unexpected(startPos, "keyword", name);
+		return sliceFrom(startPos);
 	}
 }

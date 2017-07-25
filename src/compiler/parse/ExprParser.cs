@@ -349,7 +349,7 @@ abstract class ExprParser : TyParser {
 				...
 		*/
 		takeIndent();
-		takeSpecificKeyword(Token.Do);
+		takeSpecificKeyword("do");
 		takeIndent();
 		var do_ = parseBlock();
 
@@ -358,8 +358,8 @@ abstract class ExprParser : TyParser {
 
 		var catchStart = pos;
 
-		switch (takeKeyword()) {
-			case Token.Catch: {
+		switch (takeCatchOrFinally()) {
+			case CatchOrFinally.Catch: {
 				takeSpace();
 				var exceptionType = parseTy();
 				takeSpace();
@@ -373,17 +373,19 @@ abstract class ExprParser : TyParser {
 				if (tryTakeDedent())
 					break;
 				else {
-					takeSpecificKeyword(Token.Finally);
-					goto case Token.Finally;
+					takeSpecificKeyword("finally");
+					goto case CatchOrFinally.Finally;
 				}
 			}
 
-			case Token.Finally: {
+			case CatchOrFinally.Finally: {
 				takeIndent();
 				finally_ = Op.Some(parseBlock());
 				takeDedent();
 				break;
 			}
+
+			default: throw unreachable();
 		}
 
 		return new Ast.Try(locFrom(startPos), do_, catch_, finally_);

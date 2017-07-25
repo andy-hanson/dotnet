@@ -130,7 +130,5 @@ namespace Model {
 		public bool deepEqual(BuiltinClass b) => throw new NotSupportedException(); // This should never happen.
 		public override int GetHashCode() => name.GetHashCode();
 		public override Dat toDat() => Dat.of(this, nameof(name), name);
-
-		public override string ToString() => $"BuiltinClass({name})";
 	}
 }
