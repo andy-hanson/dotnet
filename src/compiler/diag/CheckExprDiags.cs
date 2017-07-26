@@ -168,7 +168,7 @@ namespace Diag.CheckExprDiags {
 		}
 
 		public override void show(StringMaker s) =>
-			s.add("Target object has a ").add(targetEffect.show()).add(" effect. Can't call method with a ").add(methodEffect.show()).add(" effect.");
+			s.add("Target object has a ").add(targetEffect.show).add(" effect. Can't call method with a ").add(methodEffect.show).add(" effect.");
 
 		public override bool deepEqual(IllegalEffect i) =>
 			targetEffect.deepEqual(i.targetEffect) &&

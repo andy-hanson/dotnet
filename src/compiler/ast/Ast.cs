@@ -259,7 +259,7 @@ namespace Ast {
 		internal void Deconstruct(out Loc loc, out Model.Effect effect, out ClsRef cls) { loc = this.loc; effect = this.effect; cls = this.cls; }
 
 		public override bool deepEqual(Node n) => n is Ty t && deepEqual(t);
-		public bool deepEqual(Ty t) => locEq(t) && effect == t.effect && cls.deepEqual(t.cls);
+		public bool deepEqual(Ty t) => locEq(t) && effect.deepEqual(t.effect) && cls.deepEqual(t.cls);
 		public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(cls), cls);
 	}
 

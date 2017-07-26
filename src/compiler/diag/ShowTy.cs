@@ -14,13 +14,9 @@ static class ShowTy {
 	}
 
 	static void showPlainTy(StringMaker s, Ty.PlainTy p) {
-		switch (p.effect) {
-			case Effect.Pure:
-				break;
-			default:
-				s.add(p.effect.show());
-				s.add(' ');
-				break;
+		if (!p.effect.isPure) {
+			s.add(p.effect.show);
+			s.add(' ');
 		}
 
 		s.add(p.cls.name.str);

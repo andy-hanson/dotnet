@@ -107,7 +107,7 @@ class ExprChecker : CheckerCommon {
 					return handleBogus(ref expected, loc);
 				}
 
-				if (slot.mutable && !selfEffect.canGet())
+				if (slot.mutable && !selfEffect.canGet)
 					addDiagnostic(loc, new MissingEffectToGetSlot(slot));
 
 				return handle(ref expected, new GetMySlot(loc, currentClass, slot));
@@ -208,7 +208,7 @@ class ExprChecker : CheckerCommon {
 					return handleBogus(ref expected, loc);
 				}
 
-				if (slot.mutable && !targetEffect.canGet())
+				if (slot.mutable && !targetEffect.canGet)
 					addDiagnostic(loc, new MissingEffectToGetSlot(slot));
 
 				// Handling of effect handled by GetSlot.ty -- this is the minimum common effect between 'target' and 'slot.ty'.
@@ -234,7 +234,7 @@ class ExprChecker : CheckerCommon {
 		if (!slot.mutable)
 			addDiagnostic(loc, new SlotNotMutable(slot));
 
-		if (!selfEffect.canSet())
+		if (!selfEffect.canSet)
 			addDiagnostic(loc, new MissingEffectToSetSlot(slot));
 
 		var value = checkSubtype(slot.ty, valueAst);

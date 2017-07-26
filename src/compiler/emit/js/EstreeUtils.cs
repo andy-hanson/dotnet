@@ -1,7 +1,6 @@
 static class EstreeUtils {
 	internal static bool isAsync(Model.Method method) =>
-		method.selfEffect == Model.Effect.Io ||
-			method.parameters.some(p => p.ty.effect == Model.Effect.Io);
+		method.selfEffect.canIo || method.parameters.some(p => p.ty.effect.canIo);
 
 	internal static Estree.Identifier id(Loc loc, string name) =>
 		new Estree.Identifier(loc, name);

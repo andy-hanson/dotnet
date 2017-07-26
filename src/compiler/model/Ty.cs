@@ -28,8 +28,8 @@ namespace Model {
 			internal void Deconstruct(out Effect effect, out ClsRef cls) { effect = this.effect; cls = this.cls; }
 
 			public override bool deepEqual(Ty ty) => ty is PlainTy && deepEqual(ty);
-			public bool deepEqual(PlainTy ty) => effect == ty.effect && cls.deepEqual(ty.cls);
-			public override Dat toDat() => Dat.of(this, nameof(effect), Dat.str(effect.show()), nameof(cls), cls);
+			public bool deepEqual(PlainTy ty) => effect.deepEqual(ty.effect) && cls.deepEqual(ty.cls);
+			public override Dat toDat() => Dat.of(this, nameof(effect), Dat.str(effect.show), nameof(cls), cls);
 			public override TyId getTyId() => getId();
 			public Id getId() => new Id(effect, cls.getClsRefId());
 
@@ -38,8 +38,8 @@ namespace Model {
 				internal readonly ClsRefId clsId;
 				internal Id(Effect effect, ClsRefId clsId) { this.effect = effect; this.clsId = clsId; }
 				public override bool deepEqual(TyId t) => t is Id i && deepEqual(i);
-				public bool deepEqual(Id i) => effect == i.effect && clsId.deepEqual(i.clsId);
-				public override Dat toDat() => Dat.of(this, nameof(effect), Dat.str(effect.show()), nameof(clsId), clsId);
+				public bool deepEqual(Id i) => effect.deepEqual(i.effect) && clsId.deepEqual(i.clsId);
+				public override Dat toDat() => Dat.of(this, nameof(effect), Dat.str(effect.show), nameof(clsId), clsId);
 			}
 		}
 

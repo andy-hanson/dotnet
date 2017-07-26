@@ -179,7 +179,7 @@ namespace Model {
 			nameof(isStatic), Dat.boolean(isStatic),
 			nameof(returnTy), returnTy.getTyId(),
 			nameof(name), name,
-			nameof(selfEffect), Dat.str(selfEffect.show()),
+			nameof(selfEffect), Dat.str(selfEffect.show),
 			nameof(parameters), Dat.arr(parameters),
 			nameof(body), body);
 	}
