@@ -1,5 +1,9 @@
 using System;
 
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
+/** Attribute for types that don't need to be imported, such as 'Bool'. */
+sealed class NoImportAttribute : Attribute {}
+
 // Note that constructors are always hidden, so don't need this attribute.
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Field)]
 sealed class HidAttribute : Attribute {}
@@ -87,7 +91,7 @@ sealed class JsBinaryAttribute : AnyJsTranslateAttribute {
 }
 
 public static class Builtins {
-	[JsPrimitive] // Represented by `undefined`
+	[NoImport, JsPrimitive] // Represented by `undefined`
 	public sealed class Void : ToData<Void> {
 		private Void() {}
 		[Hid] public static readonly Void instance = new Void();
@@ -96,7 +100,7 @@ public static class Builtins {
 		Dat ToData<Void>.toDat() => Dat.str("<void>");
 	}
 
-	[JsPrimitive]
+	[NoImport, JsPrimitive]
 	public struct Bool : ToData<Bool> {
 		[Hid] public readonly bool value;
 
@@ -117,7 +121,7 @@ public static class Builtins {
 		public static String str(Bool b) => String.of(b.value.ToString());
 	}
 
-	[JsPrimitive]
+	[NoImport, JsPrimitive]
 	public struct Nat : ToData<Nat> {
 		[Hid] internal readonly uint value;
 		Nat(uint value) { this.value = value; }
@@ -159,7 +163,7 @@ public static class Builtins {
 		public static Real to_real(Nat n) => Real.of((double)n.value);
 	}
 
-	[JsPrimitive]
+	[NoImport, JsPrimitive]
 	public struct Int : ToData<Int> {
 		[AllPure]
 		public static Int parse(String s) =>
@@ -198,7 +202,7 @@ public static class Builtins {
 		public static Real to_real(Int i) => Real.of((double)i.value);
 	}
 
-	[JsPrimitive]
+	[NoImport, JsPrimitive]
 	public struct Real : ToData<Real> {
 		[AllPure]
 		public static Real parse(String s) =>
@@ -238,7 +242,7 @@ public static class Builtins {
 		public static Int round_up(Real r) => Int.of(checked((int)Math.Ceiling(r.value)));
 	}
 
-	[JsPrimitive]
+	[NoImport, JsPrimitive]
 	public struct String : ToData<String> {
 		[Hid] internal readonly string value;
 

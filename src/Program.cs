@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -20,7 +21,7 @@ static class Program {
 		using (var tc = new Test.TestCompile(updateBaselines: true)) {
 			tc.runAllTests();
 			//tc.runAllCompilerTests();
-			//tc.runTestNamed("Abstract-Class");
+			//tc.runTestNamed("Console-App-User");
 		}
 	}
 

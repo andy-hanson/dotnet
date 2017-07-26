@@ -5,26 +5,23 @@ using Model;
 using static Utils;
 
 struct BaseScope {
-	internal readonly Klass self;
-	readonly Arr<Module> imports;
-
-	internal bool hasMember(Sym name) =>
-		self.membersMap.has(name);
+	internal readonly Klass currentClass;
+	readonly Arr<Imported> imports;
 
 	internal bool tryGetOwnMember(Loc loc, Sym name, Arr.Builder<Diagnostic> diags, out Member member) {
-		if (!self.membersMap.get(name, out member)) {
-			diags.add(new Diagnostic(loc, new MemberNotFound(self, name)));
+		if (!currentClass.membersMap.get(name, out member)) {
+			diags.add(new Diagnostic(loc, new MemberNotFound(currentClass, name)));
 			return false;
 		}
 		return true;
 	}
 
-	internal BaseScope(Klass self, Arr<Module> imports) {
-		this.self = self;
+	internal BaseScope(Klass currentClass, Arr<Imported> imports) {
+		this.currentClass = currentClass;
 		this.imports = imports;
 		for (uint i = 0; i < imports.length; i++) {
 			var import = imports[i];
-			if (import.name == self.name)
+			if (import.name == currentClass.name)
 				throw TODO(); // diagnostic -- can't shadow self
 			for (uint j = 0; j < i; j++)
 				if (imports[j].name == import.name)
@@ -73,15 +70,15 @@ struct BaseScope {
 	}
 
 	internal bool accessClsRef(Sym name, out ClsRef cls) {
-		if (name == self.name) {
-			cls = self;
+		if (name == currentClass.name) {
+			cls = currentClass;
 			return true;
 		}
 
-		if (imports.findMap(out cls, i => i.name == name ? Op.Some<ClsRef>(i.klass) : Op<ClsRef>.None))
+		if (imports.findMap(out cls, i => i.name == name ? Op.Some<ClsRef>(i.importedClass) : Op<ClsRef>.None))
 			return true;
 
-		if (BuiltinClass.tryGet(name, out var builtin)) {
+		if (BuiltinClass.tryGetNoImportBuiltin(name, out var builtin)) {
 			// out parameters are invariant, so need this line
 			// https://stackoverflow.com/questions/527758/in-c-sharp-4-0-why-cant-an-out-parameter-in-a-method-be-covariant
 			cls = builtin;

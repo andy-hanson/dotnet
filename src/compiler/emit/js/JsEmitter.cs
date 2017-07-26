@@ -19,14 +19,23 @@ sealed class JsEmitter {
 	static readonly Estree.Statement useStrict =
 		Estree.ExpressionStatement.of(Estree.Literal.str(Loc.zero, "use strict"));
 
-	Estree.Program emitToProgram(Module m) {
+	Estree.Program emitToProgram(Module module) {
 		var body = Arr.builder<Estree.Statement>();
 
-		foreach (var import in m.imports)
-			body.add(emitImport(m, import));
+		foreach (var import in module.imports)
+			switch (import) {
+				case Module m:
+					body.add(emitImport(module, m));
+					break;
+				case BuiltinClass b:
+					// Don't import builtin classes the normal way. They will be accessed through nzlib.
+					break;
+				default:
+					throw unreachable();
+			}
 
-		var cls = emitClass(m.klass);
-		body.add(assign(m.klass.loc, moduleExports, cls));
+		var cls = emitClass(module.klass);
+		body.add(assign(module.klass.loc, moduleExports, cls));
 
 		var statements = needsLib ? body.finishWithFirstTwo(useStrict, requireNzlib) : body.finishWithFirst(useStrict);
 		return new Estree.Program(Loc.zero, statements);

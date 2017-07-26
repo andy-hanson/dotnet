@@ -1,2 +1,4 @@
+import Console-App
+
 fun Void main(io Console-App app)
 	app.stdout().write-line "Hello world!"

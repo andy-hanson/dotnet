@@ -4,7 +4,7 @@ using Model;
 using static Utils;
 
 sealed class Checker : CheckerCommon {
-	internal static (Klass, Arr<Diagnostic>) checkClass(Module module, Arr<Module> imports, Ast.Klass ast, Sym name) {
+	internal static (Klass, Arr<Diagnostic>) checkClass(Module module, Arr<Imported> imports, Ast.Klass ast, Sym name) {
 		var klass = new Klass(module, ast.loc, name);
 		var diags = Arr.builder<Diagnostic>();
 		var ckr = new Checker(new BaseScope(klass, imports), diags);

@@ -25,7 +25,7 @@ static class JsBuiltins {
 		var primitiveNzlibStatic = Set.builder<BuiltinMethodWithBody>();
 		var primitiveNzlibInstance = Set.builder<BuiltinMethodWithBody>();
 
-		foreach (var k in BuiltinClass.all()) {
+		foreach (var k in BuiltinClass.all) {
 			if (!k.dotNetType.hasAttribute<JsPrimitiveAttribute>())
 				continue;
 
@@ -154,7 +154,7 @@ static class JsBuiltins {
 		var primitivesBuilder = Dict.builder<BuiltinClass, Arr.Builder<string>>();
 		var classes = Dict.builder<string, NzlibClassData>();
 
-		foreach (var k in BuiltinClass.all()) {
+		foreach (var k in BuiltinClass.all) {
 			if (k.dotNetType.hasAttribute<JsPrimitiveAttribute>()) {
 				primitivesBuilder.add(k, Arr.builder<string>());
 				continue;
@@ -169,9 +169,6 @@ static class JsBuiltins {
 			}
 			foreach (var o in k.overrides)
 				instance.add(o.Name);
-			//foreach (var s in k.supers)
-			//  foreach (var i in s.impls)
-			//    instance.add(BuiltinClass.escapeName(i.implemented.name));
 
 			classes.add(escapeName(k.name), new NzlibClassData(statics.finish(), instance.finish()));
 		}

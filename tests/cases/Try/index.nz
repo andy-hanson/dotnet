@@ -1,3 +1,5 @@
+import Exception
+
 fun Void main()
 	x = try
 		do

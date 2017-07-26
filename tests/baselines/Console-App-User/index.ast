@@ -1,41 +1,43 @@
 Module(
-  loc: 0-74,
-  imports: [],
+  loc: 0-94,
+  imports: [Global(
+    loc: 7-18,
+    path: ["Console-App"])],
   klass: Klass(
-    loc: 0-74,
+    loc: 20-94,
     head: null,
     supers: [],
     methods: [Method(
-      loc: 0-74,
+      loc: 20-94,
       isStatic: true,
       returnTy: Ty(
-        loc: 4-8,
+        loc: 24-28,
         cls: Access(
-          loc: 4-8,
+          loc: 24-28,
           name: "Void")),
       name: "main",
       parameters: [Parameter(
-        loc: 14-32,
+        loc: 34-52,
         ty: Ty(
-          loc: 14-28,
+          loc: 34-48,
           cls: Access(
-            loc: 17-28,
+            loc: 37-48,
             name: "Console-App")),
         name: "app")],
       body: Call(
-        loc: 35-74,
+        loc: 55-94,
         target: GetProperty(
-          loc: 35-58,
+          loc: 55-78,
           target: Call(
-            loc: 35-47,
+            loc: 55-67,
             target: GetProperty(
-              loc: 35-45,
+              loc: 55-65,
               target: Access(
-                loc: 35-38,
+                loc: 55-58,
                 name: "app"),
               propertyName: "stdout"),
             args: []),
           propertyName: "write-line"),
         args: [Literal(
-          loc: 59-73,
+          loc: 79-93,
           value: "Hello world!")]))]))

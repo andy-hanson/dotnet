@@ -47,5 +47,8 @@ namespace Model {
 
 		internal static bool canGet(this Effect e) =>
 			e.contains(Effect.Get);
+
+		internal static bool canSet(this Effect e) =>
+			e.contains(Effect.Set);
 	}
 }

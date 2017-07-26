@@ -7,11 +7,17 @@ using Model;
 using static TyUtils;
 using static Utils;
 
+/** Use a different type than Expr to ensure that I remember handle 'expected'. */
+struct Handled {
+	internal readonly Expr expr;
+	internal Handled(Expr expr) { this.expr = expr; }
+}
+
 class ExprChecker : CheckerCommon {
 	internal static Expr checkMethod(BaseScope baseScope, Arr.Builder<Diagnostic> diags, MethodOrImpl methodOrImpl, bool isStatic, Method implemented, Ast.Expr body) =>
 		new ExprChecker(baseScope, diags, methodOrImpl, isStatic, implemented.selfEffect, implemented.parameters).checkReturn(implemented.returnTy, body);
 
-	Klass currentClass => baseScope.self;
+	Klass currentClass => baseScope.currentClass;
 	readonly MethodOrImpl methodOrImpl;
 	readonly bool isStatic;
 	readonly Effect selfEffect;
@@ -42,7 +48,10 @@ class ExprChecker : CheckerCommon {
 		return checkExpr(ref expected, a);
 	}
 
-	Expr checkExpr(ref Expected e, Ast.Expr a) {
+	Expr checkExpr(ref Expected e, Ast.Expr a) =>
+		checkExprWorker(ref e, a).expr;
+
+	Handled checkExprWorker(ref Expected e, Ast.Expr a) {
 		switch (a) {
 			case Ast.Access ac:
 				return checkAccess(ref e, ac);
@@ -79,7 +88,7 @@ class ExprChecker : CheckerCommon {
 		}
 	}
 
-	Expr checkAccess(ref Expected expected, Ast.Access access) {
+	Handled checkAccess(ref Expected expected, Ast.Access access) {
 		var (loc, name) = access;
 
 		if (locals.find(out var local, l => l.name == name))
@@ -98,7 +107,7 @@ class ExprChecker : CheckerCommon {
 					return handleBogus(ref expected, loc);
 				}
 
-				if (slot.mutable && selfEffect.canGet())
+				if (slot.mutable && !selfEffect.canGet())
 					addDiagnostic(loc, new MissingEffectToGetSlot(slot));
 
 				return handle(ref expected, new GetMySlot(loc, currentClass, slot));
@@ -114,7 +123,7 @@ class ExprChecker : CheckerCommon {
 		}
 	}
 
-	Expr checkStaticAccess(ref Expected expected, Ast.StaticAccess ast) {
+	Handled checkStaticAccess(ref Expected expected, Ast.StaticAccess ast) {
 		// Only get here if this is *not* the target of a call.
 		var (loc, className, staticMethodName) = ast;
 		unused(className, staticMethodName);
@@ -122,12 +131,12 @@ class ExprChecker : CheckerCommon {
 		return handleBogus(ref expected, ast.loc);
 	}
 
-	Expr checkOperatorCall(ref Expected expected, Ast.OperatorCall ast) {
+	Handled checkOperatorCall(ref Expected expected, Ast.OperatorCall ast) {
 		var (loc, left, oper, right) = ast;
 		return callMethod(ref expected, loc, left, oper, Arr.of(right));
 	}
 
-	Expr checkCallAst(ref Expected expected, Ast.Call call) {
+	Handled checkCallAst(ref Expected expected, Ast.Call call) {
 		var (callLoc, target, args) = call;
 		switch (target) {
 			case Ast.StaticAccess sa: {
@@ -152,7 +161,7 @@ class ExprChecker : CheckerCommon {
 		}
 	}
 
-	Expr checkRecur(ref Expected expected, Ast.Recur ast) {
+	Handled checkRecur(ref Expected expected, Ast.Recur ast) {
 		var (loc, argAsts) = ast;
 
 		if (!expected.inTailCallPosition)
@@ -164,7 +173,7 @@ class ExprChecker : CheckerCommon {
 		return handle(ref expected, new Recur(loc, methodOrImpl, args));
 	}
 
-	Expr checkNew(ref Expected expected, Ast.New ast) {
+	Handled checkNew(ref Expected expected, Ast.New ast) {
 		var (loc, argAsts) = ast;
 
 		if (!(currentClass.head is KlassHead.Slots slots)) {
@@ -181,7 +190,7 @@ class ExprChecker : CheckerCommon {
 		return handle(ref expected, new New(loc, slots, args));
 	}
 
-	Expr checkGetProperty(ref Expected expected, Ast.GetProperty ast) {
+	Handled checkGetProperty(ref Expected expected, Ast.GetProperty ast) {
 		var (loc, targetAst, propertyName) = ast;
 
 		var target = checkInfer(targetAst);
@@ -211,7 +220,7 @@ class ExprChecker : CheckerCommon {
 		}
 	}
 
-	Expr checkSetProperty(ref Expected expected, Ast.SetProperty ast) {
+	Handled checkSetProperty(ref Expected expected, Ast.SetProperty ast) {
 		var (loc, propertyName, valueAst) = ast;
 
 		if (!baseScope.tryGetOwnMember(loc, propertyName, diags, out var member))
@@ -225,38 +234,39 @@ class ExprChecker : CheckerCommon {
 		if (!slot.mutable)
 			addDiagnostic(loc, new SlotNotMutable(slot));
 
-		if (!selfEffect.contains(Effect.Set))
+		if (!selfEffect.canSet())
 			addDiagnostic(loc, new MissingEffectToSetSlot(slot));
 
 		var value = checkSubtype(slot.ty, valueAst);
 		return handle(ref expected, new SetSlot(loc, slot, value));
 	}
 
-	Expr checkLet(ref Expected expected, Ast.Let ast) {
+	Handled checkLet(ref Expected expected, Ast.Let ast) {
 		var (loc, assigned, valueAst, thenAst) = ast;
 		var value = checkInfer(valueAst);
 		var (pattern, nAdded) = startCheckPattern(value.ty, assigned);
 		var then = checkExpr(ref expected, thenAst);
 		endCheckPattern(nAdded);
-		return new Let(ast.loc, pattern, value, then);
+		// 'expected' was handled in 'then'
+		return new Handled(new Let(ast.loc, pattern, value, then));
 	}
 
-	Expr checkSeq(ref Expected expected, Ast.Seq ast) {
+	Handled checkSeq(ref Expected expected, Ast.Seq ast) {
 		var (loc, firstAst, thenAst) = ast;
 		var first = checkVoid(firstAst);
 		var then = checkExpr(ref expected, thenAst);
 		return handle(ref expected, new Seq(ast.loc, first, then));
 	}
 
-	Expr checkLiteral(ref Expected expected, Ast.Literal ast) {
+	Handled checkLiteral(ref Expected expected, Ast.Literal ast) {
 		var (loc, value) = ast;
 		return handle(ref expected, new Literal(loc, value));
 	}
 
-	Expr checkSelf(ref Expected expected, Ast.Self s) =>
-		new Self(s.loc, Ty.of(selfEffect, currentClass));
+	Handled checkSelf(ref Expected expected, Ast.Self s) =>
+		handle(ref expected, new Self(s.loc, Ty.of(selfEffect, currentClass)));
 
-	Expr checkWhenTest(ref Expected expected, Ast.WhenTest ast) {
+	Handled checkWhenTest(ref Expected expected, Ast.WhenTest ast) {
 		var (loc, caseAsts, elseResultAst) = ast;
 
 		//Can't use '.map' because of the `ref expected` parameter
@@ -271,20 +281,22 @@ class ExprChecker : CheckerCommon {
 
 		var elseResult = checkExpr(ref expected, elseResultAst);
 
-		return new WhenTest(loc, cases, elseResult, expected.inferredType);
+		// `expected` was handled in each case result.
+		return new Handled(new WhenTest(loc, cases, elseResult, expected.inferredType));
 	}
 
-	Expr checkAssert(ref Expected expected, Ast.Assert ast) {
+	Handled checkAssert(ref Expected expected, Ast.Assert ast) {
 		var (loc, asserted) = ast;
 		return handle(ref expected, new Assert(loc, checkSubtype(Ty.Bool, asserted)));
 	}
 
-	Expr checkTry(ref Expected expected, Ast.Try ast) {
+	Handled checkTry(ref Expected expected, Ast.Try ast) {
 		var (loc, doAst, catchAst, finallyAst) = ast;
 		var doo = checkExpr(ref expected, doAst);
 		var katch = catchAst.get(out var c) ? Op.Some(checkCatch(ref expected, c)) : Op<Try.Catch>.None;
 		var finallee = finallyAst.get(out var f) ? Op.Some(checkVoid(f)) : Op<Expr>.None;
-		return new Try(loc, doo, katch, finallee, expected.inferredType);
+		// 'expected' handled when checking 'do' and 'catch'
+		return new Handled(new Try(loc, doo, katch, finallee, expected.inferredType));
 	}
 
 	Try.Catch checkCatch(ref Expected expected, Ast.Try.Catch ast) {
@@ -299,7 +311,7 @@ class ExprChecker : CheckerCommon {
 		return new Try.Catch(loc, caught, then);
 	}
 
-	Expr callStaticMethod(ref Expected expected, Loc loc, ClsRef cls, Sym methodName, Arr<Ast.Expr> argAsts) {
+	Handled callStaticMethod(ref Expected expected, Loc loc, ClsRef cls, Sym methodName, Arr<Ast.Expr> argAsts) {
 		if (!cls.getMember(methodName, out var member)) { // No need to look in superclasses because this is a static method.
 			addDiagnostic(loc, new MemberNotFound(cls, methodName));
 			return handleBogus(ref expected, loc);
@@ -315,7 +327,7 @@ class ExprChecker : CheckerCommon {
 		return handle(ref expected, new StaticMethodCall(loc, method, args));
 	}
 
-	Expr callMethod(ref Expected expected, Loc loc, Ast.Expr targetAst, Sym methodName, Arr<Ast.Expr> argAsts) {
+	Handled callMethod(ref Expected expected, Loc loc, Ast.Expr targetAst, Sym methodName, Arr<Ast.Expr> argAsts) {
 		var target = checkInfer(targetAst);
 		switch (target.ty) {
 			case Ty.Bogus _:
@@ -350,7 +362,7 @@ class ExprChecker : CheckerCommon {
 		}
 	}
 
-	Expr callOwnMethod(ref Expected expected, Loc loc, Sym methodName, Arr<Ast.Expr> argAsts) {
+	Handled callOwnMethod(ref Expected expected, Loc loc, Sym methodName, Arr<Ast.Expr> argAsts) {
 		if (!getMember(loc, currentClass, methodName, out Member member))
 			return handleBogus(ref expected, loc);
 
@@ -440,10 +452,10 @@ class ExprChecker : CheckerCommon {
 		locals.Pop();
 	}
 
-	Expr handle(ref Expected expected, Expr e) =>
+	Handled handle(ref Expected expected, Expr e) =>
 		expected.handle(e, this);
 
-	static Expr handleBogus(ref Expected expected, Loc loc) =>
+	static Handled handleBogus(ref Expected expected, Loc loc) =>
 		expected.handleBogus(loc);
 
 	/** PASS BY REF! */
@@ -473,7 +485,7 @@ class ExprChecker : CheckerCommon {
 		/** Note: This may be called on SubTypeOf. */
 		internal Ty inferredType => expectedTy.force;
 
-		internal Expr handle(Expr e, ExprChecker c) {
+		internal Handled handle(Expr e, ExprChecker c) {
 			switch (kind) {
 				case Kind.Return:
 				case Kind.SubTypeOf:
@@ -482,17 +494,17 @@ class ExprChecker : CheckerCommon {
 				case Kind.Infer:
 					if (expectedTy.get(out var ety)) {
 						expectedTy = Op.Some(c.combineTypes(e.loc, ety, e.ty));
-						return e;
+						return new Handled(e);
 					} else {
 						expectedTy = Op.Some(e.ty);
-						return e;
+						return new Handled(e);
 					}
 				default:
 					throw unreachable();
 			}
 		}
 
-		internal Expr handleBogus(Loc loc) {
+		internal Handled handleBogus(Loc loc) {
 			Ty ty;
 			switch (kind) {
 				case Kind.Return:
@@ -508,7 +520,7 @@ class ExprChecker : CheckerCommon {
 				default:
 					throw unreachable();
 			}
-			return new Bogus(loc, ty);
+			return new Handled(new Bogus(loc, ty));
 		}
 	}
 
@@ -521,12 +533,12 @@ class ExprChecker : CheckerCommon {
 		return Ty.bogus;
 	}
 
-	Expr checkType(Ty expectedTy, Expr e) {
+	Handled checkType(Ty expectedTy, Expr e) {
 		if (isAssignable(expectedTy, e.ty))
-			return e;
+			return new Handled(e);
 
 		addDiagnostic(e.loc, new NotAssignable(expectedTy, e.ty));
-		return new BogusCast(expectedTy, e);
+		return new Handled(new BogusCast(expectedTy, e));
 	}
 
 	/**

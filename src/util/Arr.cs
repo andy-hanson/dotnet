@@ -333,6 +333,19 @@ struct Arr<T> : IEnumerable<T> {
 				return false;
 		return true;
 	}
+
+	public override string ToString() => throw new NotSupportedException();
+	public override bool Equals(object o) => throw new NotSupportedException();
+	public override int GetHashCode() => throw new NotSupportedException();
+
+	internal int hash() {
+		unchecked {
+			uint hc = 1;
+			for (uint i = 0; i < length; i++)
+				hc = hc * 17 + (uint)this[i].GetHashCode();
+			return (int)hc;
+		}
+	}
 }
 
 static class Arr {

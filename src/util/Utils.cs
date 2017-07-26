@@ -41,24 +41,24 @@ static class Utils {
 	internal static void unused<T, U>(T value1, U value2) {}
 	#pragma warning restore
 
-	internal static Exception fail(string message) =>
+	static Exception assertionFail(string message) =>
 		new DebugFailureException(message);
 
 	internal static Exception TODO(string message = "TODO!") {
 		Debugger.Break();
-		return fail(message);
+		return assertionFail(message);
 	}
 
-	internal static Exception unreachable() => fail("UNREACHABLE");
+	internal static Exception unreachable() => assertionFail("unreachable");
 
 	internal static void assert(bool condition, Func<string> message) {
 		if (!condition)
-			throw fail(message());
+			throw assertionFail(message());
 	}
 
 	internal static void assert(bool condition, string message = "Assertion failed.") {
 		if (!condition)
-			throw fail(message);
+			throw assertionFail(message);
 	}
 
 	internal static void doTimes(uint times, Action action) {

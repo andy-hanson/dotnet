@@ -48,8 +48,16 @@ sealed class ILEmitter {
 		if (maps.tryGetAlreadyEmittedTypeForKlass(module.klass, out var b))
 			return b;
 
-		foreach (var im in module.imports)
-			emitModule(im);
+		foreach (var import in module.imports)
+			switch (import) {
+				case Model.Module m:
+					emitModule(m);
+					break;
+				case BuiltinClass _:
+					break;
+				default:
+					throw unreachable();
+			}
 
 		return doCompileModule(module);
 	}

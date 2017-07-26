@@ -6,7 +6,7 @@ using static Utils;
 
 [DebuggerDisplay(":{toPathString()}")]
 struct Path : ToData<Path>, IEquatable<Path> {
-	readonly Arr<string> parts;
+	internal readonly Arr<string> parts;
 
 	internal Path(Arr<string> parts) {
 		this.parts = parts;
@@ -49,9 +49,7 @@ struct Path : ToData<Path>, IEquatable<Path> {
 		resolve(rel1).resolve(rel2);
 
 	internal Path resolve(RelPath rel) {
-		var nPartsToKeep = parts.length - rel.nParents;
-		if (nPartsToKeep < 0)
-			throw fail($"Can't resolve: {rel}\nRelative to: {this}");
+		var nPartsToKeep = checked(parts.length - rel.nParents);
 		var parent = parts.slice(0, nPartsToKeep);
 		return new Path(parent.Concat(rel.relToParent.parts));
 	}
@@ -106,7 +104,7 @@ struct Path : ToData<Path>, IEquatable<Path> {
 	public override string ToString() => throw new NotSupportedException();
 	public bool Equals(Path p) => deepEqual(p);
 	public bool deepEqual(Path p) => parts.deepEqual(p.parts);
-	public override int GetHashCode() => parts.GetHashCode();
+	public override int GetHashCode() => parts.hash();
 	internal string toPathString() => parts.join("/");
 	internal void toPathString(StringMaker s) => parts.join("/", s);
 	public static bool operator ==(Path a, Path b) => a.deepEqual(b);

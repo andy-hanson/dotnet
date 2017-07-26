@@ -5,7 +5,7 @@ using System.Reflection;
 using static Utils;
 
 namespace Model {
-	sealed class BuiltinClass : ClassLike, ToData<BuiltinClass>, IEquatable<BuiltinClass> {
+	sealed class BuiltinClass : ClassLike, Imported, ToData<BuiltinClass>, IEquatable<BuiltinClass> {
 		internal readonly Type dotNetType;
 		readonly Late<Arr<AbstractMethodLike>> _abstractMethods;
 		// Use AbstractMethodLike instead of BuiltinAbstractMethod so this type will be compatible with KlassHead.Abstract's abstractMethods
@@ -47,15 +47,19 @@ namespace Model {
 		Dict<Sym, Member> _membersMap;
 		internal override Dict<Sym, Member> membersMap => _membersMap;
 
-		static readonly Dictionary<Sym, BuiltinClass> byName = new Dictionary<Sym, BuiltinClass>();
+		static Dictionary<Type, BuiltinClass> cache = new Dictionary<Type, BuiltinClass>();
 
-		internal static IEnumerable<BuiltinClass> all() =>
-			byName.Values;
+		internal static readonly Arr<BuiltinClass> all = Builtins.allTypes.map(fromDotNetType);
+		static readonly Dict<Sym, BuiltinClass> noImportBuiltins =
+			all.mapDefinedToDict(cls =>
+				!cls.dotNetType.hasAttribute<NoImportAttribute>() ? Op<(Sym, BuiltinClass)>.None : Op.Some((cls.name, cls)));
 
-		static BuiltinClass() {
-			foreach (var klass in Builtins.allTypes)
-				fromDotNetType(klass);
-		}
+		static readonly Dict<Path, BuiltinClass> importBuiltins =
+			all.mapDefinedToDict(cls =>
+				cls.dotNetType.hasAttribute<NoImportAttribute>() ? Op<(Path, BuiltinClass)>.None : Op.Some((Path.fromParts(cls.name.str), cls)));
+
+		internal static bool tryGetNoImportBuiltin(Sym name, out BuiltinClass b) => noImportBuiltins.get(name, out b);
+		internal static bool tryImportBuiltin(Path path, out BuiltinClass b) => importBuiltins.get(path, out b);
 
 		internal static readonly BuiltinClass Void = fromDotNetType(typeof(Builtins.Void));
 		internal static readonly BuiltinClass Bool = fromDotNetType(typeof(Builtins.Bool));
@@ -65,24 +69,23 @@ namespace Model {
 		internal static readonly BuiltinClass String = fromDotNetType(typeof(Builtins.String));
 		internal static readonly BuiltinClass Exception = fromDotNetType(typeof(Builtins.Exception));
 
-		/** Get an already-registered type by name. */
-		internal static bool tryGet(Sym name, out BuiltinClass b) => byName.TryGetValue(name, out b);
+		Sym Imported.name => name;
+		ClassLike Imported.importedClass => this;
 
 		/** Safe to call this twice on the same type. */
 		internal static BuiltinClass fromDotNetType(Type dotNetType) {
+			if (cache.TryGetValue(dotNetType, out var old)) {
+				return old;
+			}
+
 			assert(dotNetType.DeclaringType == typeof(Builtins));
 			assert(dotNetType == typeof(Builtins.Exception) || !dotNetType.IsAbstract || dotNetType.IsInterface, "Use an interface instead of an abstract class.");
 
 			var name = NameEscaping.unescapeTypeName(dotNetType.Name);
 
-			if (byName.TryGetValue(name, out var old)) {
-				assert(old.dotNetType == dotNetType);
-				return old;
-			}
-
 			var klass = new BuiltinClass(name, dotNetType);
 			// Important that we put this in the map *before* initializing it, so a type's methods can refer to itself.
-			byName[name] = klass;
+			cache[dotNetType] = klass;
 
 			foreach (var field in dotNetType.GetFields()) {
 				if (field.hasAttribute<HidAttribute>())
@@ -124,6 +127,7 @@ namespace Model {
 		private BuiltinClass(Sym name, Type dotNetType) : base(name) { this.dotNetType = dotNetType; }
 
 		public override ClassLike.Id getId() => ClassLike.Id.ofBuiltin(name);
+		Dat Imported.getImportedId() => getId().toDat();
 
 		bool IEquatable<BuiltinClass>.Equals(BuiltinClass other) => object.ReferenceEquals(this, other);
 		public override bool deepEqual(ClsRef c) => throw new NotSupportedException();

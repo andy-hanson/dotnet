@@ -1,60 +1,62 @@
 Module(
-  loc: 0-135,
-  imports: [],
+  loc: 0-153,
+  imports: [Global(
+    loc: 7-16,
+    path: ["Exception"])],
   klass: Klass(
-    loc: 0-135,
+    loc: 18-153,
     head: null,
     supers: [],
     methods: [Method(
-      loc: 0-135,
+      loc: 18-153,
       isStatic: true,
       returnTy: Ty(
-        loc: 4-8,
+        loc: 22-26,
         cls: Access(
-          loc: 4-8,
+          loc: 22-26,
           name: "Void")),
       name: "main",
       parameters: [],
       body: Let(
-        loc: 19-103,
+        loc: 37-121,
         assigned: Single(
-          loc: 17-18,
+          loc: 35-36,
           name: "x"),
         value: Try(
-          loc: 21-103,
+          loc: 39-121,
           _do: Seq(
-            loc: 33-65,
+            loc: 51-83,
             first: Assert(
-              loc: 33-49,
+              loc: 51-67,
               asserted: Literal(
-                loc: 40-45,
+                loc: 58-63,
                 value: false)),
             then: Literal(
-              loc: 49-62,
+              loc: 67-80,
               value: "unreachable")),
           _catch: Catch(
-            loc: 65-103,
+            loc: 83-121,
             exceptionTy: Ty(
-              loc: 71-80,
+              loc: 89-98,
               cls: Access(
-                loc: 71-80,
+                loc: 89-98,
                 name: "Exception")),
             exceptionName: "e",
             then: Call(
-              loc: 86-101,
+              loc: 104-119,
               target: GetProperty(
-                loc: 86-99,
+                loc: 104-117,
                 target: Access(
-                  loc: 86-87,
+                  loc: 104-105,
                   name: "e"),
                 propertyName: "description"),
               args: [])),
           _finally: null),
         then: Assert(
-          loc: 103-135,
+          loc: 121-153,
           asserted: OperatorCall(
-            loc: 110-135,
+            loc: 128-153,
             oper: "==",
             right: Literal(
-              loc: 115-134,
+              loc: 133-152,
               value: "Assertion failed.")))))]))

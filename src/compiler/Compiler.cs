@@ -103,10 +103,15 @@ sealed class Compiler {
 		var ast = documentInfo.parseResult.force(); // TODO: don't force
 
 		var allDependenciesReused = true;
-		var imports = ast.imports.map(import => {
-			var (importedModule, isImportReused) = compileSingle(Op.Some(new PathLoc(fullPath, import.loc)), importPath(fullPath, import));
-			allDependenciesReused = allDependenciesReused && isImportReused;
-			return importedModule;
+		var imports = ast.imports.map<Imported>(import => {
+			var imported = importPath(fullPath, import);
+			if (imported.isLeft) {
+				return imported.left;
+			} else {
+				var (importedModule, isImportReused) = compileSingle(Op.Some(new PathLoc(fullPath, import.loc)), imported.right);
+				allDependenciesReused = allDependenciesReused && isImportReused;
+				return importedModule;
+			}
 		});
 
 		// We will only bother looking at the old module if all of our dependencies were safely reused.
@@ -123,18 +128,30 @@ sealed class Compiler {
 		return (module, isReused: false);
 	}
 
-	static Path importPath(Path importerPath, Ast.Import import) {
+	static Either<BuiltinClass, Path> importPath(Path importerPath, Ast.Import import) {
 		switch (import) {
-			case Ast.Import.Global g:
-				throw TODO();
+			case Ast.Import.Global g: {
+				var (loc, path) = g;
+				return Either<BuiltinClass, Path>.Left(resolveGlobalImport(loc, path));
+			}
+
 			case Ast.Import.Relative rel: {
 				var (loc, path) = rel;
 				unused(loc); //TODO: error message should use loc
-				return importerPath.resolve(path);
+				return Either<BuiltinClass, Path>.Right(importerPath.resolve(path));
 			}
+
 			default:
 				throw unreachable();
 		}
+	}
+
+	static BuiltinClass resolveGlobalImport(Loc loc, Path path) {
+		if (BuiltinClass.tryImportBuiltin(path, out var cls))
+			return cls;
+
+		unused(loc); //TODO: error message should use loc
+		throw TODO();
 	}
 
 	struct ModuleState {

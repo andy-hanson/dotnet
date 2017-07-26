@@ -1,9 +1,9 @@
 Klass(
-  loc: 0-135,
+  loc: 18-153,
   head: Static(),
   membersMap: Dict<Sym, Member>(
     main: MethodWithBody(
-      loc: 0-135,
+      loc: 18-153,
       isStatic: true,
       returnTy: Id(
         effect: "pure",
@@ -12,32 +12,32 @@ Klass(
       selfEffect: "pure",
       parameters: [],
       body: Let(
-        loc: 19-103,
+        loc: 37-121,
         assigned: Single(
-          loc: 17-18,
+          loc: 35-36,
           name: "x"),
         value: Try(
-          loc: 21-103,
+          loc: 39-121,
           _do: Seq(
-            loc: 33-65,
+            loc: 51-83,
             action: Assert(
-              loc: 33-49,
+              loc: 51-67,
               asserted: Literal(
-                loc: 40-45,
+                loc: 58-63,
                 value: false)),
             then: Literal(
-              loc: 49-62,
+              loc: 67-80,
               value: "unreachable")),
           _catch: Catch(
-            loc: 65-103,
+            loc: 83-121,
             exceptionTy: Id(
               effect: "pure",
               clsId: "Exception"),
             caught: Single(
-              loc: 81-82,
+              loc: 99-100,
               name: "e"),
             then: InstanceMethodCall(
-              loc: 86-101,
+              loc: 104-119,
               target: AccessLocal(
                 local: "e"),
               method: Id(
@@ -46,14 +46,14 @@ Klass(
               args: [])),
           _finally: null),
         then: Assert(
-          loc: 103-135,
+          loc: 121-153,
           asserted: InstanceMethodCall(
-            loc: 110-135,
+            loc: 128-153,
             target: AccessLocal(
               local: "x"),
             method: Id(
               klassId: "String",
               name: "=="),
             args: [Literal(
-              loc: 115-134,
+              loc: 133-152,
               value: "Assertion failed.")]))))))
