@@ -1,7 +1,7 @@
 using System;
-using System.Collections.Generic;
 using System.Reflection;
 
+using BuiltinAttributes;
 using static Utils;
 
 namespace Model {
@@ -11,7 +11,7 @@ namespace Model {
 		// Use AbstractMethodLike instead of BuiltinAbstractMethod so this type will be compatible with KlassHead.Abstract's abstractMethods
 		internal Arr<AbstractMethodLike> abstractMethods {
 			get { assert(isAbstract); return _abstractMethods.get; }
-			private set => _abstractMethods.set(value);
+			set => _abstractMethods.set(value);
 		}
 
 		//kill?
@@ -44,87 +44,24 @@ namespace Model {
 		}
 		internal override bool isAbstract => dotNetType.IsAbstract;
 
-		Dict<Sym, Member> _membersMap;
-		internal override Dict<Sym, Member> membersMap => _membersMap;
+		Late<Dict<Sym, Member>> _membersMap;
+		internal void setMembersMap(Dict<Sym, Member> value) { _membersMap.set(value); }
+		internal override Dict<Sym, Member> membersMap => _membersMap.get;
 
-		static Dictionary<Type, BuiltinClass> cache = new Dictionary<Type, BuiltinClass>();
-
-		internal static readonly Arr<BuiltinClass> all = Builtins.allTypes.map(fromDotNetType);
-		static readonly Dict<Sym, BuiltinClass> noImportBuiltins =
-			all.mapDefinedToDict(cls =>
-				!cls.dotNetType.hasAttribute<NoImportAttribute>() ? Op<(Sym, BuiltinClass)>.None : Op.Some((cls.name, cls)));
-
-		static readonly Dict<Path, BuiltinClass> importBuiltins =
-			all.mapDefinedToDict(cls =>
-				cls.dotNetType.hasAttribute<NoImportAttribute>() ? Op<(Path, BuiltinClass)>.None : Op.Some((Path.fromParts(cls.name.str), cls)));
-
-		internal static bool tryGetNoImportBuiltin(Sym name, out BuiltinClass b) => noImportBuiltins.get(name, out b);
-		internal static bool tryImportBuiltin(Path path, out BuiltinClass b) => importBuiltins.get(path, out b);
-
-		internal static readonly BuiltinClass Void = fromDotNetType(typeof(Builtins.Void));
-		internal static readonly BuiltinClass Bool = fromDotNetType(typeof(Builtins.Bool));
-		internal static readonly BuiltinClass Nat = fromDotNetType(typeof(Builtins.Nat));
-		internal static readonly BuiltinClass Int = fromDotNetType(typeof(Builtins.Int));
-		internal static readonly BuiltinClass Real = fromDotNetType(typeof(Builtins.Real));
-		internal static readonly BuiltinClass String = fromDotNetType(typeof(Builtins.String));
-		internal static readonly BuiltinClass Exception = fromDotNetType(typeof(Builtins.Exception));
+		static BuiltinClass _load<T>() => BuiltinsLoader.fromDotNetType(typeof(T));
+		internal static readonly BuiltinClass Void = _load<Builtins.Void>();
+		internal static readonly BuiltinClass Bool = _load<Builtins.Bool>();
+		internal static readonly BuiltinClass Nat = _load<Builtins.Nat>();
+		internal static readonly BuiltinClass Int = _load<Builtins.Int>();
+		internal static readonly BuiltinClass Real = _load<Builtins.Real>();
+		internal static readonly BuiltinClass String = _load<Builtins.String>();
+		internal static readonly BuiltinClass Exception = _load<Builtins.Exception>();
 
 		Sym Imported.name => name;
 		ClassLike Imported.importedClass => this;
 
-		/** Safe to call this twice on the same type. */
-		internal static BuiltinClass fromDotNetType(Type dotNetType) {
-			if (cache.TryGetValue(dotNetType, out var old)) {
-				return old;
-			}
-
-			assert(dotNetType.DeclaringType == typeof(Builtins));
-			assert(dotNetType == typeof(Builtins.Exception) || !dotNetType.IsAbstract || dotNetType.IsInterface, "Use an interface instead of an abstract class.");
-
-			var name = NameEscaping.unescapeTypeName(dotNetType.Name);
-
-			var klass = new BuiltinClass(name, dotNetType);
-			// Important that we put this in the map *before* initializing it, so a type's methods can refer to itself.
-			cache[dotNetType] = klass;
-
-			foreach (var field in dotNetType.GetFields()) {
-				if (field.hasAttribute<HidAttribute>())
-					continue;
-				throw TODO();
-			}
-
-			var abstracts = Arr.builder<AbstractMethodLike>();
-
-			var dotNetMethods = dotNetType.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
-			var overrides = Arr.builder<MethodInfo>();
-			klass._membersMap = dotNetMethods.mapToDict<MethodInfo, Sym, Member>(method => {
-				if (method.hasAttribute<HidAttribute>())
-					return Op<(Sym, Member)>.None;
-
-				if (method.GetBaseDefinition() != method) {
-					overrides.add(method);
-					return Op<(Sym, Member)>.None;
-				}
-
-				if (method.IsVirtual && !method.IsAbstract) {
-					// Must be an override. Don't add to the table.
-					assert(method.GetBaseDefinition() != method);
-					return Op<(Sym, Member)>.None;
-				}
-
-				var m2 = BuiltinMethod.of(klass, method);
-				if (m2 is BuiltinAbstractMethod b)
-					abstracts.add(b);
-				return Op.Some<(Sym, Member)>((m2.name, m2));
-			});
-
-			klass.overrides = overrides.finish();
-			klass.abstractMethods = abstracts.finish();
-
-			return klass;
-		}
-
-		private BuiltinClass(Sym name, Type dotNetType) : base(name) { this.dotNetType = dotNetType; }
+		/** Only call this if you are BuiltinsLoader! */
+		internal BuiltinClass(Sym name, Type dotNetType) : base(name) { this.dotNetType = dotNetType; }
 
 		public override ClassLike.Id getId() => ClassLike.Id.ofBuiltin(name);
 		Dat Imported.getImportedId() => getId().toDat();

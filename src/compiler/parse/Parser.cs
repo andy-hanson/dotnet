@@ -179,20 +179,15 @@ sealed class Parser : ExprParser {
 		return (slot, isNext);
 	}
 
-	Arr<Ast.Method> parseMethods(Pos start, MethodKw next) {
-		//TODO: helper fn for this pattern
-		var b = Arr.builder<Ast.Method>();
-		while (true) {
+	Arr<Ast.Method> parseMethods(Pos start, MethodKw next) =>
+		Arr.buildUntilNull(() => {
 			var m = parseMethod(start, next);
-			if (!m.get(out var mm))
-				return b.finish();
-
-			b.add(mm);
-
-			start = pos;
-			next = takeMethodKeywordOrEof();
-		}
-	}
+			if (m.has) {
+				start = pos;
+				next = takeMethodKeywordOrEof();
+			}
+			return m;
+		});
 
 	Op<Ast.Method> parseMethod(Pos start, MethodKw next) {
 		switch (next) {

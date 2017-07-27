@@ -147,7 +147,7 @@ sealed class Compiler {
 	}
 
 	static BuiltinClass resolveGlobalImport(Loc loc, Path path) {
-		if (BuiltinClass.tryImportBuiltin(path, out var cls))
+		if (BuiltinsLoader.tryImportBuiltin(path, out var cls))
 			return cls;
 
 		unused(loc); //TODO: error message should use loc

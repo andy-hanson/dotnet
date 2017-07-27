@@ -1,6 +1,7 @@
 using System;
 using System.Reflection;
 
+using BuiltinAttributes;
 using Model;
 using static EstreeUtils;
 using static NameEscaping;
@@ -25,7 +26,7 @@ static class JsBuiltins {
 		var primitiveNzlibStatic = Set.builder<BuiltinMethodWithBody>();
 		var primitiveNzlibInstance = Set.builder<BuiltinMethodWithBody>();
 
-		foreach (var k in BuiltinClass.all) {
+		foreach (var k in BuiltinsLoader.all) {
 			if (!k.dotNetType.hasAttribute<JsPrimitiveAttribute>())
 				continue;
 
@@ -154,7 +155,7 @@ static class JsBuiltins {
 		var primitivesBuilder = Dict.builder<BuiltinClass, Arr.Builder<string>>();
 		var classes = Dict.builder<string, NzlibClassData>();
 
-		foreach (var k in BuiltinClass.all) {
+		foreach (var k in BuiltinsLoader.all) {
 			if (k.dotNetType.hasAttribute<JsPrimitiveAttribute>()) {
 				primitivesBuilder.add(k, Arr.builder<string>());
 				continue;

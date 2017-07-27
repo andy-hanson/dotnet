@@ -49,7 +49,7 @@ static class Utils {
 		return assertionFail(message);
 	}
 
-	internal static Exception unreachable() => assertionFail("unreachable");
+	internal static Exception unreachable() => assertionFail(nameof(unreachable));
 
 	internal static void assert(bool condition, Func<string> message) {
 		if (!condition)

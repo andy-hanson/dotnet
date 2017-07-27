@@ -7,9 +7,6 @@ using Lsp;
 #pragma warning disable CC0068 // Allow unused methods in this file
 #pragma warning disable CC0057 // Allow unused arguments in this file
 
-class Animal {}
-class Cat : Animal {}
-
 static class Program {
 	static void Main(string[] args) {
 		//args = new[] { "run", "tests/cases/ConsoleApp/index.nz" };

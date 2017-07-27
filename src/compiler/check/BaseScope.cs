@@ -78,7 +78,7 @@ struct BaseScope {
 		if (imports.findMap(out cls, i => i.name == name ? Op.Some<ClsRef>(i.importedClass) : Op<ClsRef>.None))
 			return true;
 
-		if (BuiltinClass.tryGetNoImportBuiltin(name, out var builtin)) {
+		if (BuiltinsLoader.tryGetNoImportBuiltin(name, out var builtin)) {
 			// out parameters are invariant, so need this line
 			// https://stackoverflow.com/questions/527758/in-c-sharp-4-0-why-cant-an-out-parameter-in-a-method-be-covariant
 			cls = builtin;

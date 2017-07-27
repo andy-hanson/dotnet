@@ -2,7 +2,7 @@ using static Utils;
 
 namespace Model {
 	struct Effect : ToData<Effect> {
-		Kind kind;
+		readonly Kind kind;
 		Effect(Kind kind) { this.kind = kind; }
 
 		/** True pure function. */
@@ -50,6 +50,6 @@ namespace Model {
 		}
 
 		/** Ordering is important; strictest level comes first, each new level contains the previous one. */
-		enum Kind { Pure, Get, Set, Io };
+		enum Kind { Pure, Get, Set, Io }
 	}
 }
