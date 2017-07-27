@@ -21,7 +21,14 @@ static class ReaderU {
 			if (source.at(i) == '\n')
 				lineNo++;
 
-		return $"Line {lineNo + 1}: {source.slice(nlBefore, pos.index)}|{source.slice(pos.index, nlAfter)}";
+		return StringMaker.create()
+			.add("Line ")
+			.add(lineNo + 1)
+			.add(": ")
+			.add(source.slice(nlBefore, pos.index))
+			.add('|')
+			.add(source.slice(pos.index, nlAfter))
+			.finish();
 	}
 }
 
@@ -274,10 +281,13 @@ abstract class Lexer : Reader {
 		return false;
 	}
 
-	void expectCharacter(char expected) {
+	void expectNewlineCharacter() => expectCharacter('\n', "newline");
+	void expectTabCharacter() => expectCharacter('\t', "tab");
+
+	void expectCharacter(char expected, string expectedDesc) {
 		var actual = readChar();
 		if (actual != expected)
-			throw exit(singleCharLoc, new UnexpectedCharacter(actual, $"'{expected}'"));
+			throw exit(singleCharLoc, new UnexpectedCharacter(actual, expectedDesc));
 	}
 
 	void expectCharacter(string expected, Func<char, bool> pred) {
@@ -314,9 +324,9 @@ abstract class Lexer : Reader {
 
 	protected enum NewlineOrDedent { Newline, Dedent }
 	protected NewlineOrDedent takeNewlineOrDedent() {
-		expectCharacter('\n');
+		expectNewlineCharacter();
 		skipEmptyLines();
-		doTimes(indent - 1, () => expectCharacter('\t'));
+		doTimes(indent - 1, () => expectTabCharacter());
 		if (tryTake('\t'))
 			return NewlineOrDedent.Newline;
 		else {
@@ -327,9 +337,9 @@ abstract class Lexer : Reader {
 
 	protected enum NewlineOrIndent { Newline, Indent }
 	protected NewlineOrIndent takeNewlineOrIndent() {
-		expectCharacter('\n');
+		expectNewlineCharacter();
 		skipEmptyLines();
-		doTimes(indent, () => expectCharacter('\t'));
+		doTimes(indent, () => expectTabCharacter());
 		if (tryTake('\t')) {
 			indent++;
 			return NewlineOrIndent.Indent;
@@ -373,39 +383,40 @@ abstract class Lexer : Reader {
 			return;
 		}
 
-		expectCharacter('\n');
+		expectNewlineCharacter();
 		skipEmptyLines();
 		this.indent--;
-		doTimes(this.indent, () => expectCharacter('\t'));
+		doTimes(this.indent, expectTabCharacter);
 	}
 
 	protected void takeNewline() {
-		expectCharacter('\n');
+		expectNewlineCharacter();
 		skipEmptyLines();
-		doTimes(this.indent, () => expectCharacter('\t'));
+		doTimes(this.indent, expectTabCharacter);
 	}
 
 	protected bool tryTakeNewline() {
 		if (!tryTake('\n')) return false;
 		skipEmptyLines();
-		doTimes(this.indent, () => expectCharacter('\t'));
+		doTimes(this.indent, expectTabCharacter);
 		return true;
 	}
 
 	protected void takeIndent() {
-		expectCharacter('\n');
+		expectNewlineCharacter();
 		this.indent++;
-		doTimes(this.indent, () => expectCharacter('\t'));
+		doTimes(this.indent, expectTabCharacter);
 	}
 
 	protected bool tryTakeSpace() => tryTake(' ');
 
-	protected void takeSpace() => expectCharacter(' ');
-	protected void takeLparen() => expectCharacter('(');
-	protected void takeRparen() => expectCharacter(')');
-	protected void takeComma() => expectCharacter(',');
-	protected void takeDot() => expectCharacter('.');
-	protected void takeEquals() => expectCharacter('=');
+	protected void takeSpace() => expectCharacter(' ', "space");
+	protected void takeLparen() => expectCharacter('(', "'('");
+	protected void takeRparen() => expectCharacter(')', "')'");
+	protected void takeComma() => expectCharacter(',', "','");
+	protected void takeDot() => expectCharacter('.', "'.'");
+	protected void takeEquals() => expectCharacter('=', "'='");
+
 	protected bool tryTakeRparen() => tryTake(')');
 	protected bool tryTakeDot() => tryTake('.');
 	protected bool tryTakeColon() => tryTake(':');

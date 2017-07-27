@@ -31,7 +31,7 @@ namespace Test {
 
 		internal void runTestNamed(string name) {
 			if (!getTestMethods().get(name, out var method))
-				throw TODO($"No test method for {name}");
+				throw TODO("No test method for " + name);
 			runSingle(name, method);
 		}
 
@@ -64,7 +64,7 @@ namespace Test {
 
 			var extraBaselines = Set.setDifference(allBaselines, allTests.toSet());
 			if (extraBaselines.Any())
-				throw new TestFailureException($"Baselines have no associated tests: {string.Join(", ", extraBaselines)}");
+				throw new TestFailureException("Baselines have no associated tests: " + string.Join(", ", extraBaselines));
 		}
 
 		static Dict<string, MethodInfo> getTestMethods() {

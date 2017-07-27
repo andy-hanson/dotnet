@@ -5,7 +5,7 @@ using static System.Math;
 using static Utils;
 
 [DebuggerDisplay(":{toPathString()}")]
-struct Path : ToData<Path>, IEquatable<Path> {
+struct Path : ToData<Path>, IEquatable<Path>, Show {
 	internal readonly Arr<string> parts;
 
 	internal Path(Arr<string> parts) {
@@ -106,6 +106,7 @@ struct Path : ToData<Path>, IEquatable<Path> {
 	public bool deepEqual(Path p) => parts.deepEqual(p.parts);
 	public override int GetHashCode() => parts.hash();
 	internal string toPathString() => parts.join("/");
+	void Show.show(StringMaker s) => parts.join("/", s);
 	internal void toPathString(StringMaker s) => parts.join("/", s);
 	public static bool operator ==(Path a, Path b) => a.deepEqual(b);
 	public static bool operator !=(Path a, Path b) => !a.deepEqual(b);

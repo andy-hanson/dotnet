@@ -32,8 +32,8 @@ namespace Test {
 		internal static void assertEqual<T>(T expected, T actual) where T : ToData<T> {
 			if (expected.deepEqual(actual))
 				return;
-			Console.WriteLine($"Expected: {CsonWriter.write(expected)}");
-			Console.WriteLine($"Actual: {CsonWriter.write(actual)}");
+			Console.WriteLine("Expected: " + CsonWriter.write(expected));
+			Console.WriteLine("Actual: " + CsonWriter.write(actual));
 			throw TODO();
 		}
 	}

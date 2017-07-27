@@ -135,7 +135,7 @@ sealed class ILEmitter {
 		}
 	}
 
-	void generateConstructor(TypeBuilder tb, Klass klass, Arr<FieldInfo> fields, /*nullable*/ Logger logger) {
+	void generateConstructor(TypeBuilder tb, Klass klass, Arr<FieldInfo> fields, /*nullable*/ InstructionLogger logger) {
 		//Constructor can't call any other methods, so we generate it eagerly.
 		var parameterTypes = fields.mapToArray(f => f.FieldType);
 		var ctr = tb.DefineConstructor(MethodAttributes.Private, CallingConventions.Standard, parameterTypes);
@@ -196,8 +196,8 @@ static class Attributes {
 	internal const MethodAttributes impl = MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final;
 }
 
-sealed class LogWriter : Logger {
-	readonly StringMaker s = StringMaker.create();
+sealed class LogWriter : InstructionLogger {
+	internal readonly StringMaker s = StringMaker.create();
 
 	internal void beginConstructor() =>
 		s.add("constructor");
@@ -218,8 +218,9 @@ sealed class LogWriter : Logger {
 	internal void endMethod() =>
 		s.add("\n\n");
 
-	void Logger.log(string str) =>
-		s.add("\n\t").add(str);
+	StringMaker InstructionLogger.log() =>
+		// Begin each instruction with "\n\t"
+		s.add("\n\t");
 
 	internal string finish() =>
 		s.finish();

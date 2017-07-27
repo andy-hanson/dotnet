@@ -69,7 +69,7 @@ sealed class Compiler {
 				case ModuleState.Kind.Compiling:
 					//TODO: attach an error to the Module.
 					//raiseWithPath(logicalPath, fromLoc ?? Loc.zero, Err.CircularDependency(logicalPath));
-					throw TODO($"Circular dependency around {logicalPath}");
+					throw TODO("Circular dependency around " + logicalPath);
 
 				case ModuleState.Kind.CompiledFresh:
 				case ModuleState.Kind.CompiledReused:

@@ -24,7 +24,7 @@ static class Program {
 	static void doTestIl() {
 		var t = testIl();
 		var res = t.invokeStatic("stat", 10);
-		Console.WriteLine($"res: {res}");
+		Console.WriteLine(res);
 
 		//var instance = Activator.CreateInstance(t);
 		//Console.WriteLine(t.invokeInstance(instance, "foo"));
@@ -56,11 +56,11 @@ static class Program {
 
 sealed class ConsoleLogger : Lsp.Server.Logger {
 	public void received(string s) {
-		Console.WriteLine($"Received: {s}");
+		Console.WriteLine("Received: " + s);
 	}
 
 	public void sent(string s) {
-		Console.WriteLine($"Sent: {s}");
+		Console.WriteLine("Sent: " + s);
 	}
 }
 
@@ -76,11 +76,11 @@ class DumbSmartness : LspImplementation {
 	}
 
 	void LspImplementation.textDocumentDidSave(string uri, uint version) {
-		Console.WriteLine($"Saved {uri}");
+		Console.WriteLine("Saved " + uri);
 	}
 
 	void LspImplementation.textDocumentDidOpen(string uri, string languageId, uint version, string text) {
-		Console.WriteLine($"Opened ${uri}");
+		Console.WriteLine("Opened " + uri);
 	}
 
 	void LspImplementation.goToDefinition(TextDocumentPositionParams pms, out string uri, out Range range) {

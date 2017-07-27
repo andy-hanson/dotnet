@@ -21,7 +21,7 @@ namespace Test {
 			assert(typeToImplement.IsInterface);
 
 			const TypeAttributes attr = TypeAttributes.Public | TypeAttributes.Sealed;
-			var implementer = moduleBuilder.DefineType($"{typeToImplement.Name}_implementer", attr, parent: null, interfaces: new Type[] { typeToImplement });
+			var implementer = moduleBuilder.DefineType(typeToImplement.Name + "_implementer", attr, parent: null, interfaces: new Type[] { typeToImplement });
 
 			var fieldType = o.GetType();
 			assert(fieldType.IsSealed);

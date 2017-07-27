@@ -5,7 +5,7 @@ using System.Linq;
 static class FileUtils {
 	internal static IEnumerable<string> listDirectoriesInDirectory(Path path) {
 		var pathStr = path.toPathString();
-		var pathSlash = $"{pathStr}/";
+		var pathSlash = pathStr + '/';
 		return Directory.EnumerateDirectories(pathStr).Select(d => d.withoutStart(pathSlash));
 	}
 

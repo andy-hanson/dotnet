@@ -187,8 +187,6 @@ static class TcpUtils {
 	internal static void writeTcpString(Stream stream, string content) {
 		var contentBytes = System.Text.Encoding.UTF8.GetBytes(content);
 
-		//var contentLengthBytes = System.Text.Encoding.UTF8.GetBytes($"{contentLengthStr}{contentBytes.Length}\r\n\r\n");
-
 		#pragma warning disable CC0022 // Closing sw would close 'stream', which we don't want.
 		var sw = new System.IO.StreamWriter(stream);
 		#pragma warning restore CC0022
@@ -222,7 +220,7 @@ static class StreamUtils {
 	internal static uint readUintThenNewline(Stream stream) {
 		var fst = (char)stream.ReadByte();
 		var isDigit = Json.JsonScanner.toDigit(fst, out var res);
-		assert(isDigit, () => $"Expected a digit, got: {fst}");
+		assert(isDigit, () => "Expected a digit, got: " + fst);
 
 		while (true) {
 			var ch = (char)stream.ReadByte();

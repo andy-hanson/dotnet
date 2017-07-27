@@ -71,7 +71,7 @@ namespace Json {
 					readNull();
 					return new LspMethod.Shutdown(id.force);
 				default:
-					throw TODO($"Unrecognized method: {methodName}");
+					throw TODO("Unrecognized method: " + methodName);
 			}
 		}
 

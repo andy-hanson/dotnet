@@ -17,7 +17,7 @@ sealed class ILExprEmitter {
 		this.currentMethod = currentMethod;
 	}
 
-	internal static void emitMethodBody(EmitterMaps maps, MethodBuilder mb, Expr body, /*nullable*/ Logger logger) {
+	internal static void emitMethodBody(EmitterMaps maps, MethodBuilder mb, Expr body, /*nullable*/ InstructionLogger logger) {
 		var iw = new ILWriter(mb, logger);
 		new ILExprEmitter(maps, iw, mb).emitAny(body);
 		iw.ret();
@@ -160,7 +160,7 @@ sealed class ILExprEmitter {
 	static readonly List<Sym> caseSyms = new List<Sym>();
 	static Sym caseSym(uint idx) {
 		while (caseSyms.Count <= idx)
-			caseSyms.Add(Sym.of($"case{caseSyms.Count}"));
+			caseSyms.Add(Sym.of("case" + caseSyms.Count));
 		return caseSyms[signed(idx)];
 	}
 

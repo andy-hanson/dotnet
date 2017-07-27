@@ -25,7 +25,7 @@ namespace Json {
 		internal void over() {
 			while (idx.index != str.Length) {
 				var ch = readCh();
-				assert(!isWhitespace(ch), () => $"Did not expect {ch}");
+				assert(!isWhitespace(ch), () => $"Did not expect '{ch}'");
 			}
 		}
 

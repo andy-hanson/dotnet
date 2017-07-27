@@ -14,7 +14,7 @@ main
 	const string "unreachable"
 	call non-virtual String.of
 	set local tryResult
-	catch Builtins+Exception
+	catch Exception
 	declare local e
 	set local e
 	get local e

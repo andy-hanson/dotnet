@@ -10,7 +10,7 @@ namespace Test {
 		JsTestRunner(SynchronousProcess process) { this.process = process; }
 
 		internal void runTest(Path testPath) {
-			var response = process.sendAndReceive($"normal {testPath.toPathString()}");
+			var response = process.sendAndReceive(StringMaker.create().add("normal ").add(testPath).finish());
 			if (response != "OK") {
 				if (response.StartsWith('"') && response.EndsWith('"'))
 					//Response is a string with the error.
@@ -20,7 +20,7 @@ namespace Test {
 		}
 
 		internal void runTestSpecial(Path testPath) {
-			var response = process.sendAndReceive($"special {testPath.toPathString()}");
+			var response = process.sendAndReceive(StringMaker.create().add("special ").add(testPath).finish());
 			assert(response == "OK");
 		}
 
@@ -66,7 +66,7 @@ namespace Test {
 			var proc = new Process();
 			var si = proc.StartInfo;
 			si.FileName = "node";
-			si.Arguments = $"--harmony_tailcalls {path.toPathString()}";
+			si.Arguments = "--harmony_tailcalls " + path.toPathString();
 			si.CreateNoWindow = true;
 
 			var syncProc = new SynchronousProcess(proc);

@@ -19,6 +19,22 @@ struct StringMaker {
 		return this;
 	}
 
+	internal StringMaker add(int i) {
+		sb.Append(i);
+		return this;
+	}
+
+	internal StringMaker add(double d) {
+		sb.Append(d);
+		return this;
+	}
+
+	internal StringMaker addQuotedString(string s) {
+		var _sb = sb;
+		Utils.writeQuotedString(s, ch => _sb.Append(ch));
+		return this;
+	}
+
 	internal StringMaker add<T>(T t) where T : Show {
 		t.show(this);
 		return this;
