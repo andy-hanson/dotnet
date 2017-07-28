@@ -70,6 +70,9 @@ sealed class ILExprEmitter {
 			case SetSlot s:
 				emitSetSlot(s);
 				return;
+			case IfElse i:
+				emitIfElse(i);
+				return;
 			case WhenTest w:
 				emitWhenTest(w);
 				return;
@@ -156,6 +159,7 @@ sealed class ILExprEmitter {
 	}
 
 	static readonly Sym symElse = Sym.of("else");
+	static readonly Sym symEndIf = Sym.of("endIf");
 	static readonly Sym symEndWhen = Sym.of("endWhen");
 	static readonly List<Sym> caseSyms = new List<Sym>();
 	static Sym caseSym(uint idx) {
@@ -164,27 +168,51 @@ sealed class ILExprEmitter {
 		return caseSyms[signed(idx)];
 	}
 
+	void emitIfElse(IfElse i) {
+		/*
+		{condition}
+		if not, goto elze
+		{then}
+		goto end
+		elze:
+		{else}
+		end:
+		*/
+
+		var elze = il.label(symElse);
+		var end = il.label(symEndIf);
+
+		emitAny(i.test);
+		unpackBool();
+		il.goToIfFalse(elze);
+		emitAny(i.then);
+		il.goTo(end);
+		il.markLabel(elze);
+		emitAny(i.@else);
+		il.markLabel(end);
+	}
+
 	void emitWhenTest(WhenTest w) {
 		/*
-		do test0
+		{test0}
 		ifnot: goto case1
-			do case0 result
-			goto end
+		{result0}
+		goto end
 		case1:
-		do test1
+		{test1}
 		ifnot: goto elze
-			do test1 result
-			goto end
+		{result1}
+		goto end
+		...
 		elze:
-			do elze result
-			(already at end)
+		{elseResult}
 		end:
 		*/
 
 		// At index i, stores the label for case i + 1.
 		var nextCaseLabels = Arr.buildWithIndex(w.cases.length - 1, i => il.label(caseSym(i + 1)));
 
-		var elzeResultLabel = il.label(symElse);
+		var elseResultLabel = il.label(symElse);
 		var end = il.label(symEndWhen);
 
 		for (uint i = 0; i < w.cases.length; i++) {
@@ -194,12 +222,12 @@ sealed class ILExprEmitter {
 
 			emitAny(kase.test);
 			unpackBool();
-			il.goToIfFalse(i == w.cases.length - 1 ? elzeResultLabel : nextCaseLabels[i]);
+			il.goToIfFalse(i == w.cases.length - 1 ? elseResultLabel : nextCaseLabels[i]);
 			emitAny(kase.result);
 			il.goTo(end);
 		}
 
-		il.markLabel(elzeResultLabel);
+		il.markLabel(elseResultLabel);
 		emitAny(w.elseResult);
 
 		il.markLabel(end);

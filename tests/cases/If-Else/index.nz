@@ -1,0 +1,6 @@
+fun Void main()
+	assert (f true) == 1
+	assert (f false) == 2
+
+fun Nat f(Bool b)
+	if b then 1 else 2

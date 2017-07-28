@@ -71,6 +71,8 @@ sealed class JsExprEmitter {
 		switch (expr) {
 			case Assert a:
 				return assertToStatement(a);
+			case IfElse i:
+				return ifElseToStatement(i);
 			case WhenTest w:
 				return whenToStatement(w);
 			case Try t:
@@ -182,6 +184,8 @@ sealed class JsExprEmitter {
 			}
 			case GetMySlot g:
 				return Estree.MemberExpression.simple(loc, new Estree.ThisExpression(loc), escapeName(g.slot.name));
+			case IfElse i:
+				return ifElseToExpr(i);
 			case WhenTest w:
 				return whenToExpr(w);
 			default:
@@ -207,6 +211,12 @@ sealed class JsExprEmitter {
 			: Estree.MemberExpression.ofThis(loc, escapeName(methodName));
 		return new Estree.CallExpression(loc, fn, r.args.map(exprToExpr));
 	}
+
+	Estree.Statement ifElseToStatement(IfElse i) =>
+		new Estree.IfStatement(i.loc, exprToExpr(i.test), exprToReturnStatementOrBlock(i.then), exprToReturnStatementOrBlock(i.@else));
+
+	Estree.Expression ifElseToExpr(IfElse i) =>
+		new Estree.ConditionalExpression(i.loc, exprToExpr(i.test), exprToExpr(i.then), exprToExpr(i.@else));
 
 	/** if (test1) { return result1; } else if (test2) { return result2; } else { return result3; } */
 	Estree.Statement whenToStatement(WhenTest w) =>

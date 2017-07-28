@@ -60,7 +60,7 @@
         <key>name</key>
         <string>keyword</string>
         <key>match</key>
-        <string>\b(_|abstract|assert|catch|def|do|else|enum|false|finally|for|fun|generic|get|if|io|is|impl|import|in|new|pass|recur|self|set|slots|static|true|try|val|var|when|\&lt;|\&gt;|\&lt;\=|\&gt;\=|\+|\-|\*|\/)[^a-zA-Z0-9-]</string>
+        <string>\b(_|abstract|assert|catch|def|do|else|enum|false|finally|for|fun|generic|get|if|io|is|impl|import|in|new|pass|recur|self|set|slots|then|true|try|val|var|when|\&lt;|\&gt;|\&lt;\=|\&gt;\=|\+|\-|\*|\/)[^a-zA-Z0-9-]</string>
       </dict>
       <dict>
         <key>name</key>
@@ -149,7 +149,7 @@
         <key>name</key>
         <string>constant.numeric</string>
         <key>match</key>
-        <string>-?((0((b[01]+)|(o[0-8]+)|(x[\da-f]+)))|(\d+(\.\d+)?))</string>
+        <string>[\+\-]?((0((b[01]+)|(o[0-8]+)|(x[\da-f]+)))|(\d+(\.\d+)?))</string>
       </dict>
     </array>
   </dict>

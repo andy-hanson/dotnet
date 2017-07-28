@@ -18,6 +18,9 @@ namespace Test {
 			t.jsTestRunner.runTestSpecial(t.testPath);
 		}
 
+		[TestFor("If-Else")]
+		static void IfElse(TestData t) => runCsJsTests(t);
+
 		[TestFor(nameof(Impl))]
 		static void Impl(TestData t) => runCsJsTests(t);
 

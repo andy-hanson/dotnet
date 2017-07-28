@@ -156,6 +156,41 @@ namespace Model {
 		public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(value), value);
 	}
 
+	internal sealed class IfElse : Expr, ToData<IfElse> {
+		internal readonly Expr test;
+		internal readonly Expr then;
+		internal readonly Expr @else;
+		[NotData] internal readonly Ty _ty; // Cached common type of 'then' and '@else'
+		internal IfElse(Loc loc, Expr test, Expr then, Expr @else, Ty ty) : base(loc) {
+			this.test = test;
+			test.parent = this;
+			this.then = then;
+			then.parent = this;
+			this.@else = @else;
+			@else.parent = this;
+			this._ty = ty;
+		}
+
+		internal override IEnumerable<Expr> children() {
+			yield return test;
+			yield return then;
+			yield return @else;
+		}
+		internal override Ty ty => _ty;
+
+		public override bool deepEqual(Expr e) => e is IfElse i && deepEqual(i);
+		public bool deepEqual(IfElse i) =>
+			locEq(i) &&
+			test.deepEqual(i.test) &&
+			then.deepEqual(i.then) &&
+			@else.deepEqual(i.@else);
+		public override Dat toDat() => Dat.of(this,
+			nameof(loc), loc,
+			nameof(test), test,
+			nameof(then), then,
+			nameof(@else), @else);
+	}
+
 	internal sealed class WhenTest : Expr, ToData<WhenTest> {
 		internal readonly Arr<Case> cases;
 		internal readonly Expr elseResult;

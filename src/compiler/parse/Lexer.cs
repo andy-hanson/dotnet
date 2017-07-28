@@ -8,7 +8,6 @@ using static Utils;
 //mv
 static class ReaderU {
 	internal static string debug(string source, Pos pos) {
-		//Current line with a '|' in the middle.
 		var nlBefore = pos.index;
 		while (nlBefore > 0 && source.at(nlBefore - 1) != '\n')
 			nlBefore--;

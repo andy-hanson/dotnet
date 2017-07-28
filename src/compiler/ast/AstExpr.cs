@@ -186,6 +186,35 @@ namespace Ast {
 		public override Dat toDat() => Dat.of(this, nameof(loc), loc);
 	}
 
+	internal sealed class IfElse : Expr, ToData<IfElse> {
+		internal readonly Expr test;
+		internal readonly Expr then;
+		internal readonly Expr @else;
+		internal IfElse(Loc loc, Expr test, Expr then, Expr @else) : base(loc) {
+			this.test = test;
+			this.then = then;
+			this.@else = @else;
+		}
+		internal void Deconstruct(out Loc loc, out Expr condition, out Expr then, out Expr @else) {
+			loc = this.loc;
+			condition = this.test;
+			then = this.then;
+			@else = this.@else;
+		}
+
+		public override bool deepEqual(Node n) => n is IfElse i && deepEqual(i);
+		public bool deepEqual(IfElse i) =>
+			locEq(i) &&
+			test.deepEqual(i.test) &&
+			then.deepEqual(i.then) &&
+			@else.deepEqual(i.@else);
+		public override Dat toDat() => Dat.of(this,
+			nameof(loc), loc,
+			nameof(test), test,
+			nameof(then), then,
+			nameof(@else), @else);
+	}
+
 	internal sealed class WhenTest : Expr, ToData<WhenTest> {
 		internal readonly Arr<Case> cases;
 		internal readonly Expr elseResult;

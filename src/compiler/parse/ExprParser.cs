@@ -24,6 +24,8 @@ abstract class ExprParser : TyParser {
 		NextOperator, //pair with NoOperator
 		Dedent,
 		Rparen,
+		Then,
+		Else,
 		Indent,
 		Comma,
 	}
@@ -60,11 +62,14 @@ abstract class ExprParser : TyParser {
 		}
 	}
 
-	Ast.Expr parseExprAndEndContext(Ctx ctx, Next expectedNext, Pos start, Token startToken) {
+	Ast.Expr parseExprAndExpectNext(Ctx ctx, Next expectedNext, Pos start, Token startToken) {
 		var (expr, next) = parseExprWithNext(ctx, start, startToken);
 		if (next != expectedNext) throw TODO();
 		return expr;
 	}
+
+	Ast.Expr parseExprAndExpectNext(Ctx ctx, Next expectedNext) =>
+		parseExprAndExpectNext(ctx, expectedNext, pos, nextToken());
 
 	(Ast.Expr, Next) parseExpr(Ctx ctx) {
 		var start = pos;
@@ -146,6 +151,23 @@ abstract class ExprParser : TyParser {
 					var assert = new Ast.Assert(locFrom(exprStart), asserted);
 					return (assert, next);
 				}
+
+				case Token.If: {
+					takeSpace();
+					var test = parseExprAndExpectNext(Ctx.Plain, Next.Then);
+					takeSpace();
+					var then = parseExprAndExpectNext(Ctx.Plain, Next.Else);
+					takeSpace();
+					var (@else, next) = parseExpr(Ctx.Plain);
+					var _if = new Ast.IfElse(locFrom(loopStart), test, then, @else);
+					parts.add(_if);
+					var expr = finishRegular(exprStart, specialStart, parts);
+					return (expr, next);
+				}
+
+				case Token.Then:
+				case Token.Else:
+					return (finishRegular(exprStart, specialStart, parts), loopNext == Token.Then ? Next.Then : Next.Else);
 
 				case Token.When:
 				case Token.Try: {
@@ -271,12 +293,8 @@ abstract class ExprParser : TyParser {
 				var staticMethodName = takeName();
 				return new Ast.StaticAccess(locFrom(pos), className, staticMethodName);
 			}
-			case Token.ParenL: {
-				var (expr, next) = parseExpr(Ctx.Plain);
-				if (next != Next.Rparen)
-					throw TODO();
-				return expr;
-			}
+			case Token.ParenL:
+				return parseExprAndExpectNext(Ctx.Plain, Next.Rparen);
 			default:
 				return singleTokenExpr(locFrom(pos), token);
 		}
@@ -319,7 +337,7 @@ abstract class ExprParser : TyParser {
 		var caseStart = startPos;
 		var caseStartToken = nextToken();
 		do {
-			var firstTest = parseExprAndEndContext(Ctx.Plain, Next.Indent, caseStart, caseStartToken);
+			var firstTest = parseExprAndExpectNext(Ctx.Plain, Next.Indent, caseStart, caseStartToken);
 			var firstResult = parseBlock();
 			cases.add(new Ast.WhenTest.Case(locFrom(caseStart), firstTest, firstResult));
 

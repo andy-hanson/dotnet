@@ -32,6 +32,7 @@ class ExprChecker : CheckerCommon {
 	}
 
 	Expr checkVoid(Ast.Expr a) => checkSubtype(Ty.Void, a);
+	Expr checkBool(Ast.Expr a) => checkSubtype(Ty.Bool, a);
 
 	Expr checkInfer(Ast.Expr a) {
 		var expected = Expected.Infer();
@@ -77,6 +78,8 @@ class ExprChecker : CheckerCommon {
 				return checkLiteral(ref e, li);
 			case Ast.Self s:
 				return checkSelf(ref e, s);
+			case Ast.IfElse i:
+				return checkIfElse(ref e, i);
 			case Ast.WhenTest w:
 				return checkWhenTest(ref e, w);
 			case Ast.Assert ass:
@@ -266,6 +269,15 @@ class ExprChecker : CheckerCommon {
 	Handled checkSelf(ref Expected expected, Ast.Self s) =>
 		handle(ref expected, new Self(s.loc, Ty.of(selfEffect, currentClass)));
 
+	Handled checkIfElse(ref Expected expected, Ast.IfElse ast) {
+		var (loc, conditionAst, thenAst, elseAst) = ast;
+		var condition = checkBool(conditionAst);
+		var then = checkExpr(ref expected, thenAst);
+		var @else = checkExpr(ref expected, elseAst);
+		// `expected` was handled in `then` and `else`.
+		return new Handled(new IfElse(loc, condition, then, @else, expected.inferredType));
+	}
+
 	Handled checkWhenTest(ref Expected expected, Ast.WhenTest ast) {
 		var (loc, caseAsts, elseResultAst) = ast;
 
@@ -273,7 +285,7 @@ class ExprChecker : CheckerCommon {
 		var casesBuilder = caseAsts.mapBuilder<WhenTest.Case>();
 		for (uint i = 0; i < casesBuilder.Length; i++) {
 			var kase = caseAsts[i];
-			var test = checkSubtype(Ty.Bool, kase.test);
+			var test = checkBool(kase.test);
 			var result = checkExpr(ref expected, kase.result);
 			casesBuilder[i] = new WhenTest.Case(kase.loc, test, result);
 		}
@@ -287,7 +299,7 @@ class ExprChecker : CheckerCommon {
 
 	Handled checkAssert(ref Expected expected, Ast.Assert ast) {
 		var (loc, asserted) = ast;
-		return handle(ref expected, new Assert(loc, checkSubtype(Ty.Bool, asserted)));
+		return handle(ref expected, new Assert(loc, checkBool(asserted)));
 	}
 
 	Handled checkTry(ref Expected expected, Ast.Try ast) {

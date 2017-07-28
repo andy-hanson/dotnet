@@ -1,10 +1,12 @@
 using System;
+using System.Diagnostics;
 using System.Reflection;
 
 using BuiltinAttributes;
 using static Utils;
 
 namespace Model {
+	[DebuggerDisplay(":{name.str}")]
 	sealed class BuiltinClass : ClassLike, Imported, ToData<BuiltinClass>, IEquatable<BuiltinClass> {
 		internal readonly Type dotNetType;
 		readonly Late<Arr<AbstractMethodLike>> _abstractMethods;
