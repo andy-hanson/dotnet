@@ -113,7 +113,7 @@ class ExprChecker : CheckerCommon {
 				if (slot.mutable && !selfEffect.canGet)
 					addDiagnostic(loc, new MissingEffectToGetSlot(slot));
 
-				return handle(ref expected, new GetMySlot(loc, currentClass, slot));
+				return handle(ref expected, new GetMySlot(loc, slot));
 
 			case MethodWithBody _:
 			case AbstractMethod _:

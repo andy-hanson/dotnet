@@ -159,8 +159,8 @@ abstract class ExprParser : TyParser {
 					var then = parseExprAndExpectNext(Ctx.Plain, Next.Else);
 					takeSpace();
 					var (@else, next) = parseExpr(Ctx.Plain);
-					var _if = new Ast.IfElse(locFrom(loopStart), test, then, @else);
-					parts.add(_if);
+					var ifElse = new Ast.IfElse(locFrom(loopStart), test, then, @else);
+					parts.add(ifElse);
 					var expr = finishRegular(exprStart, specialStart, parts);
 					return (expr, next);
 				}

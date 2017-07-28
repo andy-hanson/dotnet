@@ -87,16 +87,21 @@ sealed class ILExprEmitter {
 		}
 	}
 
-	void emitAccessParameter(AccessParameter p) =>
-		il.getParameter(p.param.index);
+	void emitAccessParameter(AccessParameter p) {
+		var (_, param) = p;
+		il.getParameter(param.index);
+	}
 
-	void emitAccessLocal(AccessLocal lo) =>
-		il.getLocal(localToIl[lo.local]);
+	void emitAccessLocal(AccessLocal lo) {
+		var (_, local) = lo;
+		il.getLocal(localToIl[local]);
+	}
 
-	void emitLet(Let l) {
-		emitAny(l.value);
-		initLocal((Pattern.Single)l.assigned); //TODO:patterns
-		emitAny(l.then);
+	void emitLet(Let let) {
+		var (_, assigned, value, then) = let;
+		emitAny(value);
+		initLocal((Pattern.Single)assigned); //TODO:patterns
+		emitAny(then);
 		// Don't bother taking it out of the dictionary,
 		// we've already checked that there are no illegal accesses.
 	}
@@ -108,8 +113,9 @@ sealed class ILExprEmitter {
 	}
 
 	void emitSeq(Seq s) {
-		emitAnyVoid(s.action);
-		emitAny(s.then);
+		var (_, action, then) = s;
+		emitAnyVoid(action);
+		emitAny(then);
 	}
 
 	static readonly FieldInfo fieldBoolTrue = typeof(Builtins.Bool).GetField(nameof(Builtins.Bool.boolTrue));
@@ -168,7 +174,7 @@ sealed class ILExprEmitter {
 		return caseSyms[signed(idx)];
 	}
 
-	void emitIfElse(IfElse i) {
+	void emitIfElse(IfElse ifElse) {
 		/*
 		{condition}
 		if not, goto elze
@@ -178,21 +184,22 @@ sealed class ILExprEmitter {
 		{else}
 		end:
 		*/
+		var (_, test, then, @else) = ifElse;
 
 		var elze = il.label(symElse);
 		var end = il.label(symEndIf);
 
-		emitAny(i.test);
+		emitAny(test);
 		unpackBool();
 		il.goToIfFalse(elze);
-		emitAny(i.then);
+		emitAny(then);
 		il.goTo(end);
 		il.markLabel(elze);
-		emitAny(i.@else);
+		emitAny(@else);
 		il.markLabel(end);
 	}
 
-	void emitWhenTest(WhenTest w) {
+	void emitWhenTest(WhenTest whenTest) {
 		/*
 		{test0}
 		ifnot: goto case1
@@ -208,44 +215,46 @@ sealed class ILExprEmitter {
 		{elseResult}
 		end:
 		*/
+		var (_, cases, elseResult) = whenTest;
 
 		// At index i, stores the label for case i + 1.
-		var nextCaseLabels = Arr.buildWithIndex(w.cases.length - 1, i => il.label(caseSym(i + 1)));
+		var nextCaseLabels = Arr.buildWithIndex(cases.length - 1, i => il.label(caseSym(i + 1)));
 
 		var elseResultLabel = il.label(symElse);
 		var end = il.label(symEndWhen);
 
-		for (uint i = 0; i < w.cases.length; i++) {
-			var kase = w.cases[i];
+		for (uint i = 0; i < cases.length; i++) {
+			var kase = cases[i];
 			if (i != 0)
 				il.markLabel(nextCaseLabels[i - 1]);
 
 			emitAny(kase.test);
 			unpackBool();
-			il.goToIfFalse(i == w.cases.length - 1 ? elseResultLabel : nextCaseLabels[i]);
+			il.goToIfFalse(i == cases.length - 1 ? elseResultLabel : nextCaseLabels[i]);
 			emitAny(kase.result);
 			il.goTo(end);
 		}
 
 		il.markLabel(elseResultLabel);
-		emitAny(w.elseResult);
+		emitAny(elseResult);
 
 		il.markLabel(end);
 	}
 
 	static readonly Sym symTryResult = Sym.of("tryResult");
-	void emitTry(Try t) {
+	void emitTry(Try @try) {
+		var (_, @do, @catch, @finally) = @try;
+
 		//var failed = il.DefineLabel();
-		var res = il.declareLocal(maps.toType(t.ty), symTryResult);
+		var res = il.declareLocal(maps.toType(@try.ty), symTryResult);
 
 		// try
 		il.beginTry();
-		emitAny(t._do);
+		emitAny(@do);
 		il.setLocal(res);
 
 		// catch
-		if (t._catch.get(out var c)) {
-			var catch_ = t._catch.force; //TODO: handle missing catch
+		if (@catch.get(out var catch_)) {
 			var exceptionType = maps.toType(catch_.exceptionTy);
 			il.beginCatch(exceptionType);
 			// Catch block starts with exception on the stack. Put it in a local.
@@ -254,7 +263,7 @@ sealed class ILExprEmitter {
 			this.il.setLocal(res);
 		}
 
-		if (t._finally.get(out var f)) {
+		if (@finally.get(out var f)) {
 			throw TODO();
 			//il.???
 			//emitAnyVoid(finally_);
@@ -267,9 +276,10 @@ sealed class ILExprEmitter {
 
 	static readonly Sym symEndAssert = Sym.of("endAssert");
 	void emitAssert(Assert a) {
+		var (_, asserted) = a;
 		var end = il.label(symEndAssert);
 
-		emitAny(a.asserted);
+		emitAny(asserted);
 		unpackBool();
 		il.goToIfTrue(end);
 
@@ -283,37 +293,42 @@ sealed class ILExprEmitter {
 		emitVoid();
 	}
 
-	void emitStaticMethodCall(StaticMethodCall s) {
-		emitArgs(s.args);
-		il.callNonVirtual(maps.getMethodInfo(s.method));
+	void emitStaticMethodCall(StaticMethodCall stat) {
+		var (_, method, args) = stat;
+		emitArgs(args);
+		il.callNonVirtual(maps.getMethodInfo(method));
 	}
 
-	void emitInstanceMethodCall(InstanceMethodCall m) {
-		emitAny(m.target);
-		emitArgs(m.args);
+	void emitInstanceMethodCall(InstanceMethodCall instance) {
+		var (_, target, method, args) = instance;
+		emitAny(target);
+		emitArgs(args);
 		/*
 		This may actually call a static method in these cases:
 		An abstract class is implemented as an IL interface, so its "instance" methods are emitted as static methods instead.
 		If a builtin is implemented by a struct, its "instance" methods are emitted as static methods to avoid having to pass by ref.
 		*/
-		il.call(maps.getMethodInfo(m.method), isVirtual: m.method.isAbstract);
+		il.call(maps.getMethodInfo(method), isVirtual: method.isAbstract);
 	}
 
-	void emitMyInstanceMethodCall(MyInstanceMethodCall m) {
+	void emitMyInstanceMethodCall(MyInstanceMethodCall myInstance) {
+		var (_, method, args) = myInstance;
 		il.getThis();
-		emitArgs(m.args);
+		emitArgs(args);
 		//TODO: we still might know an exact type... so wouldn't need a virtual call...
-		il.call(maps.getMethodInfo(m.method), isVirtual: m.method.isAbstract);
+		il.call(maps.getMethodInfo(method), isVirtual: method.isAbstract);
 	}
 
 	void emitNew(New n) {
-		var ctr = this.maps.getConstructorInfo(n.klass);
+		var (_, slots, args) = n;
+		var ctr = this.maps.getConstructorInfo(slots.klass);
 		emitArgs(n.args);
 		il.callConstructor(ctr);
 	}
 
 	void emitRecur(Recur r) {
-		emitArgs(r.args);
+		var (loc, _, args) = r;
+		emitArgs(args);
 		il.tailcallNonVirtual(currentMethod);
 	}
 
@@ -323,19 +338,22 @@ sealed class ILExprEmitter {
 	}
 
 	void emitGetSlot(GetSlot g) {
-		emitAny(g.target);
-		il.getField(this.maps.getFieldInfo(g.slot));
+		var (_, target, slot) = g;
+		emitAny(target);
+		il.getField(this.maps.getFieldInfo(slot));
 	}
 
 	void emitGetMySlot(GetMySlot g) {
+		var (_, slot) = g;
 		il.getThis();
-		il.getField(this.maps.getFieldInfo(g.slot));
+		il.getField(this.maps.getFieldInfo(slot));
 	}
 
 	void emitSetSlot(SetSlot s) {
+		var (_, slot, value) = s;
 		il.getThis();
-		emitAny(s.value);
-		il.setField(this.maps.getFieldInfo(s.slot));
+		emitAny(value);
+		il.setField(this.maps.getFieldInfo(slot));
 		emitVoid();
 	}
 }

@@ -30,8 +30,10 @@ struct StringMaker {
 	}
 
 	internal StringMaker addQuotedString(string s) {
-		var _sb = sb;
-		Utils.writeQuotedString(s, ch => _sb.Append(ch));
+		var sbCopy = sb; // Can't use 'this' in lambda...
+		#pragma warning disable CC0020 // Can't use _sb.Append, that's overloaded
+		Utils.writeQuotedString(s, ch => sbCopy.Append(ch));
+		#pragma warning restore
 		return this;
 	}
 

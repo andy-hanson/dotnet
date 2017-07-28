@@ -75,6 +75,7 @@ namespace Model {
 		internal AccessParameter(Loc loc, Parameter param) : base(loc) {
 			this.param = param;
 		}
+		internal void Deconstruct(out Loc loc, out Parameter param) { loc = this.loc; param = this.param; }
 
 		internal override IEnumerable<Expr> children() => noChildren;
 		internal override Ty ty => param.ty;
@@ -89,6 +90,7 @@ namespace Model {
 		internal AccessLocal(Loc loc, Pattern.Single local) : base(loc) {
 			this.local = local;
 		}
+		internal void Deconstruct(out Loc loc, out Pattern.Single local) { loc = this.loc; local = this.local; }
 
 		internal override IEnumerable<Expr> children() => noChildren;
 		internal override Ty ty => local.ty;
@@ -109,6 +111,12 @@ namespace Model {
 			value.parent = this;
 			this.then = then;
 			then.parent = this;
+		}
+		internal void Deconstruct(out Loc loc, out Pattern assigned, out Expr value, out Expr then) {
+			loc = this.loc;
+			assigned = this.assigned;
+			value = this.value;
+			then = this.then;
 		}
 
 		internal override IEnumerable<Expr> children() {
@@ -131,6 +139,11 @@ namespace Model {
 			action.parent = this;
 			this.then = then;
 			then.parent = this;
+		}
+		internal void Deconstruct(out Loc loc, out Expr action, out Expr then) {
+			loc = this.loc;
+			action = this.action;
+			then = this.then;
 		}
 
 		internal override IEnumerable<Expr> children() {
@@ -170,6 +183,12 @@ namespace Model {
 			@else.parent = this;
 			this._ty = ty;
 		}
+		internal void Deconstruct(out Loc loc, out Expr test, out Expr then, out Expr @else) {
+			loc = this.loc;
+			test = this.test;
+			then = this.then;
+			@else = this.@else;
+		}
 
 		internal override IEnumerable<Expr> children() {
 			yield return test;
@@ -205,6 +224,11 @@ namespace Model {
 				kase.result.parent = this;
 			}
 			elseResult.parent = this;
+		}
+		internal void Deconstruct(out Loc loc, out Arr<Case> cases, out Expr elseResult) {
+			loc = this.loc;
+			cases = this.cases;
+			elseResult = this.elseResult;
 		}
 
 		internal override IEnumerable<Expr> children() {
@@ -252,6 +276,12 @@ namespace Model {
 			if (_finally.get(out var f))
 				f.parent = this;
 			this._ty = ty;
+		}
+		internal void Deconstruct(out Loc loc, out Expr _do, out Op<Catch> _catch, out Op<Expr> _finally) {
+			loc = this.loc;
+			_do = this._do;
+			_catch = this._catch;
+			_finally = this._finally;
 		}
 
 		internal override IEnumerable<Expr> children() {
@@ -310,6 +340,11 @@ namespace Model {
 			foreach (var arg in args)
 				arg.parent = this;
 		}
+		internal void Deconstruct(out Loc loc, out MethodWithBodyLike method, out Arr<Expr> args) {
+			loc = this.loc;
+			method = this.method;
+			args = this.args;
+		}
 
 		internal override IEnumerable<Expr> children() => args;
 		internal override Ty ty => method.returnTy;
@@ -335,6 +370,12 @@ namespace Model {
 			this.args = args;
 			foreach (var arg in args)
 				arg.parent = this;
+		}
+		internal void Deconstruct(out Loc loc, out Expr target, out Method method, out Arr<Expr> args) {
+			loc = this.loc;
+			target = this.target;
+			method = this.method;
+			args = this.args;
 		}
 
 		internal override IEnumerable<Expr> children() {
@@ -367,6 +408,11 @@ namespace Model {
 			foreach (var arg in args)
 				arg.parent = this;
 		}
+		internal void Deconstruct(out Loc loc, out Method method, out Arr<Expr> args) {
+			loc = this.loc;
+			method = this.method;
+			args = this.args;
+		}
 
 		internal override IEnumerable<Expr> children() => args;
 		internal override Ty ty => method.returnTy;
@@ -397,6 +443,11 @@ namespace Model {
 			foreach (var arg in args)
 				arg.parent = this;
 		}
+		internal void Deconstruct(out Loc loc, out KlassHead.Slots slots, out Arr<Expr> args) {
+			loc = this.loc;
+			slots = this.slots;
+			args = this.args;
+		}
 
 		internal Klass klass => slots.klass;
 		internal override IEnumerable<Expr> children() => args;
@@ -408,14 +459,14 @@ namespace Model {
 		public override Dat toDat() => Dat.of(this, nameof(args), Dat.arr(args));
 	}
 
-	//Note: this contains a pointer to the current class for convenience.
-	//Note: this should only happen in a non-static method. Otherwise we have Expr.Error
 	internal sealed class GetMySlot : Expr, ToData<GetMySlot> {
-		[ParentPointer] internal readonly Klass klass; // Class of the method this expression is in.
 		[UpPointer] internal readonly Slot slot;
-		internal GetMySlot(Loc loc, Klass klass, Slot slot) : base(loc) {
-			this.klass = klass;
+		internal GetMySlot(Loc loc, Slot slot) : base(loc) {
 			this.slot = slot;
+		}
+		internal void Deconstruct(out Loc loc, out Slot slot) {
+			loc = this.loc;
+			slot = this.slot;
 		}
 		internal override IEnumerable<Expr> children() => noChildren;
 		internal override Ty ty => slot.ty;
@@ -432,6 +483,11 @@ namespace Model {
 			this.target = target;
 			target.parent = this;
 			this.slot = slot;
+		}
+		internal void Deconstruct(out Loc loc, out Expr target, out Slot slot) {
+			loc = this.loc;
+			target = this.target;
+			slot = this.slot;
 		}
 
 		internal override IEnumerable<Expr> children() { yield return target; }
@@ -455,6 +511,11 @@ namespace Model {
 			this.slot = slot;
 			this.value = value;
 			value.parent = this;
+		}
+		internal void Deconstruct(out Loc loc, out Slot slot, out Expr value) {
+			loc = this.loc;
+			slot = this.slot;
+			value = this.value;
 		}
 
 		internal override IEnumerable<Expr> children() { yield return value; }
@@ -492,6 +553,10 @@ namespace Model {
 			this.asserted = asserted;
 			asserted.parent = this;
 		}
+		internal void Deconstruct(out Loc loc, out Expr asserted) {
+			loc = this.loc;
+			asserted = this.asserted;
+		}
 
 		internal override IEnumerable<Expr> children() { yield return asserted; }
 		internal override Ty ty => Ty.Void;
@@ -509,6 +574,11 @@ namespace Model {
 			this.args = args;
 			foreach (var arg in args)
 				arg.parent = this;
+		}
+		internal void Deconstruct(out Loc loc, out MethodOrImpl recurseTo, out Arr<Expr> args) {
+			loc = this.loc;
+			recurseTo = this.recurseTo;
+			args = this.args;
 		}
 
 		internal override IEnumerable<Expr> children() => args;
