@@ -1,8 +1,8 @@
 Module(
-  loc: 0-171,
+  loc: 0-172,
   imports: [],
   klass: Klass(
-    loc: 0-171,
+    loc: 0-172,
     head: Slots(
       loc: 0-29,
       slots: [
@@ -28,7 +28,7 @@ Module(
     supers: [],
     methods: [
       Method(
-        loc: 29-131,
+        loc: 29-132,
         isStatic: true,
         returnTy: Ty(
           loc: 33-37,
@@ -38,78 +38,78 @@ Module(
         name: "main",
         parameters: [],
         body: Let(
-          loc: 50-61,
+          loc: 46-62,
           assigned: Single(
             loc: 46-49,
             name: "obj"),
           value: New(
-            loc: 52-61,
+            loc: 52-62,
             args: [
               Literal(
                 loc: 56-57,
                 value: 1),
               Literal(
-                loc: 58-59,
+                loc: 59-60,
                 value: 2)
             ]),
           then: Seq(
-            loc: 61-131,
+            loc: 62-132,
             first: Assert(
-              loc: 61-80,
+              loc: 62-81,
               asserted: OperatorCall(
-                loc: 68-80,
+                loc: 69-81,
                 oper: "==",
                 right: Literal(
-                  loc: 77-78,
+                  loc: 78-79,
                   value: 1))),
             then: Seq(
-              loc: 80-131,
+              loc: 81-132,
               first: Assert(
-                loc: 80-99,
+                loc: 81-100,
                 asserted: OperatorCall(
-                  loc: 87-99,
+                  loc: 88-100,
                   oper: "==",
                   right: Literal(
-                    loc: 96-97,
+                    loc: 97-98,
                     value: 2))),
               then: Seq(
-                loc: 99-131,
+                loc: 100-132,
                 first: Call(
-                  loc: 99-110,
+                  loc: 100-111,
                   target: GetProperty(
-                    loc: 99-108,
+                    loc: 100-109,
                     target: Access(
-                      loc: 99-102,
+                      loc: 100-103,
                       name: "obj"),
                     propertyName: "incrY"),
                   args: []),
                 then: Assert(
-                  loc: 112-131,
+                  loc: 113-132,
                   asserted: OperatorCall(
-                    loc: 119-131,
+                    loc: 120-132,
                     oper: "==",
                     right: Literal(
-                      loc: 128-129,
+                      loc: 129-130,
                       value: 3)))))))),
       Method(
-        loc: 131-171,
+        loc: 132-172,
         isStatic: false,
         returnTy: Ty(
-          loc: 135-139,
+          loc: 136-140,
           cls: Access(
-            loc: 135-139,
+            loc: 136-140,
             name: "Void")),
         name: "incrY",
         parameters: [],
         body: SetProperty(
-          loc: 159-171,
+          loc: 158-172,
           propertyName: "y",
           value: Call(
-            loc: 162-170,
+            loc: 163-171,
             target: GetProperty(
-              loc: 162-168,
+              loc: 163-169,
               target: Access(
-                loc: 162-163,
+                loc: 163-164,
                 name: "y"),
               propertyName: "incr"),
             args: [])))

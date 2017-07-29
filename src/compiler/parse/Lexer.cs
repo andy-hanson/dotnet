@@ -198,6 +198,7 @@ abstract class Lexer : Reader {
 				throw TODO();
 
 			case '\\': return Token.Backslash;
+			case ',': return Token.Comma;
 			case ':': return Token.Colon;
 			case '(': return Token.ParenL;
 			case ')': return Token.ParenR;
@@ -416,6 +417,7 @@ abstract class Lexer : Reader {
 	protected void takeDot() => expectCharacter('.', "'.'");
 	protected void takeEquals() => expectCharacter('=', "'='");
 
+	protected bool tryTakeEquals() => tryTake('=');
 	protected bool tryTakeRparen() => tryTake(')');
 	protected bool tryTakeDot() => tryTake('.');
 	protected bool tryTakeColon() => tryTake(':');

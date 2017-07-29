@@ -53,7 +53,7 @@ public abstract class Dat : ToData<Dat> {
 		e.isLeft ? e.left.toDat() : e.right.toDat();
 
 	internal static Dat op<T>(Op<T> op) where T : ToData<T> => new OpDat<T>(op);
-	internal static Dat op(Op<string> op) => new OpDat<Dat>(op.map(str));
+	internal static Dat op(Op<string> op) => new OpDat<Dat>(op.get(out var s) ? Op.Some(str(s)) : Op<Dat>.None);
 	internal static Dat op(OpUint op) => new OpDat<Dat>(op.map(nat));
 	internal static Dat boolean(bool b) => new BoolDat(b);
 	internal static Dat @int(int i) => new IntDat(i);

@@ -40,11 +40,6 @@ struct Op<T> {
 		return o;
 	}
 
-	internal Op<U> map<U>(Func<T, U> mapper) =>
-		has ? Op.Some(mapper(value)) : Op<U>.None;
-	internal OpUint mapToUint(Func<T, uint> mapper) =>
-		has ? OpUint.Some(mapper(value)) : OpUint.None;
-
 	public override bool Equals(object o) => throw new NotSupportedException();
 	public override int GetHashCode() => throw new NotSupportedException();
 }

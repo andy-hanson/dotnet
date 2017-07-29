@@ -1,5 +1,5 @@
 Klass(
-  loc: 0-498,
+  loc: 0-502,
   head: Static(),
   membersMap: Dict<Sym, Member>(
     main: MethodWithBody(
@@ -86,7 +86,7 @@ Klass(
                   loc: 117-118,
                   value: 8)])))))),
     factorial: MethodWithBody(
-      loc: 120-171,
+      loc: 120-172,
       isStatic: true,
       returnTy: Id(
         effect: "pure",
@@ -115,11 +115,11 @@ Klass(
               name: "n",
               index: 0)),
           Literal(
-            loc: 168-169,
+            loc: 169-170,
             value: 1)
         ])),
     factorial-recursive: MethodWithBody(
-      loc: 171-273,
+      loc: 172-274,
       isStatic: true,
       returnTy: Id(
         effect: "pure",
@@ -128,14 +128,14 @@ Klass(
       selfEffect: "pure",
       parameters: [
         Parameter(
-          loc: 199-204,
+          loc: 200-205,
           ty: Id(
             effect: "pure",
             clsId: "Nat"),
           name: "n",
           index: 0),
         Parameter(
-          loc: 206-213,
+          loc: 207-214,
           ty: Id(
             effect: "pure",
             clsId: "Nat"),
@@ -143,15 +143,15 @@ Klass(
           index: 1)
       ],
       body: WhenTest(
-        loc: 216-273,
+        loc: 217-274,
         cases: [Case(
-          loc: 216-239,
+          loc: 217-240,
           test: InstanceMethodCall(
-            loc: 216-233,
+            loc: 217-234,
             target: AccessParameter(
-              loc: 216-224,
+              loc: 217-225,
               param: Parameter(
-                loc: 199-204,
+                loc: 200-205,
                 ty: Id(
                   effect: "pure",
                   clsId: "Nat"),
@@ -161,26 +161,26 @@ Klass(
               klassId: "Nat",
               name: "=="),
             args: [Literal(
-              loc: 228-229,
+              loc: 229-230,
               value: 0)]),
           result: AccessParameter(
-            loc: 233-236,
+            loc: 234-237,
             param: Parameter(
-              loc: 206-213,
+              loc: 207-214,
               ty: Id(
                 effect: "pure",
                 clsId: "Nat"),
               name: "acc",
               index: 1)))],
         elseResult: Recur(
-          loc: 247-273,
+          loc: 248-274,
           args: [
             InstanceMethodCall(
-              loc: 253-261,
+              loc: 255-263,
               target: AccessParameter(
-                loc: 253-254,
+                loc: 255-256,
                 param: Parameter(
-                  loc: 199-204,
+                  loc: 200-205,
                   ty: Id(
                     effect: "pure",
                     clsId: "Nat"),
@@ -191,11 +191,11 @@ Klass(
                 name: "decr"),
               args: []),
             InstanceMethodCall(
-              loc: 263-271,
+              loc: 265-274,
               target: AccessParameter(
-                loc: 263-266,
+                loc: 265-268,
                 param: Parameter(
-                  loc: 206-213,
+                  loc: 207-214,
                   ty: Id(
                     effect: "pure",
                     clsId: "Nat"),
@@ -205,9 +205,9 @@ Klass(
                 klassId: "Nat",
                 name: "*"),
               args: [AccessParameter(
-                loc: 269-270,
+                loc: 271-272,
                 param: Parameter(
-                  loc: 199-204,
+                  loc: 200-205,
                   ty: Id(
                     effect: "pure",
                     clsId: "Nat"),
@@ -215,7 +215,7 @@ Klass(
                   index: 0))])
           ]))),
     fibonacci: MethodWithBody(
-      loc: 273-369,
+      loc: 274-372,
       isStatic: true,
       returnTy: Id(
         effect: "pure",
@@ -223,23 +223,23 @@ Klass(
       name: "fibonacci",
       selfEffect: "pure",
       parameters: [Parameter(
-        loc: 291-296,
+        loc: 292-297,
         ty: Id(
           effect: "pure",
           clsId: "Nat"),
         name: "n",
         index: 0)],
       body: WhenTest(
-        loc: 299-369,
+        loc: 300-372,
         cases: [
           Case(
-            loc: 299-320,
+            loc: 300-321,
             test: InstanceMethodCall(
-              loc: 299-316,
+              loc: 300-317,
               target: AccessParameter(
-                loc: 299-307,
+                loc: 300-308,
                 param: Parameter(
-                  loc: 291-296,
+                  loc: 292-297,
                   ty: Id(
                     effect: "pure",
                     clsId: "Nat"),
@@ -249,19 +249,19 @@ Klass(
                 klassId: "Nat",
                 name: "=="),
               args: [Literal(
-                loc: 311-312,
+                loc: 312-313,
                 value: 0)]),
             result: Literal(
-              loc: 316-317,
+              loc: 317-318,
               value: 0)),
           Case(
-            loc: 320-334,
+            loc: 321-335,
             test: InstanceMethodCall(
-              loc: 320-330,
+              loc: 321-331,
               target: AccessParameter(
-                loc: 320-321,
+                loc: 321-322,
                 param: Parameter(
-                  loc: 291-296,
+                  loc: 292-297,
                   ty: Id(
                     effect: "pure",
                     clsId: "Nat"),
@@ -271,10 +271,10 @@ Klass(
                 klassId: "Nat",
                 name: "=="),
               args: [Literal(
-                loc: 325-326,
+                loc: 326-327,
                 value: 1)]),
             result: Literal(
-              loc: 330-331,
+              loc: 331-332,
               value: 1))
         ],
         elseResult: StaticMethodCall(
@@ -283,23 +283,23 @@ Klass(
             name: "fibonacci-recursive"),
           args: [
             AccessParameter(
-              loc: 362-363,
+              loc: 363-364,
               param: Parameter(
-                loc: 291-296,
+                loc: 292-297,
                 ty: Id(
                   effect: "pure",
                   clsId: "Nat"),
                 name: "n",
                 index: 0)),
             Literal(
-              loc: 364-365,
+              loc: 366-367,
               value: 0),
             Literal(
-              loc: 366-367,
+              loc: 369-370,
               value: 1)
           ]))),
     fibonacci-recursive: MethodWithBody(
-      loc: 369-498,
+      loc: 372-502,
       isStatic: true,
       returnTy: Id(
         effect: "pure",
@@ -308,21 +308,21 @@ Klass(
       selfEffect: "pure",
       parameters: [
         Parameter(
-          loc: 397-402,
+          loc: 400-405,
           ty: Id(
             effect: "pure",
             clsId: "Nat"),
           name: "n",
           index: 0),
         Parameter(
-          loc: 404-412,
+          loc: 407-415,
           ty: Id(
             effect: "pure",
             clsId: "Nat"),
           name: "acc1",
           index: 1),
         Parameter(
-          loc: 414-422,
+          loc: 417-425,
           ty: Id(
             effect: "pure",
             clsId: "Nat"),
@@ -330,15 +330,15 @@ Klass(
           index: 2)
       ],
       body: WhenTest(
-        loc: 425-498,
+        loc: 428-502,
         cases: [Case(
-          loc: 425-456,
+          loc: 428-459,
           test: InstanceMethodCall(
-            loc: 425-442,
+            loc: 428-445,
             target: AccessParameter(
-              loc: 425-433,
+              loc: 428-436,
               param: Parameter(
-                loc: 397-402,
+                loc: 400-405,
                 ty: Id(
                   effect: "pure",
                   clsId: "Nat"),
@@ -348,14 +348,14 @@ Klass(
               klassId: "Nat",
               name: "=="),
             args: [Literal(
-              loc: 437-438,
+              loc: 440-441,
               value: 2)]),
           result: InstanceMethodCall(
-            loc: 442-456,
+            loc: 445-459,
             target: AccessParameter(
-              loc: 442-446,
+              loc: 445-449,
               param: Parameter(
-                loc: 404-412,
+                loc: 407-415,
                 ty: Id(
                   effect: "pure",
                   clsId: "Nat"),
@@ -365,23 +365,23 @@ Klass(
               klassId: "Nat",
               name: "+"),
             args: [AccessParameter(
-              loc: 449-453,
+              loc: 452-456,
               param: Parameter(
-                loc: 414-422,
+                loc: 417-425,
                 ty: Id(
                   effect: "pure",
                   clsId: "Nat"),
                 name: "acc2",
                 index: 2))]))],
         elseResult: Recur(
-          loc: 464-498,
+          loc: 467-502,
           args: [
             InstanceMethodCall(
-              loc: 470-478,
+              loc: 474-482,
               target: AccessParameter(
-                loc: 470-471,
+                loc: 474-475,
                 param: Parameter(
-                  loc: 397-402,
+                  loc: 400-405,
                   ty: Id(
                     effect: "pure",
                     clsId: "Nat"),
@@ -392,20 +392,20 @@ Klass(
                 name: "decr"),
               args: []),
             AccessParameter(
-              loc: 479-483,
+              loc: 484-488,
               param: Parameter(
-                loc: 414-422,
+                loc: 417-425,
                 ty: Id(
                   effect: "pure",
                   clsId: "Nat"),
                 name: "acc2",
                 index: 2)),
             InstanceMethodCall(
-              loc: 485-497,
+              loc: 490-502,
               target: AccessParameter(
-                loc: 485-489,
+                loc: 490-494,
                 param: Parameter(
-                  loc: 404-412,
+                  loc: 407-415,
                   ty: Id(
                     effect: "pure",
                     clsId: "Nat"),
@@ -415,9 +415,9 @@ Klass(
                 klassId: "Nat",
                 name: "+"),
               args: [AccessParameter(
-                loc: 492-496,
+                loc: 497-501,
                 param: Parameter(
-                  loc: 414-422,
+                  loc: 417-425,
                   ty: Id(
                     effect: "pure",
                     clsId: "Nat"),

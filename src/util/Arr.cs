@@ -4,7 +4,7 @@ using System.Diagnostics;
 
 using static Utils;
 
-[DebuggerDisplay("[{join(\", \")}]")]
+[DebuggerDisplay("Arr({length})")]
 struct Arr<T> : IEnumerable<T> {
 	readonly T[] inner;
 

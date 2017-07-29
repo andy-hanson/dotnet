@@ -6,14 +6,14 @@ fun Void main()
 	assert fibonacci 6 == 8
 
 fun Nat factorial(Nat n)
-	factorial-recursive n 1
+	factorial-recursive n, 1
 
 fun Nat factorial-recursive(Nat n, Nat acc)
 	when
 		n == 0
 			acc
 		else
-			recur n.decr() (acc * n)
+			recur: n.decr(), acc * n
 
 fun Nat fibonacci(Nat n)
 	when
@@ -22,11 +22,11 @@ fun Nat fibonacci(Nat n)
 		n == 1
 			1
 		else
-			fibonacci-recursive n 0 1
+			fibonacci-recursive n, 0, 1
 
 fun Nat fibonacci-recursive(Nat n, Nat acc1, Nat acc2)
 	when
 		n == 2
 			acc1 + acc2
 		else
-			recur n.decr() acc2 (acc1 + acc2)
+			recur: n.decr(), acc2, acc1 + acc2

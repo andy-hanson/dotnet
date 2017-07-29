@@ -61,7 +61,7 @@ Module(
       name: "main",
       parameters: [],
       body: Let(
-        loc: 105-114,
+        loc: 103-114,
         assigned: Single(
           loc: 103-104,
           name: "x"),

@@ -12,255 +12,190 @@ abstract class ExprParser : TyParser {
 	}
 
 	enum Ctx {
+		Statement,
 		/** Allow any operator */
-		Plain,
+		YesOperators,
 		/** Like Plain, but stop if you see an operator. */
 		NoOperator,
 	}
 
-	enum Next {
-		NewlineAfterEquals, // This means that we got an incomplete Let expression. Must fill in the body.
-		NewlineAfterStatement,
-		NextOperator, //pair with NoOperator
-		Dedent,
-		Rparen,
-		Then,
-		Else,
-		Indent,
-		Comma,
-	}
-
 	Ast.Expr parseBlockWithStart(Pos start, Token first) {
-		var (expr, next) = parseExprWithNext(Ctx.Plain, start, first);
-
+		var (expr, next) = parseExpr(Ctx.Statement, start, first);
 		switch (next) {
-			case Next.NewlineAfterEquals: {
-				if (!(expr is Ast.Let l))
-					throw unreachable();
-				l.then = parseBlock();
-				return l;
+			case Token.Newline: {
+				if (expr is Ast.Let l) {
+					l.then = parseBlock();
+					return l;
+				} else {
+					var rest = parseBlock();
+					return new Ast.Seq(locFrom(start), expr, rest);
+				}
 			}
-			case Next.NewlineAfterStatement: {
-				var rest = parseBlock();
-				return new Ast.Seq(locFrom(start), expr, rest);
-			}
-			/*case Next.EndNestedBlock: {
-				var start2 = pos;
-				var first2 = nextToken();
-				if (first2 == Token.Dedent)
-					return expr;
-				var rest = parseBlockWithStart(start2, first2);
-				return new Ast.Expr.Seq(locFrom(start2), expr, rest);
-			}*/
-			case Next.Dedent:
+			case Token.Dedent:
 				return expr;
-			case Next.Rparen:
-			case Next.Indent:
+			case Token.ParenR:
+			case Token.Indent:
 				throw TODO(); //unexpected
 			default:
 				throw unreachable();
 		}
 	}
 
-	Ast.Expr parseExprAndExpectNext(Ctx ctx, Next expectedNext, Pos start, Token startToken) {
-		var (expr, next) = parseExprWithNext(ctx, start, startToken);
+
+	Ast.Expr parseExprAndExpectNext(Ctx ctx, Token expectedNext) =>
+		parseExprAndExpectNext(ctx, expectedNext, pos, nextToken());
+
+	Ast.Expr parseExprAndExpectNext(Ctx ctx, Token expectedNext, Pos start, Token startToken) {
+		var (expr, next) = parseExpr(ctx, start, startToken);
 		if (next != expectedNext) throw TODO();
 		return expr;
 	}
 
-	Ast.Expr parseExprAndExpectNext(Ctx ctx, Next expectedNext) =>
-		parseExprAndExpectNext(ctx, expectedNext, pos, nextToken());
+	(Ast.Expr, Token next) parseExpr(Ctx ctx) => parseExpr(ctx, pos, nextToken());
 
-	(Ast.Expr, Next) parseExpr(Ctx ctx) {
-		var start = pos;
-		var startToken = nextToken();
-		return parseExprWithNext(ctx, start, startToken);
-	}
+	(Ast.Expr, Token next) parseExpr(Ctx ctx, Pos start, Token firstToken) {
+		var (first, next) = parseFirstExpr(start, firstToken);
+		switch (next) {
+			case Token.Space: {
+				var nextStart = pos;
+				var tok = nextToken();
+				switch (tok) {
+					case Token.Colon: {
+						if (ctx != Ctx.Statement)
+							throw TODO(); //diagnostic -- can't use `:=` in expression, did you mean `: ` or `==`?
+						takeEquals();
+						if (!(first is Ast.Access access))
+							throw exit(first.loc, PrecedingEquals.instance);
+						var propertyName = access.name;
+						takeSpace();
+						var (value, next2) = parseExpr(Ctx.YesOperators);
+						return (new Ast.SetProperty(locFrom(start), propertyName, value), next2);
+					}
 
-	enum SpecialStart { None, New, Recur }
-	(Ast.Expr, Next) parseExprWithNext(Ctx ctx, Pos loopStart, Token loopNext) {
-		var exprStart = loopStart;
-		var specialStart = SpecialStart.None;
-		var parts = Arr.builder<Ast.Expr>();
+					case Token.Equals: {
+						if (ctx != Ctx.Statement)
+							throw TODO(); //diagnostic -- can't use `=` in expression, did you mean `:=`?
+						if (!(first is Ast.Access access))
+							throw exit(first.loc, PrecedingEquals.instance);
+						var pattern = new Ast.Pattern.Single(access.loc, access.name);
+						takeSpace();
+						var (value, next2) = parseExpr(Ctx.YesOperators);
+						if (next2 != Token.Newline)
+							throw exit(locFrom(start), BlockCantEndInLet.instance);
+						return (new Ast.Let(locFrom(start), pattern, value), Token.Newline);
+					}
 
-		switch (loopNext) {
-			case Token.New:
-			case Token.Recur:
-				specialStart = loopNext == Token.New ? SpecialStart.New : SpecialStart.Recur;
-				if (tryTakeColon())
-					return parseAfterColon(parts, exprStart, specialStart);
+					case Token.Then:
+					case Token.Else:
+						return (first, tok == Token.Then ? Token.Then : Token.Else);
 
-				takeSpace();
-				loopStart = pos;
-				loopNext = nextToken();
-				break;
-			default:
-				break;
-		}
-
-
-		while (true) {
-			switch (loopNext) {
-				case Token.Colon: {
-					takeEquals();
-					var slot = partsToSlot(parts);
-					takeSpace();
-					var (value, next) = parseExpr(Ctx.Plain);
-					if (next == Next.NewlineAfterEquals) throw TODO();
-					return (new Ast.SetProperty(locFrom(loopStart), slot, value), next);
-				}
-
-				case Token.Equals: {
-					var patternLoc = locFrom(loopStart);
-					var pattern = partsToPattern(patternLoc, parts);
-					takeSpace();
-					var (value, next) = parseExpr(Ctx.Plain);
-					if (next != Next.NewlineAfterStatement) throw exit(locFrom(loopStart), BlockCantEndInLet.instance); //TODO: special error if next = Next.NewlineAfterEquals
-					return (new Ast.Let(locFrom(loopStart), pattern, value), Next.NewlineAfterEquals);
-				}
-
-				/*
-				a b + c * d
-				*/
-				case Token.Operator: {
-					if (ctx == Ctx.NoOperator) {
+					case Token.Operator:
 						// If we are already on the RHS of an operator, don't continue parsing operators -- leave that to the outer version of `parseExprWithNext`.
 						// This ensures that `a + b * c` is parsed as `(a + b) * c`, because we stop parsing at the `*` and allow the outer parser to continue.
-						return (finishRegular(exprStart, specialStart, parts), Next.NextOperator);
+						return ctx == Ctx.NoOperator ? (first, Token.Operator) : slurpOperators(start, first);
+
+					default: {
+						var (args, next2) = parseArgs(Ctx.NoOperator, nextStart, tok);
+						var call = new Ast.Call(locFrom(start), first, args);
+						return ctx != Ctx.NoOperator && next2 == Token.Operator ? slurpOperators(start, call) : (call, next2);
 					}
-
-					var @operator = tokenSym;
-
-					var left = finishRegular(exprStart, specialStart, parts);
-					while (true) {
-						takeSpace(); // operator must be followed by space.
-						var (right, next) = parseExpr(Ctx.NoOperator);
-						left = new Ast.OperatorCall(locFrom(exprStart), left, @operator, right);
-						if (next == Next.NextOperator)
-							@operator = tokenSym;
-						else
-							return (left, next);
-					}
-				}
-
-				case Token.Assert: {
-					if (!parts.isEmpty)
-						throw TODO();
-					takeSpace();
-					var (asserted, next) = parseExpr(Ctx.Plain);
-					var assert = new Ast.Assert(locFrom(exprStart), asserted);
-					return (assert, next);
-				}
-
-				case Token.If: {
-					takeSpace();
-					var test = parseExprAndExpectNext(Ctx.Plain, Next.Then);
-					takeSpace();
-					var then = parseExprAndExpectNext(Ctx.Plain, Next.Else);
-					takeSpace();
-					var (@else, next) = parseExpr(Ctx.Plain);
-					var ifElse = new Ast.IfElse(locFrom(loopStart), test, then, @else);
-					parts.add(ifElse);
-					var expr = finishRegular(exprStart, specialStart, parts);
-					return (expr, next);
-				}
-
-				case Token.Then:
-				case Token.Else:
-					return (finishRegular(exprStart, specialStart, parts), loopNext == Token.Then ? Next.Then : Next.Else);
-
-				case Token.When:
-				case Token.Try: {
-					parts.add(loopNext == Token.When ? parseWhen(loopStart) : parseTry(loopStart));
-					var expr = finishRegular(exprStart, specialStart, parts);
-					var next = tryTakeDedentFromDedenting() ? Next.Dedent : Next.NewlineAfterStatement;
-					return (expr, next);
-				}
-
-				default: {
-					var (single, nextPos, tokenAfter) = parseSimpleExpr(loopStart, loopNext);
-					parts.add(single);
-					switch (tokenAfter) {
-						case Token.Colon:
-							return parseAfterColon(parts, exprStart, specialStart);
-
-						case Token.Comma:
-							takeSpace();
-							return (single, Next.Comma);
-
-						case Token.Space:
-							loopStart = pos;
-							loopNext = nextToken();
-							// Continue adding parts
-							break;
-
-						case Token.ParenR:
-							return (finishRegular(exprStart, specialStart, parts), Next.Rparen);
-
-						case Token.Newline:
-						case Token.Dedent: {
-							var expr = finishRegular(exprStart, specialStart, parts);
-							Next next;
-							switch (tokenAfter) {
-								case Token.Newline:
-									next = Next.NewlineAfterStatement;
-									break;
-								case Token.Dedent:
-									next = Next.Dedent;
-									break;
-								default:
-									throw unreachable();
-							}
-							return (expr, next);
-						}
-
-						case Token.Indent:
-							return (finishRegular(exprStart, specialStart, parts), Next.Indent);
-
-						default:
-							throw unexpected(nextPos, "Space or newline", tokenAfter);
-					}
-
-					break;
 				}
 			}
-		}
-	}
 
-	(Ast.Expr, Next) parseAfterColon(Arr.Builder<Ast.Expr> parts, Pos exprStart, SpecialStart specialStart) {
-		takeSpace();
-		/*
-		Take remaining parts differently.
-		*/
-		while (true) {
-			var (e, next) = parseExpr(Ctx.Plain);
-			parts.add(e);
-			if (next != Next.Comma) {
-				return (finishRegular(exprStart, specialStart, parts), next);
+			case Token.Colon: {
+				if (ctx == Ctx.NoOperator)
+					throw TODO();
+
+				takeSpace();
+				var (args, next2) = parseArgs(Ctx.YesOperators);
+				var call = new Ast.Call(locFrom(start), first, args);
+				return (call, next2);
 			}
-		}
-	}
 
-	Ast.Expr finishRegular(Pos exprStart, SpecialStart specialStart, Arr.Builder<Ast.Expr> parts) {
-		if (parts.curLength == 0)
-			throw exit(singleCharLoc, EmptyExpression.instance);
+			case Token.Operator:
+				// In `f x + 1`, we would have read through the space while parsing the arguments to `f`. So can encounter an operator now.
+				return ctx == Ctx.NoOperator ? (first, Token.Operator) : slurpOperators(start, first);
 
-		switch (specialStart) {
-			case SpecialStart.None:
-				var res = parts[0];
-				if (parts.curLength > 1)
-					res = new Ast.Call(locFrom(res.loc.start), res, parts.finishTail());
-				return res;
-			case SpecialStart.New:
-				return new Ast.New(locFrom(exprStart), parts.finish());
-			case SpecialStart.Recur:
-				return new Ast.Recur(locFrom(exprStart), parts.finish());
 			default:
-				throw unreachable();
+				return (first, next);
 		}
 	}
 
-	(Ast.Expr, Pos, Token) parseSimpleExpr(Pos pos, Token token) {
+	// Only meant to be called from 'parseExpr'.
+	(Ast.Expr, Token next) parseFirstExpr(Pos start, Token token) {
+		switch (token) {
+			case Token.New:
+			case Token.Recur: {
+				var ctx = tryTakeColon() ? Ctx.YesOperators : Ctx.NoOperator;
+				takeSpace();
+				var (args, next) = parseArgs(ctx);
+				var loc = locFrom(start);
+				var expr = token == Token.New ? new Ast.New(loc, args) : new Ast.Recur(loc, args).upcast<Ast.Expr>();
+				return (expr, next);
+			}
+
+			case Token.Assert: {
+				takeSpace();
+				var (asserted, next) = parseExpr(Ctx.YesOperators);
+				var assert = new Ast.Assert(locFrom(start), asserted);
+				return (assert, next);
+			}
+
+			case Token.If: {
+				takeSpace();
+				var test = parseExprAndExpectNext(Ctx.YesOperators, Token.Then);
+				takeSpace();
+				var then = parseExprAndExpectNext(Ctx.YesOperators, Token.Else);
+				takeSpace();
+				var (@else, next) = parseExpr(Ctx.YesOperators);
+				var ifElse = new Ast.IfElse(locFrom(start), test, then, @else);
+				return (ifElse, next);
+			}
+
+			case Token.When:
+			case Token.Try: {
+				var expr = token == Token.When ? parseWhen(start) : parseTry(start);
+				var next = tryTakeDedentFromDedenting() ? Token.Dedent : Token.Newline;
+				return (expr, next);
+			}
+
+			default:
+				return parseSimpleExpr(start, token);
+		}
+	}
+
+	(Ast.Expr, Token next) slurpOperators(Pos start, Ast.Expr first) {
+		var @operator = tokenSym;
+
+		var left = first;
+		while (true) {
+			takeSpace(); // operator must be followed by space.
+			var (right, next2) = parseExpr(Ctx.NoOperator);
+			left = new Ast.OperatorCall(locFrom(start), left, @operator, right);
+			if (next2 == Token.Operator)
+				@operator = tokenSym;
+			else
+				return (left, next2);
+		}
+	}
+
+	(Arr<Ast.Expr>, Token next) parseArgs(Ctx ctx) => parseArgs(ctx, pos, nextToken());
+
+	(Arr<Ast.Expr>, Token next) parseArgs(Ctx ctx, Pos start, Token firstToken) {
+		//TODO:helper fn
+		var parts = Arr.builder<Ast.Expr>();
+		var (firstArg, next) = parseExpr(ctx, start, firstToken);
+		parts.add(firstArg);
+		while (next == Token.Comma) {
+			takeSpace();
+			var (nextArg, nextNext) = parseExpr(ctx, pos, nextToken());
+			parts.add(nextArg);
+			next = nextNext;
+		}
+		return (parts.finish(), next);
+	}
+
+	(Ast.Expr, Token) parseSimpleExpr(Pos pos, Token token) {
 		var expr = parseSimpleExprWithoutSuffixes(pos, token);
 
 		while (true) {
@@ -278,15 +213,13 @@ abstract class ExprParser : TyParser {
 					break;
 
 				default:
-					return (expr, pos, next);
+					return (expr, next);
 			}
 		}
 	}
 
 	Ast.Expr parseSimpleExprWithoutSuffixes(Pos pos, Token token) {
 		switch (token) {
-			case Token.Name:
-				return new Ast.Access(locFrom(pos), tokenSym);
 			case Token.TyName: {
 				var className = tokenSym;
 				takeDot();
@@ -294,7 +227,7 @@ abstract class ExprParser : TyParser {
 				return new Ast.StaticAccess(locFrom(pos), className, staticMethodName);
 			}
 			case Token.ParenL:
-				return parseExprAndExpectNext(Ctx.Plain, Next.Rparen);
+				return parseExprAndExpectNext(Ctx.YesOperators, Token.ParenR);
 			default:
 				return singleTokenExpr(locFrom(pos), token);
 		}
@@ -302,6 +235,8 @@ abstract class ExprParser : TyParser {
 
 	Ast.Expr singleTokenExpr(Loc loc, Token token) {
 		switch (token) {
+			case Token.Name:
+				return new Ast.Access(loc, tokenSym);
 			case Token.NatLiteral:
 				return new Ast.Literal(loc, LiteralValue.Nat.of(uint.Parse(tokenValue)));
 			case Token.IntLiteral:
@@ -337,7 +272,7 @@ abstract class ExprParser : TyParser {
 		var caseStart = startPos;
 		var caseStartToken = nextToken();
 		do {
-			var firstTest = parseExprAndExpectNext(Ctx.Plain, Next.Indent, caseStart, caseStartToken);
+			var firstTest = parseExprAndExpectNext(Ctx.YesOperators, Token.Indent, caseStart, caseStartToken);
 			var firstResult = parseBlock();
 			cases.add(new Ast.WhenTest.Case(locFrom(caseStart), firstTest, firstResult));
 
@@ -407,34 +342,5 @@ abstract class ExprParser : TyParser {
 		}
 
 		return new Ast.Try(locFrom(startPos), do_, catch_, finally_);
-	}
-
-	static Sym partsToSlot(Arr.Builder<Ast.Expr> parts) {
-		if (parts.curLength != 1)
-			throw TODO();
-
-		switch (parts[0]) {
-			case Ast.Access a:
-				return a.name;
-			default:
-				throw TODO();
-		}
-	}
-
-	static Ast.Pattern partsToPattern(Loc loc, Arr.Builder<Ast.Expr> parts) {
-		switch (parts.curLength) {
-			case 0: throw exit(loc, PrecedingEquals.instance);
-			case 1: return partToPattern(parts[0]);
-			default: return new Ast.Pattern.Destruct(loc, parts.map(partToPattern));
-		}
-
-		Ast.Pattern partToPattern(Ast.Expr part) {
-			switch (part) {
-				case Ast.Access a:
-					return new Ast.Pattern.Single(a.loc, a.name);
-				default:
-					throw exit(loc, PrecedingEquals.instance);
-			}
-		}
 	}
 }

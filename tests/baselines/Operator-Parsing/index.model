@@ -1,9 +1,9 @@
 Klass(
-  loc: 0-145,
+  loc: 0-340,
   head: Static(),
   membersMap: Dict<Sym, Member>(
     main: MethodWithBody(
-      loc: 0-116,
+      loc: 0-243,
       isStatic: true,
       returnTy: Id(
         effect: "pure",
@@ -12,10 +12,10 @@ Klass(
       selfEffect: "pure",
       parameters: [],
       body: Let(
-        loc: 19-32,
+        loc: 17-32,
         assigned: Single(
           loc: 17-18,
-          name: "x"),
+          name: "a"),
         value: InstanceMethodCall(
           loc: 21-32,
           target: InstanceMethodCall(
@@ -36,13 +36,13 @@ Klass(
             loc: 29-30,
             value: 3)]),
         then: Seq(
-          loc: 32-116,
+          loc: 32-243,
           action: Assert(
             loc: 32-47,
             asserted: InstanceMethodCall(
               loc: 39-47,
               target: AccessLocal(
-                local: "x"),
+                local: "a"),
               method: Id(
                 klassId: "Nat",
                 name: "=="),
@@ -50,10 +50,10 @@ Klass(
                 loc: 44-45,
                 value: 9)])),
           then: Let(
-            loc: 49-65,
+            loc: 47-65,
             assigned: Single(
               loc: 47-48,
-              name: "y"),
+              name: "b"),
             value: InstanceMethodCall(
               loc: 51-65,
               target: StaticMethodCall(
@@ -61,7 +61,7 @@ Klass(
                   klassId: "",
                   name: "double"),
                 args: [AccessLocal(
-                  local: "x")]),
+                  local: "a")]),
               method: Id(
                 klassId: "Nat",
                 name: "+"),
@@ -69,13 +69,13 @@ Klass(
                 loc: 62-63,
                 value: 1)]),
             then: Seq(
-              loc: 65-116,
+              loc: 65-243,
               action: Assert(
                 loc: 65-81,
                 asserted: InstanceMethodCall(
                   loc: 72-81,
                   target: AccessLocal(
-                    local: "y"),
+                    local: "b"),
                   method: Id(
                     klassId: "Nat",
                     name: "=="),
@@ -83,10 +83,10 @@ Klass(
                     loc: 77-79,
                     value: 19)])),
               then: Let(
-                loc: 83-100,
+                loc: 81-100,
                 assigned: Single(
                   loc: 81-82,
-                  name: "z"),
+                  name: "c"),
                 value: StaticMethodCall(
                   method: Id(
                     klassId: "",
@@ -94,27 +94,159 @@ Klass(
                   args: [InstanceMethodCall(
                     loc: 93-100,
                     target: AccessLocal(
-                      local: "x"),
+                      local: "a"),
                     method: Id(
                       klassId: "Nat",
                       name: "+"),
                     args: [Literal(
                       loc: 97-98,
                       value: 1)])]),
-                then: Assert(
-                  loc: 100-116,
-                  asserted: InstanceMethodCall(
-                    loc: 107-116,
-                    target: AccessLocal(
-                      local: "z"),
-                    method: Id(
-                      klassId: "Nat",
-                      name: "=="),
-                    args: [Literal(
-                      loc: 112-114,
-                      value: 20)])))))))),
+                then: Seq(
+                  loc: 100-243,
+                  action: Assert(
+                    loc: 100-117,
+                    asserted: InstanceMethodCall(
+                      loc: 107-117,
+                      target: AccessLocal(
+                        local: "c"),
+                      method: Id(
+                        klassId: "Nat",
+                        name: "=="),
+                      args: [Literal(
+                        loc: 112-114,
+                        value: 20)])),
+                  then: Let(
+                    loc: 117-147,
+                    assigned: Single(
+                      loc: 117-118,
+                      name: "d"),
+                    value: StaticMethodCall(
+                      method: Id(
+                        klassId: "",
+                        name: "add"),
+                      args: [
+                        InstanceMethodCall(
+                          loc: 126-139,
+                          target: StaticMethodCall(
+                            method: Id(
+                              klassId: "",
+                              name: "double"),
+                            args: [Literal(
+                              loc: 133-134,
+                              value: 1)]),
+                          method: Id(
+                            klassId: "Nat",
+                            name: "+"),
+                          args: [Literal(
+                            loc: 137-138,
+                            value: 1)]),
+                        InstanceMethodCall(
+                          loc: 140-147,
+                          target: Literal(
+                            loc: 140-141,
+                            value: 2),
+                          method: Id(
+                            klassId: "Nat",
+                            name: "*"),
+                          args: [Literal(
+                            loc: 144-145,
+                            value: 2)])
+                      ]),
+                    then: Seq(
+                      loc: 147-243,
+                      action: Assert(
+                        loc: 147-163,
+                        asserted: InstanceMethodCall(
+                          loc: 154-163,
+                          target: AccessLocal(
+                            local: "d"),
+                          method: Id(
+                            klassId: "Nat",
+                            name: "=="),
+                          args: [Literal(
+                            loc: 159-160,
+                            value: 7)])),
+                      then: Let(
+                        loc: 163-188,
+                        assigned: Single(
+                          loc: 163-164,
+                          name: "e"),
+                        value: InstanceMethodCall(
+                          loc: 167-188,
+                          target: StaticMethodCall(
+                            method: Id(
+                              klassId: "",
+                              name: "double"),
+                            args: [InstanceMethodCall(
+                              loc: 176-182,
+                              target: AccessLocal(
+                                local: "a"),
+                              method: Id(
+                                klassId: "Nat",
+                                name: "+"),
+                              args: [Literal(
+                                loc: 180-181,
+                                value: 1)])]),
+                          method: Id(
+                            klassId: "Nat",
+                            name: "+"),
+                          args: [Literal(
+                            loc: 185-186,
+                            value: 1)]),
+                        then: Seq(
+                          loc: 188-243,
+                          action: Assert(
+                            loc: 188-205,
+                            asserted: InstanceMethodCall(
+                              loc: 195-205,
+                              target: AccessLocal(
+                                local: "e"),
+                              method: Id(
+                                klassId: "Nat",
+                                name: "=="),
+                              args: [Literal(
+                                loc: 200-202,
+                                value: 21)])),
+                          then: Let(
+                            loc: 205-228,
+                            assigned: Single(
+                              loc: 205-206,
+                              name: "f"),
+                            value: StaticMethodCall(
+                              method: Id(
+                                klassId: "",
+                                name: "add"),
+                              args: [
+                                Literal(
+                                  loc: 214-215,
+                                  value: 1),
+                                StaticMethodCall(
+                                  method: Id(
+                                    klassId: "",
+                                    name: "mul"),
+                                  args: [
+                                    Literal(
+                                      loc: 222-223,
+                                      value: 2),
+                                    Literal(
+                                      loc: 225-226,
+                                      value: 3)
+                                  ])
+                              ]),
+                            then: Assert(
+                              loc: 228-243,
+                              asserted: InstanceMethodCall(
+                                loc: 235-243,
+                                target: AccessLocal(
+                                  local: "f"),
+                                method: Id(
+                                  klassId: "Nat",
+                                  name: "=="),
+                                args: [Literal(
+                                  loc: 240-241,
+                                  value: 7)])))))))))))))),
     double: MethodWithBody(
-      loc: 116-145,
+      loc: 243-273,
       isStatic: true,
       returnTy: Id(
         effect: "pure",
@@ -122,18 +254,18 @@ Klass(
       name: "double",
       selfEffect: "pure",
       parameters: [Parameter(
-        loc: 131-136,
+        loc: 258-263,
         ty: Id(
           effect: "pure",
           clsId: "Nat"),
         name: "x",
         index: 0)],
       body: InstanceMethodCall(
-        loc: 139-145,
+        loc: 266-273,
         target: AccessParameter(
-          loc: 139-140,
+          loc: 266-267,
           param: Parameter(
-            loc: 131-136,
+            loc: 258-263,
             ty: Id(
               effect: "pure",
               clsId: "Nat"),
@@ -143,5 +275,99 @@ Klass(
           klassId: "Nat",
           name: "*"),
         args: [Literal(
-          loc: 143-144,
-          value: 2)]))))
+          loc: 270-271,
+          value: 2)])),
+    add: MethodWithBody(
+      loc: 273-307,
+      isStatic: true,
+      returnTy: Id(
+        effect: "pure",
+        clsId: "Nat"),
+      name: "add",
+      selfEffect: "pure",
+      parameters: [
+        Parameter(
+          loc: 285-290,
+          ty: Id(
+            effect: "pure",
+            clsId: "Nat"),
+          name: "a",
+          index: 0),
+        Parameter(
+          loc: 292-297,
+          ty: Id(
+            effect: "pure",
+            clsId: "Nat"),
+          name: "b",
+          index: 1)
+      ],
+      body: InstanceMethodCall(
+        loc: 300-307,
+        target: AccessParameter(
+          loc: 300-301,
+          param: Parameter(
+            loc: 285-290,
+            ty: Id(
+              effect: "pure",
+              clsId: "Nat"),
+            name: "a",
+            index: 0)),
+        method: Id(
+          klassId: "Nat",
+          name: "+"),
+        args: [AccessParameter(
+          loc: 304-305,
+          param: Parameter(
+            loc: 292-297,
+            ty: Id(
+              effect: "pure",
+              clsId: "Nat"),
+            name: "b",
+            index: 1))])),
+    mul: MethodWithBody(
+      loc: 307-340,
+      isStatic: true,
+      returnTy: Id(
+        effect: "pure",
+        clsId: "Nat"),
+      name: "mul",
+      selfEffect: "pure",
+      parameters: [
+        Parameter(
+          loc: 319-324,
+          ty: Id(
+            effect: "pure",
+            clsId: "Nat"),
+          name: "a",
+          index: 0),
+        Parameter(
+          loc: 326-331,
+          ty: Id(
+            effect: "pure",
+            clsId: "Nat"),
+          name: "b",
+          index: 1)
+      ],
+      body: InstanceMethodCall(
+        loc: 334-340,
+        target: AccessParameter(
+          loc: 334-335,
+          param: Parameter(
+            loc: 319-324,
+            ty: Id(
+              effect: "pure",
+              clsId: "Nat"),
+            name: "a",
+            index: 0)),
+        method: Id(
+          klassId: "Nat",
+          name: "*"),
+        args: [AccessParameter(
+          loc: 338-339,
+          param: Parameter(
+            loc: 326-331,
+            ty: Id(
+              effect: "pure",
+              clsId: "Nat"),
+            name: "b",
+            index: 1))]))))

@@ -20,7 +20,7 @@ Klass(
       selfEffect: "pure",
       parameters: [],
       body: Let(
-        loc: 93-102,
+        loc: 84-102,
         assigned: Single(
           loc: 84-92,
           name: "instance"),
@@ -29,7 +29,7 @@ Klass(
             loc: 99-100,
             value: 1)]),
         then: Let(
-          loc: 107-138,
+          loc: 102-138,
           assigned: Single(
             loc: 102-106,
             name: "gotN"),

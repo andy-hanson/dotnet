@@ -1,10 +1,25 @@
 fun Void main()
-	x = 1 + 2 * 3
-	assert x == 9
-	y = double x + 1
-	assert y == 19
-	z = double: x + 1
-	assert z == 20
+	a = 1 + 2 * 3
+	assert a == 9
+	b = double a + 1
+	assert b == 19
+	c = double: a + 1
+	assert c == 20
+
+	d = add: double 1 + 1, 2 * 2
+	assert d == 7
+
+	e = (double: a + 1) + 1
+	assert e == 21
+
+	f = add: 1, mul: 2, 3
+	assert f == 7
 
 fun Nat double(Nat x)
 	x * 2
+
+fun Nat add(Nat a, Nat b)
+	a + b
+
+fun Nat mul(Nat a, Nat b)
+	a * b

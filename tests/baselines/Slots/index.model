@@ -1,5 +1,5 @@
 Klass(
-  loc: 0-171,
+  loc: 0-172,
   head: Slots(
     slots: [
       Slot(
@@ -21,7 +21,7 @@ Klass(
     ]),
   membersMap: Dict<Sym, Member>(
     main: MethodWithBody(
-      loc: 29-131,
+      loc: 29-132,
       isStatic: true,
       returnTy: Id(
         effect: "pure",
@@ -30,7 +30,7 @@ Klass(
       selfEffect: "pure",
       parameters: [],
       body: Let(
-        loc: 50-61,
+        loc: 46-62,
         assigned: Single(
           loc: 46-49,
           name: "obj"),
@@ -40,17 +40,17 @@ Klass(
               loc: 56-57,
               value: 1),
             Literal(
-              loc: 58-59,
+              loc: 59-60,
               value: 2)
           ]),
         then: Seq(
-          loc: 61-131,
+          loc: 62-132,
           action: Assert(
-            loc: 61-80,
+            loc: 62-81,
             asserted: InstanceMethodCall(
-              loc: 68-80,
+              loc: 69-81,
               target: GetSlot(
-                loc: 68-73,
+                loc: 69-74,
                 target: AccessLocal(
                   local: "obj"),
                 slot: Id(
@@ -60,16 +60,16 @@ Klass(
                 klassId: "Nat",
                 name: "=="),
               args: [Literal(
-                loc: 77-78,
+                loc: 78-79,
                 value: 1)])),
           then: Seq(
-            loc: 80-131,
+            loc: 81-132,
             action: Assert(
-              loc: 80-99,
+              loc: 81-100,
               asserted: InstanceMethodCall(
-                loc: 87-99,
+                loc: 88-100,
                 target: GetSlot(
-                  loc: 87-92,
+                  loc: 88-93,
                   target: AccessLocal(
                     local: "obj"),
                   slot: Id(
@@ -79,12 +79,12 @@ Klass(
                   klassId: "Nat",
                   name: "=="),
                 args: [Literal(
-                  loc: 96-97,
+                  loc: 97-98,
                   value: 2)])),
             then: Seq(
-              loc: 99-131,
+              loc: 100-132,
               action: InstanceMethodCall(
-                loc: 99-110,
+                loc: 100-111,
                 target: AccessLocal(
                   local: "obj"),
                 method: Id(
@@ -92,11 +92,11 @@ Klass(
                   name: "incrY"),
                 args: []),
               then: Assert(
-                loc: 112-131,
+                loc: 113-132,
                 asserted: InstanceMethodCall(
-                  loc: 119-131,
+                  loc: 120-132,
                   target: GetSlot(
-                    loc: 119-124,
+                    loc: 120-125,
                     target: AccessLocal(
                       local: "obj"),
                     slot: Id(
@@ -106,10 +106,10 @@ Klass(
                     klassId: "Nat",
                     name: "=="),
                   args: [Literal(
-                    loc: 128-129,
+                    loc: 129-130,
                     value: 3)]))))))),
     incrY: MethodWithBody(
-      loc: 131-171,
+      loc: 132-172,
       isStatic: false,
       returnTy: Id(
         effect: "pure",
@@ -118,12 +118,12 @@ Klass(
       selfEffect: "set",
       parameters: [],
       body: SetSlot(
-        loc: 159-171,
+        loc: 158-172,
         slot: Id(
           klass: "",
           name: "y"),
         value: InstanceMethodCall(
-          loc: 162-170,
+          loc: 163-171,
           target: GetMySlot(
             slot: Id(
               klass: "",

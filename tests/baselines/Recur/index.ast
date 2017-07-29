@@ -1,8 +1,8 @@
 Module(
-  loc: 0-498,
+  loc: 0-502,
   imports: [],
   klass: Klass(
-    loc: 0-498,
+    loc: 0-502,
     head: null,
     supers: [],
     methods: [
@@ -55,7 +55,7 @@ Module(
                     loc: 117-118,
                     value: 8))))))),
       Method(
-        loc: 120-171,
+        loc: 120-172,
         isStatic: true,
         returnTy: Ty(
           loc: 124-127,
@@ -72,7 +72,7 @@ Module(
               name: "Nat")),
           name: "n")],
         body: Call(
-          loc: 146-171,
+          loc: 146-172,
           target: Access(
             loc: 146-165,
             name: "factorial-recursive"),
@@ -81,198 +81,198 @@ Module(
               loc: 166-167,
               name: "n"),
             Literal(
-              loc: 168-169,
+              loc: 169-170,
               value: 1)
           ])),
       Method(
-        loc: 171-273,
+        loc: 172-274,
         isStatic: true,
         returnTy: Ty(
-          loc: 175-178,
+          loc: 176-179,
           cls: Access(
-            loc: 175-178,
+            loc: 176-179,
             name: "Nat")),
         name: "factorial-recursive",
         parameters: [
           Parameter(
-            loc: 199-204,
+            loc: 200-205,
             ty: Ty(
-              loc: 199-202,
+              loc: 200-203,
               cls: Access(
-                loc: 199-202,
+                loc: 200-203,
                 name: "Nat")),
             name: "n"),
           Parameter(
-            loc: 206-213,
+            loc: 207-214,
             ty: Ty(
-              loc: 206-209,
+              loc: 207-210,
               cls: Access(
-                loc: 206-209,
+                loc: 207-210,
                 name: "Nat")),
             name: "acc")
         ],
         body: WhenTest(
-          loc: 216-273,
+          loc: 217-274,
           cases: [Case(
-            loc: 216-239,
+            loc: 217-240,
             test: OperatorCall(
-              loc: 216-233,
+              loc: 217-234,
               oper: "==",
               right: Literal(
-                loc: 228-229,
+                loc: 229-230,
                 value: 0)),
             result: Access(
-              loc: 233-236,
+              loc: 234-237,
               name: "acc"))],
           elseResult: Recur(
-            loc: 247-273,
+            loc: 248-274,
             args: [
               Call(
-                loc: 253-261,
+                loc: 255-263,
                 target: GetProperty(
-                  loc: 253-259,
+                  loc: 255-261,
                   target: Access(
-                    loc: 253-254,
+                    loc: 255-256,
                     name: "n"),
                   propertyName: "decr"),
                 args: []),
               OperatorCall(
-                loc: 263-271,
+                loc: 265-274,
                 oper: "*",
                 right: Access(
-                  loc: 269-270,
+                  loc: 271-272,
                   name: "n"))
             ]))),
       Method(
-        loc: 273-369,
+        loc: 274-372,
         isStatic: true,
         returnTy: Ty(
-          loc: 277-280,
+          loc: 278-281,
           cls: Access(
-            loc: 277-280,
+            loc: 278-281,
             name: "Nat")),
         name: "fibonacci",
         parameters: [Parameter(
-          loc: 291-296,
+          loc: 292-297,
           ty: Ty(
-            loc: 291-294,
+            loc: 292-295,
             cls: Access(
-              loc: 291-294,
+              loc: 292-295,
               name: "Nat")),
           name: "n")],
         body: WhenTest(
-          loc: 299-369,
+          loc: 300-372,
           cases: [
             Case(
-              loc: 299-320,
+              loc: 300-321,
               test: OperatorCall(
-                loc: 299-316,
+                loc: 300-317,
                 oper: "==",
                 right: Literal(
-                  loc: 311-312,
+                  loc: 312-313,
                   value: 0)),
               result: Literal(
-                loc: 316-317,
+                loc: 317-318,
                 value: 0)),
             Case(
-              loc: 320-334,
+              loc: 321-335,
               test: OperatorCall(
-                loc: 320-330,
+                loc: 321-331,
                 oper: "==",
                 right: Literal(
-                  loc: 325-326,
+                  loc: 326-327,
                   value: 1)),
               result: Literal(
-                loc: 330-331,
+                loc: 331-332,
                 value: 1))
           ],
           elseResult: Call(
-            loc: 342-369,
+            loc: 343-372,
             target: Access(
-              loc: 342-361,
+              loc: 343-362,
               name: "fibonacci-recursive"),
             args: [
               Access(
-                loc: 362-363,
+                loc: 363-364,
                 name: "n"),
               Literal(
-                loc: 364-365,
+                loc: 366-367,
                 value: 0),
               Literal(
-                loc: 366-367,
+                loc: 369-370,
                 value: 1)
             ]))),
       Method(
-        loc: 369-498,
+        loc: 372-502,
         isStatic: true,
         returnTy: Ty(
-          loc: 373-376,
+          loc: 376-379,
           cls: Access(
-            loc: 373-376,
+            loc: 376-379,
             name: "Nat")),
         name: "fibonacci-recursive",
         parameters: [
           Parameter(
-            loc: 397-402,
+            loc: 400-405,
             ty: Ty(
-              loc: 397-400,
+              loc: 400-403,
               cls: Access(
-                loc: 397-400,
+                loc: 400-403,
                 name: "Nat")),
             name: "n"),
           Parameter(
-            loc: 404-412,
+            loc: 407-415,
             ty: Ty(
-              loc: 404-407,
+              loc: 407-410,
               cls: Access(
-                loc: 404-407,
+                loc: 407-410,
                 name: "Nat")),
             name: "acc1"),
           Parameter(
-            loc: 414-422,
+            loc: 417-425,
             ty: Ty(
-              loc: 414-417,
+              loc: 417-420,
               cls: Access(
-                loc: 414-417,
+                loc: 417-420,
                 name: "Nat")),
             name: "acc2")
         ],
         body: WhenTest(
-          loc: 425-498,
+          loc: 428-502,
           cases: [Case(
-            loc: 425-456,
+            loc: 428-459,
             test: OperatorCall(
-              loc: 425-442,
+              loc: 428-445,
               oper: "==",
               right: Literal(
-                loc: 437-438,
+                loc: 440-441,
                 value: 2)),
             result: OperatorCall(
-              loc: 442-456,
+              loc: 445-459,
               oper: "+",
               right: Access(
-                loc: 449-453,
+                loc: 452-456,
                 name: "acc2")))],
           elseResult: Recur(
-            loc: 464-498,
+            loc: 467-502,
             args: [
               Call(
-                loc: 470-478,
+                loc: 474-482,
                 target: GetProperty(
-                  loc: 470-476,
+                  loc: 474-480,
                   target: Access(
-                    loc: 470-471,
+                    loc: 474-475,
                     name: "n"),
                   propertyName: "decr"),
                 args: []),
               Access(
-                loc: 479-483,
+                loc: 484-488,
                 name: "acc2"),
               OperatorCall(
-                loc: 485-497,
+                loc: 490-502,
                 oper: "+",
                 right: Access(
-                  loc: 492-496,
+                  loc: 497-501,
                   name: "acc2"))
             ])))
     ]))

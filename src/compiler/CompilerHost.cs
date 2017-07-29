@@ -70,7 +70,7 @@ sealed class FileLoadingDocumentProvider : DocumentProvider {
 	Sym DocumentProvider.rootName => fileInput.rootName;
 
 	Op<DocumentInfo> DocumentProvider.getDocument(Path path) =>
-		fileInput.read(path).map(text => DocumentInfo.parse(text, version: 0));
+		fileInput.read(path).get(out var text) ? Op.Some(DocumentInfo.parse(text, version: 0)) : Op<DocumentInfo>.None;
 }
 
 /**

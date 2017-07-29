@@ -12,7 +12,7 @@ Klass(
       selfEffect: "pure",
       parameters: [],
       body: Let(
-        loc: 37-121,
+        loc: 35-121,
         assigned: Single(
           loc: 35-36,
           name: "x"),

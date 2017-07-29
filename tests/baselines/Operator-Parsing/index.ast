@@ -1,13 +1,13 @@
 Module(
-  loc: 0-145,
+  loc: 0-340,
   imports: [],
   klass: Klass(
-    loc: 0-145,
+    loc: 0-340,
     head: null,
     supers: [],
     methods: [
       Method(
-        loc: 0-116,
+        loc: 0-243,
         isStatic: true,
         returnTy: Ty(
           loc: 4-8,
@@ -17,10 +17,10 @@ Module(
         name: "main",
         parameters: [],
         body: Let(
-          loc: 19-32,
+          loc: 17-32,
           assigned: Single(
             loc: 17-18,
-            name: "x"),
+            name: "a"),
           value: OperatorCall(
             loc: 21-32,
             oper: "*",
@@ -28,7 +28,7 @@ Module(
               loc: 29-30,
               value: 3)),
           then: Seq(
-            loc: 32-116,
+            loc: 32-243,
             first: Assert(
               loc: 32-47,
               asserted: OperatorCall(
@@ -38,10 +38,10 @@ Module(
                   loc: 44-45,
                   value: 9))),
             then: Let(
-              loc: 49-65,
+              loc: 47-65,
               assigned: Single(
                 loc: 47-48,
-                name: "y"),
+                name: "b"),
               value: OperatorCall(
                 loc: 51-65,
                 oper: "+",
@@ -49,7 +49,7 @@ Module(
                   loc: 62-63,
                   value: 1)),
               then: Seq(
-                loc: 65-116,
+                loc: 65-243,
                 first: Assert(
                   loc: 65-81,
                   asserted: OperatorCall(
@@ -59,10 +59,10 @@ Module(
                       loc: 77-79,
                       value: 19))),
                 then: Let(
-                  loc: 83-100,
+                  loc: 81-100,
                   assigned: Single(
                     loc: 81-82,
-                    name: "z"),
+                    name: "c"),
                   value: Call(
                     loc: 85-100,
                     target: Access(
@@ -74,35 +74,194 @@ Module(
                       right: Literal(
                         loc: 97-98,
                         value: 1))]),
-                  then: Assert(
-                    loc: 100-116,
-                    asserted: OperatorCall(
-                      loc: 107-116,
-                      oper: "==",
-                      right: Literal(
-                        loc: 112-114,
-                        value: 20))))))))),
+                  then: Seq(
+                    loc: 100-243,
+                    first: Assert(
+                      loc: 100-117,
+                      asserted: OperatorCall(
+                        loc: 107-117,
+                        oper: "==",
+                        right: Literal(
+                          loc: 112-114,
+                          value: 20))),
+                    then: Let(
+                      loc: 117-147,
+                      assigned: Single(
+                        loc: 117-118,
+                        name: "d"),
+                      value: Call(
+                        loc: 121-147,
+                        target: Access(
+                          loc: 121-124,
+                          name: "add"),
+                        args: [
+                          OperatorCall(
+                            loc: 126-139,
+                            oper: "+",
+                            right: Literal(
+                              loc: 137-138,
+                              value: 1)),
+                          OperatorCall(
+                            loc: 140-147,
+                            oper: "*",
+                            right: Literal(
+                              loc: 144-145,
+                              value: 2))
+                        ]),
+                      then: Seq(
+                        loc: 147-243,
+                        first: Assert(
+                          loc: 147-163,
+                          asserted: OperatorCall(
+                            loc: 154-163,
+                            oper: "==",
+                            right: Literal(
+                              loc: 159-160,
+                              value: 7))),
+                        then: Let(
+                          loc: 163-188,
+                          assigned: Single(
+                            loc: 163-164,
+                            name: "e"),
+                          value: OperatorCall(
+                            loc: 167-188,
+                            oper: "+",
+                            right: Literal(
+                              loc: 185-186,
+                              value: 1)),
+                          then: Seq(
+                            loc: 188-243,
+                            first: Assert(
+                              loc: 188-205,
+                              asserted: OperatorCall(
+                                loc: 195-205,
+                                oper: "==",
+                                right: Literal(
+                                  loc: 200-202,
+                                  value: 21))),
+                            then: Let(
+                              loc: 205-228,
+                              assigned: Single(
+                                loc: 205-206,
+                                name: "f"),
+                              value: Call(
+                                loc: 209-228,
+                                target: Access(
+                                  loc: 209-212,
+                                  name: "add"),
+                                args: [
+                                  Literal(
+                                    loc: 214-215,
+                                    value: 1),
+                                  Call(
+                                    loc: 217-228,
+                                    target: Access(
+                                      loc: 217-220,
+                                      name: "mul"),
+                                    args: [
+                                      Literal(
+                                        loc: 222-223,
+                                        value: 2),
+                                      Literal(
+                                        loc: 225-226,
+                                        value: 3)
+                                    ])
+                                ]),
+                              then: Assert(
+                                loc: 228-243,
+                                asserted: OperatorCall(
+                                  loc: 235-243,
+                                  oper: "==",
+                                  right: Literal(
+                                    loc: 240-241,
+                                    value: 7))))))))))))))),
       Method(
-        loc: 116-145,
+        loc: 243-273,
         isStatic: true,
         returnTy: Ty(
-          loc: 120-123,
+          loc: 247-250,
           cls: Access(
-            loc: 120-123,
+            loc: 247-250,
             name: "Nat")),
         name: "double",
         parameters: [Parameter(
-          loc: 131-136,
+          loc: 258-263,
           ty: Ty(
-            loc: 131-134,
+            loc: 258-261,
             cls: Access(
-              loc: 131-134,
+              loc: 258-261,
               name: "Nat")),
           name: "x")],
         body: OperatorCall(
-          loc: 139-145,
+          loc: 266-273,
           oper: "*",
           right: Literal(
-            loc: 143-144,
-            value: 2)))
+            loc: 270-271,
+            value: 2))),
+      Method(
+        loc: 273-307,
+        isStatic: true,
+        returnTy: Ty(
+          loc: 277-280,
+          cls: Access(
+            loc: 277-280,
+            name: "Nat")),
+        name: "add",
+        parameters: [
+          Parameter(
+            loc: 285-290,
+            ty: Ty(
+              loc: 285-288,
+              cls: Access(
+                loc: 285-288,
+                name: "Nat")),
+            name: "a"),
+          Parameter(
+            loc: 292-297,
+            ty: Ty(
+              loc: 292-295,
+              cls: Access(
+                loc: 292-295,
+                name: "Nat")),
+            name: "b")
+        ],
+        body: OperatorCall(
+          loc: 300-307,
+          oper: "+",
+          right: Access(
+            loc: 304-305,
+            name: "b"))),
+      Method(
+        loc: 307-340,
+        isStatic: true,
+        returnTy: Ty(
+          loc: 311-314,
+          cls: Access(
+            loc: 311-314,
+            name: "Nat")),
+        name: "mul",
+        parameters: [
+          Parameter(
+            loc: 319-324,
+            ty: Ty(
+              loc: 319-322,
+              cls: Access(
+                loc: 319-322,
+                name: "Nat")),
+            name: "a"),
+          Parameter(
+            loc: 326-331,
+            ty: Ty(
+              loc: 326-329,
+              cls: Access(
+                loc: 326-329,
+                name: "Nat")),
+            name: "b")
+        ],
+        body: OperatorCall(
+          loc: 334-340,
+          oper: "*",
+          right: Access(
+            loc: 338-339,
+            name: "b")))
     ]))

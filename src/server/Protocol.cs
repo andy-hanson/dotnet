@@ -366,7 +366,7 @@ namespace Lsp {
 
 		public Dat toDat() => Dat.of(this,
 			nameof(range), range,
-			nameof(severity), Dat.op(severity.mapToUint(s => (uint)s)),
+			nameof(severity), Dat.op(severity.get(out var s) ? OpUint.Some((uint)s) : OpUint.None),
 			nameof(code), Dat.op(code),
 			nameof(source), Dat.op(source),
 			nameof(message), Dat.str(message));
@@ -442,7 +442,7 @@ namespace Lsp {
 		public Dat toDat() => Dat.of(this,
 			nameof(label), Dat.str(label),
 			nameof(documentation), Dat.op(documentation),
-			nameof(parameters), Dat.op(parameters.map(Dat.arr)));
+			nameof(parameters), Dat.op(parameters.get(out var p) ? Op.Some(Dat.arr(p)) : Op<Dat>.None));
 		void ToJsonSpecial.toJsonSpecial(JsonWriter j) =>
 			j.writeDictWithTwoOptionalValues(
 				nameof(label), label,
