@@ -18,7 +18,7 @@ sealed class NativeFileInput : FileInput {
 	Sym FileInput.rootName => Sym.of(rootDir.last);
 
 	Op<string> FileInput.read(Path path) {
-		var fullPath = Path.resolveWithRoot(rootDir, path).toPathString();
+		var fullPath = Path.resolveWithRoot(rootDir, path).show();
 		if (File.Exists(fullPath)) {
 			return Op.Some(File.ReadAllText(fullPath));
 		}

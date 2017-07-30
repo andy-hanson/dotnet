@@ -14,6 +14,9 @@ struct StringMaker {
 	internal static StringMaker create() =>
 		new StringMaker(new StringBuilder());
 
+	internal static string stringify<T>(T t) where T : Show =>
+		create().add(t).finish();
+
 	internal StringMaker add(uint u) {
 		sb.Append(u);
 		return this;
@@ -51,6 +54,31 @@ struct StringMaker {
 		sb.Append(s);
 		return this;
 	}
+
+	StringMaker join<T>(Arr<T> arr, Action<StringMaker, T> toString, string joiner = ", ") {
+		if (arr.isEmpty)
+			return this;
+
+		for (uint i = 0; i < arr.length - 1; i++) {
+			toString(this, arr[i]);
+			add(joiner);
+		}
+
+		toString(this, arr.last);
+		return this;
+	}
+
+	internal StringMaker join<T>(Arr<T> arr, Func<T, string> toString, string joiner = ", ") =>
+		join(arr, (ss, t) => ss.add(toString(t)), joiner);
+
+	internal StringMaker join<T>(T[] arr, Func<T, string> toString, string joiner = ", ") =>
+		join(new Arr<T>(arr), toString, joiner);
+
+	internal StringMaker join<T>(Arr<T> arr, string joiner = ", ") where T : Show =>
+		join(arr, (ss, x) => ss.add(x), joiner);
+
+	internal StringMaker join(Arr<string> arr, string joiner = ", ") =>
+		join(arr, (ss, x) => ss.add(x), joiner);
 
 	internal Sym finishSym() =>
 		Sym.of(sb.ToString());

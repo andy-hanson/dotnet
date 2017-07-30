@@ -31,15 +31,14 @@ namespace Diag.ModuleDiag {
 			this.importedPath = importedPath;
 		}
 
-		public override void show(StringMaker s) {
-			s.add("Can't find module '");
-			s.add(importedPath);
-			s.add("' from '");
-			s.add(importerPath);
-			s.add("'.\nTried ");
-			ModuleResolver.attemptedPaths(importerPath, importedPath).join(", ", s, (ss, p) => p.toPathString(ss));
-			s.add(".");
-		}
+		public override void show(StringMaker s) =>
+			s.add("Can't find module '")
+				.add(importedPath)
+				.add("' from '")
+				.add(importerPath)
+				.add("'.\nTried ")
+				.join(ModuleResolver.attemptedPaths(importerPath, importedPath))
+				.add(".");
 
 		public override bool deepEqual(CantFindLocalModule c) =>
 			importerPath.deepEqual(c.importerPath) &&

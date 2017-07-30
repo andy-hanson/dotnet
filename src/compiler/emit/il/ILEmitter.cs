@@ -205,13 +205,15 @@ sealed class LogWriter : InstructionLogger {
 	internal void endConstructor() =>
 		s.add("\n\n");
 
-	internal void methodHead(string name, MethodAttributes attrs, Type returnType, Type[] parameters) {
-		s.add(returnType.Name).add(' ').add(name).add('(');
-		new Arr<Type>(parameters).join(", ", s, (ss, p) => ss.add(p.Name));
-		s.add(") [");
-		s.add(attrs.ToString());
-		s.add("]\n\n");
-	}
+	internal void methodHead(string name, MethodAttributes attrs, Type returnType, Type[] parameters) =>
+		s.add(returnType.Name)
+			.add(' ')
+			.add(name)
+			.add('(')
+			.join(parameters, p => p.Name)
+			.add(") [")
+			.add(attrs.ToString())
+			.add("]\n\n");
 
 	internal void beginMethod(MethodBuilder m) =>
 		s.add(m.Name);

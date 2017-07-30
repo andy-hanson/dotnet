@@ -4,27 +4,27 @@ using System.Linq;
 
 static class FileUtils {
 	internal static IEnumerable<string> listDirectoriesInDirectory(Path path) {
-		var pathStr = path.toPathString();
+		var pathStr = path.show();
 		var pathSlash = pathStr + '/';
 		return Directory.EnumerateDirectories(pathStr).Select(d => d.withoutStart(pathSlash));
 	}
 
 	internal static string readFile(Path path) =>
-		File.ReadAllText(path.toPathString());
+		File.ReadAllText(path.show());
 
 	internal static bool fileExists(Path path) =>
-		File.Exists(path.toPathString());
+		File.Exists(path.show());
 
 	internal static void writeFile(Path path, string text) =>
-		File.WriteAllText(path.toPathString(), text);
+		File.WriteAllText(path.show(), text);
 
 	internal static void writeFileAndEnsureDirectory(Path path, string text) {
-		Directory.CreateDirectory(path.directory().toPathString());
-		File.WriteAllText(path.toPathString(), text);
+		Directory.CreateDirectory(path.directory().show());
+		File.WriteAllText(path.show(), text);
 	}
 
 	internal static bool isDirectory(Path path) {
-		var attr = File.GetAttributes(path.toPathString());
+		var attr = File.GetAttributes(path.show());
 		return (attr & FileAttributes.Directory) != 0;
 	}
 }

@@ -105,9 +105,8 @@ struct Path : ToData<Path>, IEquatable<Path>, Show {
 	public bool Equals(Path p) => deepEqual(p);
 	public bool deepEqual(Path p) => parts.deepEqual(p.parts);
 	public override int GetHashCode() => parts.hash();
-	internal string toPathString() => parts.join("/");
-	void Show.show(StringMaker s) => parts.join("/", s);
-	internal void toPathString(StringMaker s) => parts.join("/", s);
+	void Show.show(StringMaker s) => s.join(parts, "/");
+	public string show() => StringMaker.stringify(this);
 	public static bool operator ==(Path a, Path b) => a.deepEqual(b);
 	public static bool operator !=(Path a, Path b) => !a.deepEqual(b);
 
@@ -137,7 +136,7 @@ struct RelPath : ToData<RelPath>, Show {
 			s.add("./");
 		else
 			doTimes(nParents, () => s.add("../"));
-		relToParent.toPathString(s);
+		s.add(relToParent);
 	}
 
 	void Show.show(StringMaker s) => toPathString(s);

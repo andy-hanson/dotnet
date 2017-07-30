@@ -55,7 +55,7 @@ struct LineAndColumn : ToData<LineAndColumn>, Show {
 		this.column = column;
 	}
 
-	public void show(StringMaker s) => s.add(line).add(':').add(column);
+	void Show.show(StringMaker s) => s.add(line).add(':').add(column);
 	public override string ToString() => throw new NotSupportedException();
 	public override bool Equals(object o) => throw new NotSupportedException();
 	public override int GetHashCode() => throw new NotSupportedException();
@@ -71,7 +71,7 @@ struct LineAndColumnLoc : ToData<LineAndColumnLoc>, Show {
 		this.end = end;
 	}
 
-	public void show(StringMaker s) => s.add(start).add('-').add(end);
+	void Show.show(StringMaker s) => s.add(start).add('-').add(end);
 	public override string ToString() => throw new NotSupportedException();
 	public override bool Equals(object o) => throw new NotSupportedException();
 	public override int GetHashCode() => throw new NotSupportedException();

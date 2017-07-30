@@ -29,10 +29,9 @@ namespace Diag.CheckDiags {
 		[UpPointer] internal readonly Arr<AbstractMethodLike> abstractMethods;
 		internal ImplsMismatch(Arr<AbstractMethodLike> abstractMethods) { this.abstractMethods = abstractMethods; }
 
-		public override void show(StringMaker s) {
-			s.add("Abstract method implementations must be exactly, in order: ");
-			abstractMethods.join(", ", s, a => a.name.str);
-		}
+		public override void show(StringMaker s) =>
+			s.add("Abstract method implementations must be exactly, in order: ")
+				.join(abstractMethods, a => a.name.str);
 
 		public override bool deepEqual(ImplsMismatch w) =>
 			abstractMethods.eachEqualId<AbstractMethodLike, AbstractMethodLike.Id>(w.abstractMethods);
@@ -55,12 +54,11 @@ namespace Diag.CheckDiags {
 		[UpPointer] internal readonly AbstractMethodLike implemented;
 		internal WrongImplParameters(AbstractMethodLike implemented) { this.implemented = implemented; }
 
-		public override void show(StringMaker s) {
-			s.add("Parameters for implementation of ");
-			s.add(implemented.name.str);
-			s.add(" must be exactly, in order: ");
-			implemented.parameters.join(", ", s, p => p.name.str);
-		}
+		public override void show(StringMaker s) =>
+			s.add("Parameters for implementation of ")
+				.add(implemented.name.str)
+				.add(" must be exactly, in order: ")
+				.join(implemented.parameters, p => p.name.str);
 
 		public override bool deepEqual(WrongImplParameters w) =>
 			implemented.equalsId<AbstractMethodLike, AbstractMethodLike.Id>(w.implemented);

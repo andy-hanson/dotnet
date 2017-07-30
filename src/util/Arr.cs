@@ -355,30 +355,6 @@ struct Arr<T> : IEnumerable<T> {
 
 	internal T[] toBuilder() => sliceToBuilder(0, length);
 
-	internal string join(string joiner, Func<T, string> toString) {
-		if (length == 0)
-			return string.Empty;
-
-		var res = StringMaker.create();
-		join(joiner, res, (s, x) => s.add(toString(x)));
-		return res.finish();
-	}
-
-	internal void join(string joiner, StringMaker s, Action<StringMaker, T> toString) {
-		if (length == 0)
-			return;
-
-		for (uint i = 0; i < length - 1; i++) {
-			toString(s, this[i]);
-			s.add(joiner);
-		}
-
-		toString(s, this[this.length - 1]);
-	}
-
-	internal void join(string joiner, StringMaker s, Func<T, string> toString) =>
-		join(joiner, s, (ss, t) => ss.add(toString(t)));
-
 	internal bool eachCorresponds<U>(Arr<U> other, Func<T, U, bool> correspond) {
 		if (length != other.length)
 			return false;
@@ -403,11 +379,6 @@ struct Arr<T> : IEnumerable<T> {
 }
 
 static class Arr {
-	internal static string join(this Arr<string> arr, string joiner) =>
-		arr.join(joiner, x => x);
-	internal static void join(this Arr<string> arr, string joiner, StringMaker s) =>
-		arr.join(joiner, s, x => x);
-
 	internal static Arr<T> slice<T>(this T[] arr, uint low, uint high) {
 		var len = high - low;
 		var res = new T[len];

@@ -22,7 +22,7 @@ struct CompiledProgram : ToData<CompiledProgram> {
 		object.ReferenceEquals(documentProvider, c.documentProvider) &&
 		modules.deepEqual(c.modules);
 	public Dat toDat() =>
-		Dat.of(this, nameof(modules), Dat.dict(modules.mapKeys(p => p.toPathString())));
+		Dat.of(this, nameof(modules), Dat.dict(modules.mapKeys(p => p.show())));
 }
 
 /*
@@ -150,51 +150,54 @@ sealed class Compiler {
 	(Either<Arr<Imported>, (Arr<Either<Imported, FailModule>>, Arr<Diagnostic>)>, bool dependenciesReused) resolveImports(Path fullPath, Arr<Ast.Import> importAsts) {
 		var importDiagnostics = Arr.builder<Diagnostic>();
 		var allDependenciesReused = true;
-		var attemptedImports = importAsts.mapDefinedProbablyAll<Either<Imported, FailModule>>(import => {
-			switch (import) {
-				case Ast.Import.Global g: {
-					var (loc, path) = g;
-					if (BuiltinsLoader.tryImportBuiltin(path, out var cls))
-						return Op.Some(Either<Imported, FailModule>.Left(cls));
-					else {
-						importDiagnostics.add(new Diagnostic(loc, new CantFindGlobalModule(path)));
-						return Op<Either<Imported, FailModule>>.None;
-					}
-				}
-
-				case Ast.Import.Relative rel: {
-					var (loc, relativePath) = rel;
-					var (importedModule, isImportReused) = compileSingle(fullPath.resolve(relativePath));
-					allDependenciesReused = allDependenciesReused && isImportReused;
-					switch (importedModule.kind) {
-						case CompileSingleResult.Kind.Circular:
-						case CompileSingleResult.Kind.Missing: {
-							var diag = importedModule.kind == CompileSingleResult.Kind.Circular
-								? new CircularDependency(fullPath, relativePath)
-								: new CantFindLocalModule(fullPath, relativePath).upcast<DiagnosticData>();
-							importDiagnostics.add(new Diagnostic(import.loc, diag));
-							return Op<Either<Imported, FailModule>>.None;
-						}
-
-						case CompileSingleResult.Kind.Found: {
-							var i = importedModule.found;
-							return Op.Some(i is Module m ? Either<Imported, FailModule>.Left(m) : Either<Imported, FailModule>.Right((FailModule)i));
-						}
-
-						default:
-							throw unreachable();
-					}
-				}
-
-				default:
-					throw unreachable();
-			}
-		});
+		var attemptedImports = importAsts.mapDefinedProbablyAll<Either<Imported, FailModule>>(import =>
+			resolveImport(import, importDiagnostics, fullPath, ref allDependenciesReused));
 
 		var res = attemptedImports.mapOrDie(i => i.opLeft, out var imports)
 			? Either<Arr<Imported>, (Arr<Either<Imported, FailModule>>, Arr<Diagnostic>)>.Left(imports)
 			: Either<Arr<Imported>, (Arr<Either<Imported, FailModule>>, Arr<Diagnostic>)>.Right((attemptedImports, importDiagnostics.finish()));
 		return (res, allDependenciesReused);
+	}
+
+	Op<Either<Imported, FailModule>> resolveImport(Ast.Import import, Arr.Builder<Diagnostic> importDiagnostics, Path fullPath, ref bool allDependenciesReused) {
+		switch (import) {
+			case Ast.Import.Global g: {
+				var (loc, path) = g;
+				if (BuiltinsLoader.tryImportBuiltin(path, out var cls))
+					return Op.Some(Either<Imported, FailModule>.Left(cls));
+				else {
+					importDiagnostics.add(new Diagnostic(loc, new CantFindGlobalModule(path)));
+					return Op<Either<Imported, FailModule>>.None;
+				}
+			}
+
+			case Ast.Import.Relative rel: {
+				var (loc, relativePath) = rel;
+				var (importedModule, isImportReused) = compileSingle(fullPath.resolve(relativePath));
+				allDependenciesReused = allDependenciesReused && isImportReused;
+				switch (importedModule.kind) {
+					case CompileSingleResult.Kind.Circular:
+					case CompileSingleResult.Kind.Missing: {
+						var diag = importedModule.kind == CompileSingleResult.Kind.Circular
+							? new CircularDependency(fullPath, relativePath)
+							: new CantFindLocalModule(fullPath, relativePath).upcast<DiagnosticData>();
+						importDiagnostics.add(new Diagnostic(import.loc, diag));
+						return Op<Either<Imported, FailModule>>.None;
+					}
+
+					case CompileSingleResult.Kind.Found: {
+						var i = importedModule.found;
+						return Op.Some(i is Module m ? Either<Imported, FailModule>.Left(m) : Either<Imported, FailModule>.Right((FailModule)i));
+					}
+
+					default:
+						throw unreachable();
+				}
+			}
+
+			default:
+				throw unreachable();
+		}
 	}
 
 	struct CompileSingleResult {

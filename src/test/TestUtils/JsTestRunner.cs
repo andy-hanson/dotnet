@@ -66,7 +66,7 @@ namespace Test {
 			var proc = new Process();
 			var si = proc.StartInfo;
 			si.FileName = "node";
-			si.Arguments = "--harmony_tailcalls " + path.toPathString();
+			si.Arguments = StringMaker.create().add("--harmony_tailcalls ").add(path).finish();
 			si.CreateNoWindow = true;
 
 			var syncProc = new SynchronousProcess(proc);
