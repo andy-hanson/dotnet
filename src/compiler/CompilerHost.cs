@@ -40,11 +40,14 @@ struct DocumentInfo : ToData<DocumentInfo> {
 		this.parseResult = parseResult;
 	}
 
+	internal bool sameVersionAs(DocumentInfo document) =>
+		version == document.version;
+
 	public override bool Equals(object o) => throw new NotSupportedException();
 	public override int GetHashCode() => throw new NotSupportedException();
 	public bool deepEqual(DocumentInfo d) =>
 		text == d.text &&
-		parseResult.deepEq(d.parseResult) &&
+		parseResult.deepEqual(d.parseResult) &&
 		version == d.version;
 	public Dat toDat() => Dat.of(this, nameof(text), Dat.str(text), nameof(parseResult), Dat.either(parseResult), nameof(version), Dat.nat(version));
 }

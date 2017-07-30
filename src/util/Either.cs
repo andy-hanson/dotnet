@@ -2,6 +2,7 @@ using System;
 
 using static Utils;
 
+/** By convention, 'L' should be used for success and 'R' for failure. */
 class Either<L, R> {
 	internal readonly bool isLeft;
 	readonly L _left;
@@ -17,13 +18,9 @@ class Either<L, R> {
 	internal Either<L2, R> map<L2>(Func<L, L2> mapLeft) =>
 		isLeft ? Either<L2, R>.Left(mapLeft(_left)) : Either<L2, R>.Right(_right);
 
-	//TODO:KILL
-	internal L force() {
-		assert(isLeft);
-		return _left;
-	}
-
 	internal bool isRight => !isLeft;
+
+	internal Op<L> opLeft => isLeft ? Op.Some(left) : Op<L>.None;
 
 	internal L left {
 		get {
@@ -40,7 +37,10 @@ class Either<L, R> {
 	}
 }
 
-static class EitherU {
-	internal static bool deepEq<L, R>(this Either<L, R> a, Either<L, R> b) where L : DeepEqual<L> where R : DeepEqual<R> =>
+static class EitherUtils {
+	internal static bool deepEqual<L, R>(this Either<L, R> a, Either<L, R> b) where L : DeepEqual<L> where R : DeepEqual<R> =>
 		a.isLeft ? b.isLeft && a.left.deepEqual(b.left) : b.isRight && a.right.deepEqual(b.right);
+
+	internal static Dat toDat<L, R>(this Either<L, R> a) where L : ToData<L> where R : ToData<R> =>
+		a.isLeft ? a.left.toDat() : a.right.toDat();
 }

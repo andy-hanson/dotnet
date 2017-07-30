@@ -114,7 +114,7 @@ struct Path : ToData<Path>, IEquatable<Path>, Show {
 	public Dat toDat() => Dat.arr(parts);
 }
 
-struct RelPath : ToData<RelPath> {
+struct RelPath : ToData<RelPath>, Show {
 	internal readonly uint nParents;
 	internal readonly Path relToParent;
 
@@ -132,13 +132,15 @@ struct RelPath : ToData<RelPath> {
 		return s.finish();
 	}
 
-	internal void toPathString(StringMaker s) {
+	void toPathString(StringMaker s) {
 		if (nParents == 0)
 			s.add("./");
 		else
 			doTimes(nParents, () => s.add("../"));
 		relToParent.toPathString(s);
 	}
+
+	void Show.show(StringMaker s) => toPathString(s);
 
 	internal RelPath withoutExtension(string extension) =>
 		new RelPath(nParents, relToParent.withoutExtension(extension));

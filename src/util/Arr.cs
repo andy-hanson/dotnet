@@ -107,6 +107,60 @@ struct Arr<T> : IEnumerable<T> {
 		return new Arr<U>(b);
 	}
 
+	internal bool mapOrDie<U>(Func<T, Op<U>> mapper, out Arr<U> result) {
+		var b = new U[length];
+		for (uint i = 0; i < length; i++) {
+			var res = mapper(this[i]);
+			if (res.get(out var x))
+				b[i] = x;
+			else {
+				result = Arr.empty<U>();
+				return false;
+			}
+		}
+		result = new Arr<U>(b);
+		return true;
+	}
+
+	/** Calls 'mapper' on every element, but returns None if at least one call to mapper failed. */
+	internal Op<Arr<U>> mapOrDieButFinish<U>(Func<T, Op<U>> mapper) {
+		var b = new U[length];
+		for (uint i = 0; i < length; i++) {
+			var res = mapper(this[i]);
+			if (res.get(out var x))
+				b[i] = x;
+			else {
+				for (; i < length; i++)
+					mapper(this[i]); // Just for the side effect.
+				return Op<Arr<U>>.None;
+			}
+		}
+		return Op.Some(new Arr<U>(b));
+	}
+
+	/** Either successfully maps everything, or returns an array of just the failures. */
+	internal Either<Arr<U>, Arr<F>> mapOrMapFailure<U, F>(Func<T, Either<U, F>> mapper) {
+		var b = new U[length];
+		for (uint i = 0; i < length; i++) {
+			var x = mapper(this[i]);
+			if (x.isLeft)
+				b[i] = x.left;
+			else
+				return Either<Arr<U>, Arr<F>>.Right(mapFailures(i, x.right, mapper));
+		}
+		// No errors.
+		return Either<Arr<U>, Arr<F>>.Left(new Arr<U>(b));
+	}
+	Arr<F> mapFailures<U, F>(uint i, F firstFailure, Func<T, Either<U, F>> mapper) {
+		var b = Arr.builder<F>(firstFailure);
+		for (; i < length; i++) {
+			var x = mapper(this[i]);
+			if (x.isRight)
+				b.add(x.right);
+		}
+		return b.finish();
+	}
+
 	internal Arr<U> mapTail<U>(Func<T, uint, U> mapper) {
 		var b = new U[length - 1];
 		for (uint i = 0; i < length - 1; i++)
@@ -390,6 +444,9 @@ static class Arr {
 		deepEqual(a, b, (x, y) => x.deepEqual(y));
 
 	internal static bool deepEqual(this Arr<string> a, Arr<string> b) => deepEqual(a, b, (x, y) => x == y);
+
+	internal static bool deepEqual<T, U>(this Arr<Either<T, U>> a, Arr<Either<T, U>> b) where T : ToData<T> where U : ToData<U> =>
+		a.eachCorresponds(b, (ea, eb) => ea.deepEqual(eb));
 
 	internal static bool eachEqualId<T, U>(this Arr<T> a, Arr<T> b) where T : Identifiable<U> where U : ToData<U> =>
 		deepEqual(a, b, (x, y) => x.equalsId<T, U>(y));

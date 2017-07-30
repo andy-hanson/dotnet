@@ -69,7 +69,8 @@ namespace Model {
 		Dat Imported.getImportedId() => getId().toDat();
 
 		bool IEquatable<BuiltinClass>.Equals(BuiltinClass other) => object.ReferenceEquals(this, other);
-		public override bool deepEqual(ClsRef c) => throw new NotSupportedException();
+		bool DeepEqual<Imported>.deepEqual(Imported i) => object.ReferenceEquals(this, i);
+		public override bool deepEqual(ClsRef c) => throw new NotSupportedException(); // This should never happen.
 		public bool deepEqual(BuiltinClass b) => throw new NotSupportedException(); // This should never happen.
 		public override int GetHashCode() => name.GetHashCode();
 		public override Dat toDat() => Dat.of(this, nameof(name), name);

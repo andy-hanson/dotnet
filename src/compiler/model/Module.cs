@@ -5,14 +5,14 @@ using static Utils;
 
 namespace Model {
 	/** Module or BuiltinClass. */
-	interface Imported {
+	interface Imported : ToData<Imported> {
 		Sym name { get; }
 		ClassLike importedClass { get; }
 		Dat getImportedId();
 	}
 
 	// A module's identity is its path.
-	sealed class Module : ModelElement, Imported, IEquatable<Module>, ToData<Module>, Identifiable<Path> {
+	sealed class Module : ModelElement, Imported, ModuleOrFail, IEquatable<Module>, ToData<Module>, Identifiable<Path> {
 		/**
 		For "a.nz" this is "a".
 		For "a/index.nz" this is still "a".
@@ -20,14 +20,18 @@ namespace Model {
 		Use `fullPath` to get the full path.
 		*/
 		internal readonly Path logicalPath;
+		Path ModuleOrFail.logicalPath => logicalPath;
 		internal readonly bool isIndex;
+		bool ModuleOrFail.isIndex => isIndex;
 		internal readonly DocumentInfo document;
+		DocumentInfo ModuleOrFail.document => document;
 		// Technically these form a tree and thus aren't up-pointers, but don't want to serialize imports when serializing a module.
 		[UpPointer] internal readonly Arr<Imported> imports;
 		Late<Klass> _klass;
 		internal Klass klass { get => _klass.get; set => _klass.set(value); }
 		Late<Arr<Diagnostic>> _diagnostics;
 		internal Arr<Diagnostic> diagnostics { get => _diagnostics.get; set => _diagnostics.set(value); }
+		Arr<Diagnostic> ModuleOrFail.diagnostics => diagnostics;
 		//TODO: does this belong here? Or somewhere else?
 		[NotData] internal readonly LineColumnGetter lineColumnGetter;
 
@@ -50,6 +54,8 @@ namespace Model {
 		bool IEquatable<Module>.Equals(Module m) => object.ReferenceEquals(this, m);
 		public override int GetHashCode() => logicalPath.GetHashCode();
 
+		public bool deepEqual(Imported i) => i is Module m && deepEqual(m);
+		public bool deepEqual(ModuleOrFail mf) => mf is Module m && deepEqual(m);
 		public bool deepEqual(Module m) =>
 			logicalPath.deepEqual(m.logicalPath) &&
 			isIndex == m.isIndex &&

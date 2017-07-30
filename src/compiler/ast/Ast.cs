@@ -19,6 +19,7 @@ namespace Ast {
 			this.imports = imports;
 			this.klass = klass;
 		}
+		internal void Deconstruct(out Arr<Import> imports, out Klass klass) { imports = this.imports; klass = this.klass; }
 
 		public override bool deepEqual(Node n) => n is Module m && deepEqual(m);
 		public bool deepEqual(Module m) => locEq(m) && imports.deepEqual(m.imports) && klass.deepEqual(m.klass);

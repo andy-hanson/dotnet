@@ -8,7 +8,12 @@ namespace Cli {
 		static readonly Sym symMain = Sym.of("main");
 
 		public static void run(Path path) {
-			var (_, module) = isDirectory(path) ? Compiler.compileDir(path) : Compiler.compileFile(path);
+			var op = isDirectory(path) ? Compiler.compileDir(path) : Compiler.compileFile(path);
+			if (!op.get(out var success)) {
+				throw TODO();
+			}
+
+			var module = (Model.Module)success.root; //TODO: handle failure
 
 			//TODO: if there are compile errors, stop.
 			var emitted = ILEmitter.emit(module);

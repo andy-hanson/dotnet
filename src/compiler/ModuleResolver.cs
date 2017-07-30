@@ -13,8 +13,10 @@ static class ModuleResolver {
 		return false;
 	}
 
-	internal static Arr<Path> attemptedPaths(Path logicalPath) =>
-		Arr.of(regularPath(logicalPath), indexPath(logicalPath));
+	internal static Arr<Path> attemptedPaths(Path importerPath, RelPath importedPath) {
+		var logicalPath = importerPath.resolve(importedPath);
+		return Arr.of(regularPath(logicalPath), indexPath(logicalPath));
+	}
 
 	internal static Path fullPath(Path logicalPath, bool isIndex) =>
 		isIndex ? indexPath(logicalPath) : regularPath(logicalPath);

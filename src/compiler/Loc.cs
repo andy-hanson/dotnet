@@ -1,16 +1,5 @@
 using System;
 
-struct PathLoc : ToData<PathLoc> {
-	internal readonly Path path;
-	internal readonly Loc loc;
-	internal PathLoc(Path path, Loc loc) { this.path = path; this.loc = loc; }
-
-	public override bool Equals(object o) => throw new NotSupportedException();
-	public override int GetHashCode() => throw new NotSupportedException();
-	public bool deepEqual(PathLoc p) => path.deepEqual(p.path) && loc.deepEqual(p.loc);
-	public Dat toDat() => Dat.of(this, nameof(path), path, nameof(loc), loc);
-}
-
 // Newtype over uint
 struct Pos : ToData<Pos> {
 	internal static readonly Pos start = new Pos(0);

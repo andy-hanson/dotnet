@@ -83,12 +83,15 @@ namespace Test {
 
 		TestData runCompilerTest(Path testPath) {
 			var testDirectory = casesRootDir.resolve(testPath.asRel);
-			var (program, indexModule) = Compiler.compileDir(testDirectory);
+			var (program, indexModuleOrFail) = Compiler.compileDir(testDirectory).force; //TODO!!!
 			var baselinesDirectory = baselinesRootDir.resolve(testPath.asRel);
+
+			var indexModule = (Model.Module)indexModuleOrFail; //TODO!!!
 
 			var (emittedRoot, emitLogs) = ILEmitter.emitWithLogs(indexModule);
 
-			foreach (var (_, module) in program.modules) {
+			foreach (var (_, moduleOrFail) in program.modules) {
+				var module = (Model.Module)moduleOrFail; //TODO!!!
 				var modulePath = module.fullPath().withoutExtension(ModuleResolver.extension);
 
 				assertBaseline(baselinesDirectory, modulePath, ".ast", Dat.either(module.document.parseResult));

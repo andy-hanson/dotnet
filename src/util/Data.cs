@@ -61,6 +61,8 @@ public abstract class Dat : ToData<Dat> {
 	internal static Dat realDat(double f) => new RealDat(f);
 	internal static Dat str(string s) => new StrDat(s);
 	internal static Dat arr<T>(Arr<T> a) where T : ToData<T> => new ArrDat<T>(a);
+	internal static Dat arr<T, U>(Arr<Either<T, U>> a) where T : ToData<T> where U : ToData<U> =>
+		new ArrDat<Dat>(a.map(em => em.toDat()));
 	internal static Dat arrOfIds<T, U>(Arr<T> a) where T : Identifiable<U> where U : ToData<U> => new ArrDat<U>(a.map(em => em.getId()));
 	internal static Dat arr(Arr<char> a) => new ArrDat<Dat>(a.map(ch => str(ch.ToString())));
 	internal static Dat arr(Arr<string> a) => new ArrDat<Dat>(a.map(str));

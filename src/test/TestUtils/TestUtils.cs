@@ -9,7 +9,7 @@ namespace Test {
 
 		internal static void runCsJsTests(TestData t) {
 			foreach (var module in t.compiledProgram.modules.values)
-				verifyModule(module);
+				verifyModule((Model.Module)module); //TODO!!!
 
 			var csres = t.emittedRoot.invokeStatic("main");
 			assert(csres == Builtins.Void.instance); // Test must return void
