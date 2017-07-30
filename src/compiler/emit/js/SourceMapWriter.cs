@@ -100,12 +100,12 @@ class SourceMapWriter {
 			sourceMapFile = filePath.last,
 			sourceMapSourceRoot = string.Empty,
 			sourceMapSources = Arr.of(fileText),
-			inputSourceFileNames = Arr.of(filePath.show()),
+			inputSourceFileNames = Arr.of(filePath.toPathString()),
 			sourceMapNames = Arr.builder<string>(),
 			sourceMapMappings = StringMaker.create()
 		};
 
-		sourceMapDir = filePath.directory().show();
+		sourceMapDir = filePath.directory().toPathString();
 
 		//TODO: setSourceFile
 	}

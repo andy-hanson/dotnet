@@ -3,13 +3,13 @@ using System;
 namespace Diag {
 	struct Diagnostic : ToData<Diagnostic> {
 		internal readonly Loc loc;
-		internal readonly DiagnosticData err;
-		internal Diagnostic(Loc loc, DiagnosticData err) { this.loc = loc; this.err = err; }
+		internal readonly DiagnosticData data;
+		internal Diagnostic(Loc loc, DiagnosticData data) { this.loc = loc; this.data = data; }
 
 		public override bool Equals(object o) => throw new NotSupportedException();
 		public override int GetHashCode() => throw new NotSupportedException();
-		public bool deepEqual(Diagnostic e) => loc.deepEqual(e.loc) && err.deepEqual(e.err);
-		public Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(err), err);
+		public bool deepEqual(Diagnostic e) => loc.deepEqual(e.loc) && data.deepEqual(e.data);
+		public Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(data), data);
 	}
 
 	abstract class DiagnosticData : ToData<DiagnosticData>, Show {

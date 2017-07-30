@@ -88,7 +88,7 @@ sealed class Checker : CheckerCommon {
 	}
 
 	Arr<AbstractMethodLike> getAbstractMethods(Loc loc, ClsRef superClass) {
-		if (!superClass.supers.isEmpty)
+		if (superClass.supers.any)
 			//TODO: also handle abstract methods in superclass of superclass
 			throw TODO();
 

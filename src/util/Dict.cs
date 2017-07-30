@@ -146,7 +146,26 @@ static class DictBuilderUtils {
 	}
 }
 
+//mv
 static class DictionaryUtils {
+	internal static bool any<K, V>(this Dictionary<K, V> dict) =>
+		dict.Count != 0;
+
+	internal static Dictionary<K, V> toMutableDict<K, V>(this IEnumerable<(K, V)> e) {
+		var d = new Dictionary<K, V>();
+		foreach (var (key, value) in e)
+			d.Add(key, value);
+		return d;
+	}
+
+	internal static bool tryDelete<K, V>(this IDictionary<K, V> dict, K key, out V value) {
+		if (dict.TryGetValue(key, out value)) {
+			dict.Remove(key);
+			return true;
+		}
+		return false;
+	}
+
 	internal static V getOrUpdate<K, V>(this IDictionary<K, V> dict, K key, Func<V> getValue) {
 		if (dict.TryGetValue(key, out var value))
 			return value;

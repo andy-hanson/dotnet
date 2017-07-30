@@ -220,7 +220,7 @@ public static class Builtins {
 		Path(global::Path path) { this.value = path; }
 
 		[AllPure] public static Path from_string(String pathString) => new Path(global::Path.fromString(pathString.value));
-		[Instance, AllPure] public static String to_string(Path p) => String.of(p.value.show());
+		[Instance, AllPure] public static String to_string(Path p) => String.of(p.value.toPathString());
 
 		[Instance, AllPure] public static Path directory(Path p) => new Path(p.value.directory());
 

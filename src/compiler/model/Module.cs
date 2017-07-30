@@ -32,18 +32,15 @@ namespace Model {
 		Late<Arr<Diagnostic>> _diagnostics;
 		internal Arr<Diagnostic> diagnostics { get => _diagnostics.get; set => _diagnostics.set(value); }
 		Arr<Diagnostic> ModuleOrFail.diagnostics => diagnostics;
-		//TODO: does this belong here? Or somewhere else?
-		[NotData] internal readonly LineColumnGetter lineColumnGetter;
 
 		internal Module(Path logicalPath, bool isIndex, DocumentInfo document, Arr<Imported> imports) {
 			this.logicalPath = logicalPath;
 			this.isIndex = isIndex;
 			this.document = document;
 			this.imports = imports;
-			this.lineColumnGetter = new LineColumnGetter(document.text);
 		}
 
-		internal Path fullPath() => ModuleResolver.fullPath(logicalPath, isIndex);
+		public Path fullPath() => ModuleResolver.fullPath(logicalPath, isIndex);
 		internal Sym name => klass.name;
 		Sym Imported.name => name;
 		ClassLike Imported.importedClass => klass;

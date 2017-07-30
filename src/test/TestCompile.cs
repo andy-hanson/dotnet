@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
@@ -8,6 +9,11 @@ using static Utils;
 namespace Test {
 	sealed class TestFailureException : Exception {
 		internal TestFailureException(string message) : base(message) {}
+		internal static TestFailureException create(Action<StringMaker> message) {
+			var s = StringMaker.create();
+			message(s);
+			return new TestFailureException(s.finish());
+		}
 	}
 
 	class TestCompile : IDisposable {
@@ -49,7 +55,7 @@ namespace Test {
 
 		internal void runAllCompilerTests() {
 			var allTests = listDirectoriesInDirectory(casesRootDir).toArr();
-			checkNoExtraBaselines(allTests);
+			checkNoExtraBaselineDirectories(allTests);
 			var methods = getTestMethods();
 
 			foreach (var test in allTests) {
@@ -58,13 +64,14 @@ namespace Test {
 			}
 		}
 
-		static void checkNoExtraBaselines(Arr<string> allTests) {
+		// Checking of baseline *files* is done in `runCompilerTest`.
+		static void checkNoExtraBaselineDirectories(Arr<string> allTests) {
 			var allBaselines = listDirectoriesInDirectory(baselinesRootDir).toArr();
 			if (allBaselines.length == allTests.length) return;
 
 			var extraBaselines = Set.setDifference(allBaselines, allTests.toSet());
 			if (extraBaselines.Any())
-				throw new TestFailureException("Baselines have no associated tests: " + string.Join(", ", extraBaselines));
+				throw TestFailureException.create(s => s.add("Baselines have no associated tests: ").join(extraBaselines));
 		}
 
 		static Dict<string, MethodInfo> getTestMethods() {
@@ -78,52 +85,133 @@ namespace Test {
 
 		void runSingle(string testName, MethodInfo method) {
 			var testData = runCompilerTest(Path.fromParts(testName));
-			method.Invoke(null, new object[] { testData });
+			method.Invoke(null, new object[] { testData.force }); //TODO!!!
 		}
 
-		TestData runCompilerTest(Path testPath) {
+		static bool anyDiagnostics(ModuleOrFail mf) {
+			switch (mf) {
+				case FailModule _:
+					return true;
+				case Model.Module m:
+					return anyDiagnostics(m);
+				default:
+					throw unreachable();
+			}
+		}
+
+		static bool anyDiagnostics(Model.Module module) =>
+			module.diagnostics.any || module.imports.some(import => {
+				switch (import) {
+					case Model.BuiltinClass b:
+						return false;
+					case Model.Module m:
+						return anyDiagnostics(m);
+					default:
+						throw unreachable();
+				}
+			});
+
+		Op<TestData> runCompilerTest(Path testPath) {
 			var testDirectory = casesRootDir.resolve(testPath.asRel);
-			var (program, indexModuleOrFail) = Compiler.compileDir(testDirectory).force; //TODO!!!
+
+			var documentProvider = new TestDocumentProvider(testDirectory);
+			var opCompileResult = Compiler.compile(Path.empty, documentProvider);
+			if (!opCompileResult.get(out var compileResult))
+				throw new TestFailureException(StringMaker.create().add("Test ").add(testPath).add(" must contain 'index.nz'").finish());
+
+			var (program, indexModuleOrFail) = compileResult;
 			var baselinesDirectory = baselinesRootDir.resolve(testPath.asRel);
 
-			var indexModule = (Model.Module)indexModuleOrFail; //TODO!!!
+			var expectedDiagnostics = documentProvider.getDiagnostics();
 
+			var baselines = readFilesInDirectoryRecursive(baselinesDirectory).toMutableDict();
+
+			Op<TestData> res;
+			switch (indexModuleOrFail) {
+				case FailModule f:
+					testWithDiagnostics(baselinesDirectory, program, baselines, expectedDiagnostics);
+					res = Op<TestData>.None;
+					break;
+				case Model.Module m:
+					if (anyDiagnostics(m)) {
+						testWithDiagnostics(baselinesDirectory, program, baselines, expectedDiagnostics);
+						res = Op<TestData>.None;
+					} else
+						res = Op.Some(testWithNoDiagnostics(testPath, baselinesDirectory, program, m, baselines));
+					break;
+				default:
+					throw unreachable();
+			}
+
+			if (baselines.any())
+				throw TestFailureException.create(s =>
+					s.add("Extra baselines: ").join(baselines.Keys.Select(k => testPath.resolve(k.asRel))));
+
+			return res;
+		}
+
+		void testWithDiagnostics(
+			Path baselinesDirectory,
+			CompiledProgram program,
+			Dictionary<Path, string> baselines,
+			Dictionary<Path, Arr<(LineAndColumnLoc, string)>> expectedDiagnosticsByPath) {
+			foreach (var moduleOrFail in program.modules.values) {
+				var modulePath = moduleOrFail.fullPath().withoutExtension(ModuleResolver.extension);
+				assertBaseline(baselinesDirectory, modulePath, ".ast", Dat.either(moduleOrFail.document.parseResult), baselines, updateBaselines);
+
+				// Can only do a '.model' baseline if it's a Module
+				if (moduleOrFail is Model.Module module) {
+					assertBaseline(baselinesDirectory, modulePath, ".model", module.klass.toDat(), baselines, updateBaselines);
+				}
+
+				var diags = moduleOrFail.diagnostics;
+				if (expectedDiagnosticsByPath.tryDelete(modulePath, out var expectedDiagnostics)) {
+					throw TODO(); //TODO!!! Need to compare actual w/ expected diagnostics.
+				} else if (diags.any) {
+					throw TODO(); //TODO!!! Did not expect these diagnostics
+				}
+			}
+
+			assert(expectedDiagnosticsByPath.Count == 0); // Shouldn't have any entries for modules that dont' actually exist.
+		}
+
+		TestData testWithNoDiagnostics(Path testPath, Path baselinesDirectory, CompiledProgram program, Model.Module indexModule, Dictionary<Path, string> baselines) {
+			// Program compiled with no diagnostics, so safe to emit.
 			var (emittedRoot, emitLogs) = ILEmitter.emitWithLogs(indexModule);
 
-			foreach (var (_, moduleOrFail) in program.modules) {
-				var module = (Model.Module)moduleOrFail; //TODO!!!
+			foreach (var moduleOrFail in program.modules.values) {
+				var module = (Model.Module)moduleOrFail; // Can't be a FailModule or we would call testWithDiagnostics
 				var modulePath = module.fullPath().withoutExtension(ModuleResolver.extension);
 
-				assertBaseline(baselinesDirectory, modulePath, ".ast", Dat.either(module.document.parseResult));
-				assertBaseline(baselinesDirectory, modulePath, ".model", module.klass.toDat());
-				assertBaseline(baselinesDirectory, modulePath, ".js", JsEmitter.emitToString(module));
-				assertBaseline(baselinesDirectory, modulePath, ".il", emitLogs[module]);
+				assertBaseline(baselinesDirectory, modulePath, ".ast", Dat.either(module.document.parseResult), baselines, updateBaselines);
+				assertBaseline(baselinesDirectory, modulePath, ".model", module.klass.toDat(), baselines, updateBaselines);
+				assertBaseline(baselinesDirectory, modulePath, ".js", JsEmitter.emitToString(module), baselines, updateBaselines);
+				assertBaseline(baselinesDirectory, modulePath, ".il", emitLogs[module], baselines, updateBaselines);
 			}
 
 			return new TestData(testPath, program, indexModule, emittedRoot, jsTestRunner);
 		}
 
-		void assertBaseline(Path testDirectory, Path modulePath, string extension, Dat actualDat) =>
-			assertBaseline(testDirectory, modulePath, extension, CsonWriter.write(actualDat) + "\n");
+		static void assertBaseline(Path testDirectory, Path modulePath, string extension, Dat actualDat, Dictionary<Path, string> baselines, bool updateBaselines) =>
+			assertBaseline(testDirectory, modulePath, extension, CsonWriter.write(actualDat) + "\n", baselines, updateBaselines);
 
-		void assertBaseline(Path testDirectory, Path modulePath, string extension, string actual) {
-			var fullModulePath = testDirectory.resolve(modulePath.asRel);
-			var baselinePath = fullModulePath.addExtension(extension);
+		static void assertBaseline(Path testDirectory, Path modulePath, string extension, string actual, Dictionary<Path, string> baselines, bool updateBaselines) {
+			var baselinePath = modulePath.addExtension(extension);
 
-			// If it doesn't exist, create it.
-			if (!fileExists(baselinePath)) {
-				writeFileAndEnsureDirectory(baselinePath, actual);
-				return;
-			}
+			var fullBaselinePath = testDirectory.resolve(baselinePath.asRel); //TODO: compute lazily
 
-			var expected = readFile(baselinePath);
-			if (actual == expected)
-				return;
-
-			if (updateBaselines) {
-				writeFile(baselinePath, actual);
-			} else {
-				throw new TestFailureException($"Unexpected output!\nExpected: {expected}\nActual: {actual}");
+			if (!baselines.tryDelete(baselinePath, out var oldBaseline)) {
+				// This baseline didn't exist before.
+				if (updateBaselines) {
+					writeFileAndEnsureDirectory(fullBaselinePath, actual);
+				} else {
+					throw TestFailureException.create(s => s.add("No such baseline ").add(fullBaselinePath));
+				}
+			} else if (actual != oldBaseline) {
+				if (updateBaselines)
+					writeFile(fullBaselinePath, actual);
+				else
+					throw TestFailureException.create(s => s.add("Unexpected output!\nExpected: ").add(oldBaseline).add("\nActual: ").add(actual));
 			}
 		}
 	}

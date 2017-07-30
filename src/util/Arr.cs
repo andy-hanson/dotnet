@@ -17,6 +17,8 @@ struct Arr<T> : IEnumerable<T> {
 		}
 	}
 
+	internal T[] toArray => inner;
+
 	internal bool some(Func<T, bool> predicate) {
 		for (uint i = 0; i < length; i++)
 			if (predicate(this[i]))
@@ -352,6 +354,7 @@ struct Arr<T> : IEnumerable<T> {
 	internal T last => this[this.length - 1];
 
 	internal bool isEmpty => length == 0;
+	internal bool any => length != 0;
 
 	internal T[] toBuilder() => sliceToBuilder(0, length);
 
@@ -492,6 +495,11 @@ static class Arr {
 		}
 
 		internal void add(T u) { b.Add(u); }
+		internal void addMany(Arr<T> a) {
+			foreach (var em in a)
+				add(em);
+		}
+
 		internal T[] finishToArray() => b.ToArray();
 		internal Arr<T> finish() => new Arr<T>(b.ToArray());
 

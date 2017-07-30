@@ -36,7 +36,7 @@ namespace Model {
 			// If this is a builtin, this will be missing.
 			private readonly string id;
 			Id(string id) { this.id = id; }
-			internal static Id ofPath(Path path) => new Id(path.show());
+			internal static Id ofPath(Path path) => new Id(path.toPathString());
 			internal static Id ofBuiltin(Sym name) => new Id(name.str);
 			public bool deepEqual(Id i) => id == i.id;
 			public Dat toDat() => Dat.str(id);

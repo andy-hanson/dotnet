@@ -106,7 +106,7 @@ struct Path : ToData<Path>, IEquatable<Path>, Show {
 	public bool deepEqual(Path p) => parts.deepEqual(p.parts);
 	public override int GetHashCode() => parts.hash();
 	void Show.show(StringMaker s) => s.join(parts, "/");
-	public string show() => StringMaker.stringify(this);
+	public string toPathString() => StringMaker.stringify(this);
 	public static bool operator ==(Path a, Path b) => a.deepEqual(b);
 	public static bool operator !=(Path a, Path b) => !a.deepEqual(b);
 

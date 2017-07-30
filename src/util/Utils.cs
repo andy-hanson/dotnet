@@ -56,6 +56,14 @@ static class Utils {
 			throw assertionFail(message());
 	}
 
+	internal static void assert(bool condition, Action<StringMaker> message) {
+		if (!condition) {
+			var sm = StringMaker.create();
+			message(sm);
+			throw assertionFail(sm.finish());
+		}
+	}
+
 	internal static void assert(bool condition, string message = "Assertion failed.") {
 		if (!condition)
 			throw assertionFail(message);

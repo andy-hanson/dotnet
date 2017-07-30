@@ -22,7 +22,7 @@ struct CompiledProgram : ToData<CompiledProgram> {
 		object.ReferenceEquals(documentProvider, c.documentProvider) &&
 		modules.deepEqual(c.modules);
 	public Dat toDat() =>
-		Dat.of(this, nameof(modules), Dat.dict(modules.mapKeys(p => p.show())));
+		Dat.of(this, nameof(modules), Dat.dict(modules.mapKeys(p => p.toPathString())));
 }
 
 /*
@@ -42,7 +42,7 @@ sealed class Compiler {
 	Compiler(DocumentProvider documentProvider, Op<CompiledProgram> oldProgram) { this.documentProvider = documentProvider; this.oldProgram = oldProgram; }
 
 	/**
-	Returns None if the root module could not be found.
+	Returns None iff the root module could not be found.
 	(If some other module can not be found, its parent will be a FailModule with a diagnostic for that.)
 	*/
 	internal static Op<(CompiledProgram, ModuleOrFail root)> compile(Path path, DocumentProvider documentProvider, Op<CompiledProgram> oldProgram) {
@@ -68,12 +68,12 @@ sealed class Compiler {
 		compile(path, documentProvider, Op<CompiledProgram>.None);
 
 	internal static Op<(CompiledProgram, ModuleOrFail root)> compileDir(Path dir) =>
-		compile(Path.empty, DocumentProviders.CommandLine(dir));
+		compile(Path.empty, DocumentProviders.fileSystemDocumentProvider(dir));
 
 	internal static Op<(CompiledProgram, ModuleOrFail root)> compileFile(Path path) {
 		var fileName = path.last.withoutEndIfEndsWith(".nz");
 		var filePath = fileName == "index" ? Path.empty : Path.fromParts(fileName);
-		return compile(filePath, DocumentProviders.CommandLine(path.directory()));
+		return compile(filePath, DocumentProviders.fileSystemDocumentProvider(path.directory()));
 	}
 
 	/**

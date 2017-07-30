@@ -34,4 +34,6 @@ static class ReflectionUtils {
 			throw unreachable();
 		}
 	}
+
+	internal static Arr<ParameterInfo> paramz(this MethodInfo m) => new Arr<ParameterInfo>(m.GetParameters());
 }

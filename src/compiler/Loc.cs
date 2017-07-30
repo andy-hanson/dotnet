@@ -70,6 +70,8 @@ struct LineAndColumnLoc : ToData<LineAndColumnLoc>, Show {
 		this.start = start;
 		this.end = end;
 	}
+	internal static LineAndColumnLoc singleLine(uint line, uint startColumn, uint endColumn) =>
+		new LineAndColumnLoc(new LineAndColumn(line, startColumn), new LineAndColumn(line, endColumn));
 
 	void Show.show(StringMaker s) => s.add(start).add('-').add(end);
 	public override string ToString() => throw new NotSupportedException();

@@ -14,6 +14,9 @@ static class StringUtils {
 		return s.slice(unsigned(start.Length));
 	}
 
+	internal static Arr<string> split(this string s, char splitter) =>
+		new Arr<string>(s.Split(splitter));
+
 	internal static string withoutEndIfEndsWith(this string s, string end) =>
 		s.EndsWith(end) ? s.slice(0, unsigned(s.Length) - unsigned(end.Length)) : s;
 }

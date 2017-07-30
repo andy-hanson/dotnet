@@ -29,13 +29,19 @@ static class Set {
 			inner.Add(value);
 	}
 
-	internal static Set<T> toSet<T>(this Arr<T> xs) where T : IEquatable<T> {
+	internal static HashSet<T> toMutableSet<E, T>(this E xs) where E : IEnumerable<T> where T : IEquatable<T> {
 		var h = new HashSet<T>();
-		foreach (var x in xs) {
+		foreach (var x in xs)
 			h.Add(x);
-		}
-		return new Set<T>(h);
+		return h;
 	}
+
+	internal static Set<T> toSet<E, T>(this E xs) where E : IEnumerable<T> where T : IEquatable<T> =>
+		new Set<T>(toMutableSet<E, T>(xs));
+
+	// Type inference won't work on above overload
+	internal static Set<T> toSet<T>(this Arr<T> xs) where T : IEquatable<T> =>
+		toSet<Arr<T>, T>(xs);
 
 	internal static IEnumerable<T> setDifference<T>(Arr<T> a, Set<T> b) where T : IEquatable<T> {
 		foreach (var elem in a) {

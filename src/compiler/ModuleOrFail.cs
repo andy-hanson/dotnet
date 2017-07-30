@@ -5,6 +5,7 @@ using static Utils;
 /** Module or FailModule */
 interface ModuleOrFail : ToData<ModuleOrFail> {
 	Path logicalPath { get; }
+	Path fullPath();
 	bool isIndex { get; }
 	DocumentInfo document { get; }
 	Arr<Diagnostic> diagnostics { get; }
@@ -27,10 +28,10 @@ sealed class FailModule : ModuleOrFail, ToData<FailModule> {
 		this.document = document;
 		this.imports = imports;
 		this.diagnostics = diagnostics;
-		assert(!diagnostics.isEmpty);
+		assert(diagnostics.any);
 	}
 
-	Path fullPath() => ModuleResolver.fullPath(logicalPath, isIndex);
+	public Path fullPath() => ModuleResolver.fullPath(logicalPath, isIndex);
 
 	public bool deepEqual(ModuleOrFail m) => m is FailModule f && deepEqual(f);
 	public bool deepEqual(FailModule f) =>

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 
 interface Show {
@@ -32,6 +33,12 @@ struct StringMaker {
 		return this;
 	}
 
+	internal StringMaker addSlice(string s, uint start) {
+		for (uint i = start; i < s.Length; i++)
+			add(s.at(i));
+		return this;
+	}
+
 	internal StringMaker addQuotedString(string s) {
 		var sbCopy = sb; // Can't use 'this' in lambda...
 		#pragma warning disable CC0020 // Can't use _sb.Append, that's overloaded
@@ -55,7 +62,20 @@ struct StringMaker {
 		return this;
 	}
 
-	StringMaker join<T>(Arr<T> arr, Action<StringMaker, T> toString, string joiner = ", ") {
+	StringMaker join<T>(IEnumerable<T> arr, Action<StringMaker, T> toString, string joiner = ", ") {
+		var e = arr.GetEnumerator();
+		if (!e.MoveNext())
+			return this;
+
+		toString(this, e.Current);
+		while (e.MoveNext()) {
+			add(joiner);
+			toString(this, e.Current);
+		}
+		return this;
+	}
+
+	internal StringMaker join<T>(Arr<T> arr, Action<StringMaker, T> toString, string joiner = ", ") {
 		if (arr.isEmpty)
 			return this;
 
@@ -70,15 +90,18 @@ struct StringMaker {
 
 	internal StringMaker join<T>(Arr<T> arr, Func<T, string> toString, string joiner = ", ") =>
 		join(arr, (ss, t) => ss.add(toString(t)), joiner);
-
-	internal StringMaker join<T>(T[] arr, Func<T, string> toString, string joiner = ", ") =>
-		join(new Arr<T>(arr), toString, joiner);
+	internal StringMaker join<T>(IEnumerable<T> arr, Func<T, string> toString, string joiner = ", ") =>
+		join(arr, (ss, t) => ss.add(toString(t)), joiner);
 
 	internal StringMaker join<T>(Arr<T> arr, string joiner = ", ") where T : Show =>
+		join(arr, (ss, x) => ss.add(x), joiner);
+	internal StringMaker join<T>(IEnumerable<T> arr, string joiner = ", ") where T : Show =>
 		join(arr, (ss, x) => ss.add(x), joiner);
 
 	internal StringMaker join(Arr<string> arr, string joiner = ", ") =>
 		join(arr, (ss, x) => ss.add(x), joiner);
+	internal StringMaker join(IEnumerable<string> xs, string joiner = ", ") =>
+		join(xs, (s, x) => s.add(x), joiner);
 
 	internal Sym finishSym() =>
 		Sym.of(sb.ToString());

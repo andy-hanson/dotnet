@@ -44,7 +44,8 @@ sealed class Parser : ExprParser {
 
 		var startPos = pos;
 		uint leadingDots = 0;
-		while (tryTakeDot()) leadingDots++;
+		while (tryTakeDot())
+			leadingDots++;
 
 		var pathParts = Arr.builder<string>();
 		pathParts.add(takeTyNameString());

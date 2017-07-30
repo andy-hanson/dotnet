@@ -37,10 +37,7 @@ namespace Cli {
 			var toRun = args[0]; // name of the file to be run.
 
 			var path = Path.fromString(toRun);
-			Run.run(path);
-			//TODO: 'Run.run' shouldn't throw exceptions
-
-			return ExitCode.Success;
+			return Run.run(path);
 		}
 
 		static ExitCode compile(Arr<string> args) {
