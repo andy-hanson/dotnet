@@ -1,7 +1,7 @@
 using Model;
 
 static class ShowTy {
-	internal static StringMaker show(StringMaker s, Ty ty) {
+	internal static S showTy<S>(this S s, Ty ty) where S : Shower<S> {
 		switch (ty) {
 			case Ty.Bogus _:
 				s.add("<error>");
@@ -13,7 +13,7 @@ static class ShowTy {
 		return s;
 	}
 
-	static void showPlainTy(StringMaker s, Ty.PlainTy p) {
+	static void showPlainTy<S>(this S s, Ty.PlainTy p) where S : Shower<S> {
 		if (!p.effect.isPure) {
 			s.add(p.effect.show);
 			s.add(' ');

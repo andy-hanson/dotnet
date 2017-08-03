@@ -10,7 +10,7 @@ sealed class TestDocumentProvider : DocumentProvider {
 		fileInput = new NativeFileInput(rootDir);
 	}
 
-	internal Dictionary<Path, Arr<(LineAndColumnLoc, string)>> getDiagnostics() => errorsDict;
+	internal Dictionary<Path, Arr<(LineAndColumnLoc, string)>> getExpectedDiagnostics() => errorsDict;
 
 	Sym DocumentProvider.rootName => fileInput.rootName;
 
@@ -21,74 +21,107 @@ sealed class TestDocumentProvider : DocumentProvider {
 		}
 
 		var (textWithoutErrors, errors) = parseExpectedErrors(content);
-		errorsDict.Add(path, errors);
+		if (errors.any)
+			errorsDict.Add(path, errors);
 		di = DocumentInfo.parse(textWithoutErrors, version: 0);
 		return true;
 	}
 
 	static (string textWithoutErrors, Arr<(LineAndColumnLoc, string)> errors) parseExpectedErrors(string code) {
-		/*
-		E.g.:
-			fun Nat f()
-				true
-				~~~~
-			!!! This is not a Nat.
-			!!! Why would you think that's a Nat?
-		We require that error spans take up only 1 line. (Error text can take up many lines.)
-		*/
-
-		var lines = code.split('\n');
 		var goodLines = StringMaker.create();
-		var errs = Arr.builder<(LineAndColumnLoc, string)>();
+		var expectedDiagnostics = Arr.builder<(LineAndColumnLoc, string)>();
+		uint goodLineNumber = 0;
+		uint lastGoodStartIndex = 0;
+		uint lastGoodLineEnd = 0; // To index *past* the '\n'.
+		uint lastGoodLineIndent = 0;
+		uint i = 0;
+		while (i != code.Length) {
+			uint tabIndent = 0;
+			uint spacesIndent = 0;
+			// This switch statement only runs until we know whether we're on an error line or not.
+			switch (code.at(i)) {
+				case '\t':
+					if (spacesIndent != 0) throw TODO();
+					// Should match previous line's indentation.
+					tabIndent++;
+					i++;
+					break;
 
-		assert(lines.last == string.Empty);
-		// Don't bother with last line, it's empty.
-		for (uint lineNumber = 0; lineNumber < lines.length - 1; lineNumber++) {
-			var line = lines[lineNumber];
-			for (uint i = 0; i < line.Length; i++) {
-				switch (line.at(i)) {
-					case '\t':
-						break;
+				case ' ':
+					spacesIndent++;
+					i++;
+					break;
 
-					case '~':
-						var errLc = LineAndColumnLoc.singleLine(lineNumber, i, unsigned(line.Length));
-						for (; i < line.Length; i++)
-							assert(line.at(i) == '~', "Line starting with '~' must constist of *only* '~'");
+				case '~':
+					if (tabIndent != lastGoodLineIndent)
+						throw TODO(); // error: Error line should match tab indent of previous line. (Other indent should be spaces.)
 
-						// The next line *must* contain error text.
-						var errorText = StringMaker.create();
-						lineNumber++;
-						var eLineFirst = lines[lineNumber];
-						const string errorTextStart = "!!! ";
-						assert(eLineFirst.StartsWith(errorTextStart));
-						errorText.addSlice(eLineFirst, unsigned(errorTextStart.Length));
+					var start = i;
+					i++;
+					#pragma warning disable S108 // empty block
+					for (; i != code.Length && code.at(i) == '~'; i++) {}
+					#pragma warning restore
+					if (i == code.Length)
+						throw TODO(); // Error: Should be followed by a `!` line.
+					if (code.at(i) != '\n')
+						throw TODO(); // error: If there is `~` on a line, that should be all there is.
+					var diagnosticWidth = i - start;
+					i++; // Past the '\n'
 
-						while (true) {
-							var eLine = lines[lineNumber + 1];
-							if (eLine.StartsWith(errorTextStart)) {
-								lineNumber++;
-								errorText.addSlice(eLine, unsigned(errorTextStart.Length));
-							} else
-								break;
-						}
+					goodLines.addSlice(code, lastGoodStartIndex, lastGoodLineEnd);
+					var totalIndent = tabIndent + spacesIndent;
+					if (goodLineNumber == 0) throw TODO(); // error: Shouldn't begin with a `~` line!
+					// The error will apply to the *previous* line.
+					var errLc = LineAndColumnLoc.singleLine(goodLineNumber - 1, totalIndent, totalIndent + diagnosticWidth);
 
-						errs.add((errLc, errorText.finish()));
-						goto nextLine;
+					// Next line must contain error text.
+					if (code.at(i) != '!') throw TODO();
+					i++;
+					if (code.at(i) != ' ') throw TODO();
+					i++;
 
-					default:
-						goto thisLineNotAnErrorLine;
-				}
+					var errorText = StringMaker.create();
+					for (; i != code.Length && code.at(i) != '\n'; i++)
+						errorText.add(code.at(i));
+					if (i != code.Length) i++;
+
+					while (i != code.Length && code.at(i) == '!') {
+						// Collect more lines of diagnostic text.
+						i++;
+						if (code.at(i) != ' ') throw TODO(); // error: Must always begin with `! `
+						errorText.add('\n');
+						for (; i != code.Length && code.at(i) != '\n'; i++)
+							errorText.add(code.at(i));
+						if (i != code.Length) i++;
+					}
+
+					expectedDiagnostics.add((errLc, errorText.finish()));
+
+					lastGoodStartIndex = i;
+					lastGoodLineEnd = i;
+					break;
+
+				default:
+					#pragma warning disable S108 // empty block
+					for (; code.at(i) != '\n' && i != code.Length; i++) {}
+					#pragma warning restore
+					if (i != code.Length) {
+						i++;
+						lastGoodLineEnd = i;
+						goodLineNumber++;
+					}
+					lastGoodLineIndent = tabIndent;
+					break;
 			}
-
-			// Not an error line.
-			thisLineNotAnErrorLine:
-			goodLines.add(line).add('\n');
-
-			#pragma warning disable S108 // Allow empty block, need something to label
-			nextLine: {}
-			#pragma warning restore
 		}
 
-		return (goodLines.finish(), errs.finish());
+		// Optimization -- if we never saw a '~' just return the original string.
+		if (lastGoodStartIndex == 0) {
+			assert(goodLines.isEmpty);
+			return (code, Arr.empty<(LineAndColumnLoc, string)>());
+		} else {
+			goodLines.addSlice(code, lastGoodStartIndex, unsigned(code.Length));
+			return (goodLines.finish(), expectedDiagnostics.finish());
+		}
 	}
 }

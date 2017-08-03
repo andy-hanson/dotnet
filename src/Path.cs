@@ -105,7 +105,7 @@ struct Path : ToData<Path>, IEquatable<Path>, Show {
 	public bool Equals(Path p) => deepEqual(p);
 	public bool deepEqual(Path p) => parts.deepEqual(p.parts);
 	public override int GetHashCode() => parts.hash();
-	void Show.show(StringMaker s) => s.join(parts, "/");
+	void Show.show<S>(S s) => s.join(parts, "/");
 	public string toPathString() => StringMaker.stringify(this);
 	public static bool operator ==(Path a, Path b) => a.deepEqual(b);
 	public static bool operator !=(Path a, Path b) => !a.deepEqual(b);
@@ -131,7 +131,7 @@ struct RelPath : ToData<RelPath>, Show {
 		return s.finish();
 	}
 
-	void toPathString(StringMaker s) {
+	void toPathString<T>(T s) where T : Shower<T> {
 		if (nParents == 0)
 			s.add("./");
 		else
@@ -139,7 +139,7 @@ struct RelPath : ToData<RelPath>, Show {
 		s.add(relToParent);
 	}
 
-	void Show.show(StringMaker s) => toPathString(s);
+	void Show.show<S>(S s) => toPathString(s);
 
 	internal RelPath withoutExtension(string extension) =>
 		new RelPath(nParents, relToParent.withoutExtension(extension));

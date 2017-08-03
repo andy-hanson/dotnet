@@ -2,26 +2,8 @@ using Model;
 
 //mv
 static class ShowUtils {
-	internal static StringMaker showMember(this StringMaker s, Member m, bool upper) =>
+	internal static S showMember<S>(this S s, Member m, bool upper) where S : Shower<S> =>
 		s.add(m.showKind(upper)).add(' ').add(m.klass.name.str).add('.').add(m.name.str);
-
-	//mv?
-	internal static StringMaker showTy(this StringMaker s, Ty ty) =>
-		ShowTy.show(s, ty);
-
-	internal static StringMaker showChar(this StringMaker s, char ch) {
-		s.add('\'');
-		switch (ch) {
-			case '\n':
-			case '\t':
-				s.add('\\');
-				goto default;
-			default:
-				s.add(ch);
-				break;
-		}
-		return s.add('\'');
-	}
 }
 
 namespace Diag.CheckExprDiags {
@@ -30,12 +12,8 @@ namespace Diag.CheckExprDiags {
 		[UpPointer] internal readonly Ty actual;
 		internal NotAssignable(Ty expected, Ty actual) { this.expected = expected; this.actual = actual; }
 
-		public override void show(StringMaker s) {
-			s.add("Expected type ");
-			ShowTy.show(s, expected);
-			s.add(", got ");
-			ShowTy.show(s, actual);
-		}
+		public override void show<S>(S s) =>
+			s.add("Expected type ").showTy(expected).add(", got ").showTy(actual);
 
 		public override bool deepEqual(NotAssignable n) =>
 			expected.equalsId<Ty, TyId>(n.expected) && actual.equalsId<Ty, TyId>(n.actual);
@@ -46,7 +24,7 @@ namespace Diag.CheckExprDiags {
 		[UpPointer] internal readonly Parameter parameter;
 		internal CantReassignParameter(Parameter parameter) { this.parameter = parameter; }
 
-		public override void show(StringMaker s) =>
+		public override void show<S>(S s) =>
 			s.add("Can't re-assign parameter ").add(parameter.name.str);
 
 		public override bool deepEqual(CantReassignParameter c) => parameter.equalsId<Parameter, Sym>(c.parameter);
@@ -57,7 +35,7 @@ namespace Diag.CheckExprDiags {
 		[UpPointer] internal readonly Pattern.Single local;
 		internal CantReassignLocal(Pattern.Single local) { this.local = local; }
 
-		public override void show(StringMaker s) =>
+		public override void show<S>(S s) =>
 			s.add("Can't re-assign local ").add(local.name.str);
 
 		public override bool deepEqual(CantReassignLocal c) => local.equalsId<Pattern.Single, Sym>(c.local);
@@ -68,7 +46,7 @@ namespace Diag.CheckExprDiags {
 		[UpPointer] internal readonly Member member;
 		internal CantSetNonSlot(Member member) { this.member = member; }
 
-		public override void show(StringMaker s) =>
+		public override void show<S>(S s) =>
 			s.showMember(member, upper: true).add(" is not a slot; can't be set.");
 
 		public override bool deepEqual(CantSetNonSlot c) => member.equalsId<Member, MemberId>(c.member);
@@ -79,7 +57,7 @@ namespace Diag.CheckExprDiags {
 		[UpPointer] internal readonly Slot slot;
 		internal SlotNotMutable(Slot slot) { this.slot = slot; }
 
-		public override void show(StringMaker s) =>
+		public override void show<S>(S s) =>
 			s.showMember(slot, upper: true).add(" is not mutable.");
 
 		public override bool deepEqual(SlotNotMutable s) => slot.equalsId<Slot, Slot.Id>(s.slot);
@@ -90,7 +68,7 @@ namespace Diag.CheckExprDiags {
 		[UpPointer] internal readonly Slot slot;
 		internal MissingEffectToSetSlot(Slot slot) { this.slot = slot; }
 
-		public override void show(StringMaker s) =>
+		public override void show<S>(S s) =>
 			s.showMember(slot, upper: true).add(" can't be set through a reference that doesn't have the 'set' effect.");
 
 		public override bool deepEqual(MissingEffectToSetSlot m) => slot.equalsId<Slot, Slot.Id>(m.slot);
@@ -101,7 +79,7 @@ namespace Diag.CheckExprDiags {
 		[UpPointer] internal readonly Slot slot;
 		internal MissingEffectToGetSlot(Slot slot) { this.slot = slot; }
 
-		public override void show(StringMaker s) =>
+		public override void show<S>(S s) =>
 			s.showMember(slot, upper: true).add(" is mutable, and can't be read through a pure reference.");
 
 		public override bool deepEqual(MissingEffectToGetSlot m) => slot.equalsId<Slot, Slot.Id>(m.slot);
@@ -112,7 +90,7 @@ namespace Diag.CheckExprDiags {
 		[UpPointer] internal readonly Klass klass;
 		internal NewInvalid(Klass klass) { this.klass = klass; }
 
-		public override void show(StringMaker s) =>
+		public override void show<S>(S s) =>
 			s.add("Class ").add(klass.name.str).add(" does not have 'slots', so can't call 'new'.");
 
 		public override bool deepEqual(NewInvalid n) =>
@@ -129,7 +107,7 @@ namespace Diag.CheckExprDiags {
 			this.argumentsCount = argumentsCount;
 		}
 
-		public override void show(StringMaker s) =>
+		public override void show<S>(S s) =>
 			s.add("Class ").add(slots.klass.name.str).add(" has ").add(slots.slots.length).add(" slots, but there are ").add(argumentsCount).add("arguments to 'new'.");
 
 		public override bool deepEqual(NewArgumentCountMismatch n) =>
@@ -148,7 +126,7 @@ namespace Diag.CheckExprDiags {
 			this.argumentsCount = argumentsCount;
 		}
 
-		public override void show(StringMaker s) =>
+		public override void show<S>(S s) =>
 			s.showMember(called, upper: true).add(" takes ").add(called.parameters.length).add(" arguments; got ").add(argumentsCount);
 
 		public override bool deepEqual(ArgumentCountMismatch a) =>
@@ -167,7 +145,7 @@ namespace Diag.CheckExprDiags {
 			this.methodEffect = methodEffect;
 		}
 
-		public override void show(StringMaker s) =>
+		public override void show<S>(S s) =>
 			s.add("Target object has a ").add(targetEffect.show).add(" effect. Can't call method with a ").add(methodEffect.show).add(" effect.");
 
 		public override bool deepEqual(IllegalEffect i) =>
@@ -182,7 +160,7 @@ namespace Diag.CheckExprDiags {
 		[UpPointer] internal readonly Slot slot;
 		internal CantAccessSlotFromStaticMethod(Slot slot) { this.slot = slot; }
 
-		public override void show(StringMaker s) =>
+		public override void show<S>(S s) =>
 			s.showMember(slot, upper: true).add("can't be accessed from a static method.");
 
 		public override bool deepEqual(CantAccessSlotFromStaticMethod c) =>
@@ -194,7 +172,7 @@ namespace Diag.CheckExprDiags {
 		[UpPointer] internal readonly Method method;
 		internal CantCallInstanceMethodFromStaticMethod(Method method) { this.method = method; }
 
-		public override void show(StringMaker s) =>
+		public override void show<S>(S s) =>
 			s.showMember(method, upper: true).add("can't be called from a function.");
 
 		public override bool deepEqual(CantCallInstanceMethodFromStaticMethod c) =>
@@ -206,7 +184,7 @@ namespace Diag.CheckExprDiags {
 		[UpPointer] internal readonly Method method;
 		internal CantAccessStaticMethodThroughInstance(Method method) { this.method = method; }
 
-		public override void show(StringMaker s) =>
+		public override void show<S>(S s) =>
 			s.showMember(method, upper: true).add(" can't be called like a method.");
 
 		public override bool deepEqual(CantAccessStaticMethodThroughInstance c) =>
@@ -219,7 +197,7 @@ namespace Diag.CheckExprDiags {
 		internal readonly Sym memberName;
 		internal MemberNotFound(ClsRef cls, Sym memberName) { this.cls = cls; this.memberName = memberName; }
 
-		public override void show(StringMaker s) =>
+		public override void show<S>(S s) =>
 			s.add(cls.name.str).add(" has no value ").add(memberName.str);
 
 		public override bool deepEqual(MemberNotFound m) =>
@@ -235,7 +213,7 @@ namespace Diag.CheckExprDiags {
 		[UpPointer] internal readonly Ty ty2;
 		internal CantCombineTypes(Ty ty1, Ty ty2) { this.ty1 = ty1; this.ty2 = ty2; }
 
-		public override void show(StringMaker s) =>
+		public override void show<S>(S s) =>
 			s.add("Mismatch in type inference: inferred ").showTy(ty1).add(" earlier; now inferred ").showTy(ty2).add(".");
 
 		public override bool deepEqual(CantCombineTypes e) => ty1.equalsId<Ty, TyId>(e.ty1) && ty2.equalsId<Ty, TyId>(e.ty2);

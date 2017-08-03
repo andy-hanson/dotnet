@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
+using Diag;
 using static FileUtils;
 using static Utils;
 
@@ -35,11 +36,8 @@ namespace Test {
 			GC.SuppressFinalize(this);
 		}
 
-		internal void runTestNamed(string name) {
-			if (!getTestMethods().get(name, out var method))
-				throw TODO("No test method for " + name);
-			runSingle(name, method);
-		}
+		internal void runTestNamed(string testName) =>
+			runSingle(testName, getTestMethods());
 
 		internal void runAllTests() {
 			testNzlib();
@@ -57,11 +55,8 @@ namespace Test {
 			var allTests = listDirectoriesInDirectory(casesRootDir).toArr();
 			checkNoExtraBaselineDirectories(allTests);
 			var methods = getTestMethods();
-
-			foreach (var test in allTests) {
-				var method = methods[test];
-				runSingle(test, method);
-			}
+			foreach (var test in allTests)
+				runSingle(test, methods);
 		}
 
 		// Checking of baseline *files* is done in `runCompilerTest`.
@@ -74,18 +69,22 @@ namespace Test {
 				throw TestFailureException.create(s => s.add("Baselines have no associated tests: ").join(extraBaselines));
 		}
 
-		static Dict<string, MethodInfo> getTestMethods() {
-			const BindingFlags flags = BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly;
-			return new Arr<MethodInfo>(typeof(Tests).GetMethods(flags)).mapDefinedToDict(method => {
+		const BindingFlags testMethodFlags =
+			BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly;
+		static Dict<string, MethodInfo> getTestMethods() =>
+			new Arr<MethodInfo>(typeof(Tests).GetMethods(testMethodFlags)).mapDefinedToDict(method => {
 				assert(method.IsStatic);
 				var testFor = method.GetCustomAttribute<TestForAttribute>();
 				return testFor != null ? Op.Some((testFor.testPath, method)) : Op<(string, MethodInfo)>.None;
 			});
-		}
 
-		void runSingle(string testName, MethodInfo method) {
+		void runSingle(string testName, Dict<string, MethodInfo> methods) {
+			var method = methods.getOp(testName);
 			var testData = runCompilerTest(Path.fromParts(testName));
-			method.Invoke(null, new object[] { testData.force }); //TODO!!!
+			if (method.get(out var m))
+				m.Invoke(null, new object[] { testData.force }); // Custom tests should only run on non-error tests.
+			else if (testData.get(out var td))
+				TestUtils.runCsJsTests(td);
 		}
 
 		static bool anyDiagnostics(ModuleOrFail mf) {
@@ -122,30 +121,36 @@ namespace Test {
 			var (program, indexModuleOrFail) = compileResult;
 			var baselinesDirectory = baselinesRootDir.resolve(testPath.asRel);
 
-			var expectedDiagnostics = documentProvider.getDiagnostics();
+			var expectedDiagnostics = documentProvider.getExpectedDiagnostics();
 
-			var baselines = readFilesInDirectoryRecursive(baselinesDirectory).toMutableDict();
+			var expectedBaselines = readFilesInDirectoryRecursiveIfExists(baselinesDirectory).toMutableDict();
 
 			Op<TestData> res;
 			switch (indexModuleOrFail) {
 				case FailModule f:
-					testWithDiagnostics(baselinesDirectory, program, baselines, expectedDiagnostics);
+					testWithDiagnostics(baselinesDirectory, program, expectedBaselines, expectedDiagnostics);
 					res = Op<TestData>.None;
 					break;
 				case Model.Module m:
 					if (anyDiagnostics(m)) {
-						testWithDiagnostics(baselinesDirectory, program, baselines, expectedDiagnostics);
+						testWithDiagnostics(baselinesDirectory, program, expectedBaselines, expectedDiagnostics);
 						res = Op<TestData>.None;
-					} else
-						res = Op.Some(testWithNoDiagnostics(testPath, baselinesDirectory, program, m, baselines));
+					} else {
+						if (expectedDiagnostics.any())
+							throw new TestFailureException(StringMaker.create()
+								.add("Compiled without diagnostics, but expected diagnostics in: ")
+								.join(expectedDiagnostics.Keys)
+								.finish());
+						res = Op.Some(testWithNoDiagnostics(testPath, baselinesDirectory, program, m, expectedBaselines));
+					}
 					break;
 				default:
 					throw unreachable();
 			}
 
-			if (baselines.any())
+			if (expectedBaselines.any())
 				throw TestFailureException.create(s =>
-					s.add("Extra baselines: ").join(baselines.Keys.Select(k => testPath.resolve(k.asRel))));
+					s.add("Extra baselines: ").join(expectedBaselines.Keys.Select(k => testPath.resolve(k.asRel))));
 
 			return res;
 		}
@@ -153,29 +158,57 @@ namespace Test {
 		void testWithDiagnostics(
 			Path baselinesDirectory,
 			CompiledProgram program,
-			Dictionary<Path, string> baselines,
+			Dictionary<Path, string> expectedBaselines,
 			Dictionary<Path, Arr<(LineAndColumnLoc, string)>> expectedDiagnosticsByPath) {
 			foreach (var moduleOrFail in program.modules.values) {
-				var modulePath = moduleOrFail.fullPath().withoutExtension(ModuleResolver.extension);
-				assertBaseline(baselinesDirectory, modulePath, ".ast", Dat.either(moduleOrFail.document.parseResult), baselines, updateBaselines);
+				var moduleFullPath = moduleOrFail.fullPath();
+				var modulePath = moduleFullPath.withoutExtension(ModuleResolver.extension);
+				var document = moduleOrFail.document;
+
+				if (document.parseResult.isLeft)
+					assertBaseline(baselinesDirectory, modulePath, ".ast", document.parseResult.left.toDat(), expectedBaselines, updateBaselines);
+				// If document.parseResult.isRight, that will be the module's diagnostics.
 
 				// Can only do a '.model' baseline if it's a Module
 				if (moduleOrFail is Model.Module module) {
-					assertBaseline(baselinesDirectory, modulePath, ".model", module.klass.toDat(), baselines, updateBaselines);
+					assertBaseline(baselinesDirectory, modulePath, ".model", module.klass.toDat(), expectedBaselines, updateBaselines);
 				}
 
-				var diags = moduleOrFail.diagnostics;
-				if (expectedDiagnosticsByPath.tryDelete(modulePath, out var expectedDiagnostics)) {
-					throw TODO(); //TODO!!! Need to compare actual w/ expected diagnostics.
-				} else if (diags.any) {
-					throw TODO(); //TODO!!! Did not expect these diagnostics
-				}
+				var text = document.text;
+				var actualDiagnostics = moduleOrFail.diagnostics;
+				var diagnosticsOK = expectedDiagnosticsByPath.tryDelete(moduleFullPath, out var expectedDiagnostics)
+					// Expected some diagnostics, see if actual diagnostics match.
+					? diagnosticsMatch(text, actualDiagnostics, expectedDiagnostics)
+					// Did not expect any diagnostics.
+					: !actualDiagnostics.any;
+				if (!diagnosticsOK)
+					throw showDiagnosticsMismatchError(moduleFullPath, text, actualDiagnostics);
 			}
 
-			assert(expectedDiagnosticsByPath.Count == 0); // Shouldn't have any entries for modules that dont' actually exist.
+			assert(expectedDiagnosticsByPath.Count == 0); // Shouldn't have any entries for modules that don't actually exist.
 		}
 
-		TestData testWithNoDiagnostics(Path testPath, Path baselinesDirectory, CompiledProgram program, Model.Module indexModule, Dictionary<Path, string> baselines) {
+		static TestFailureException showDiagnosticsMismatchError(Path moduleFullpath, string text, Arr<Diagnostic> actualDiagnostics) {
+			var s = StringMaker.create();
+			s.add("Unexpected diagnostics for ").add(moduleFullpath).add(':').nl();
+			Foo.generateExpectedDiagnosticsText(text, s, actualDiagnostics);
+			return new TestFailureException(s.finish());
+		}
+
+		//mv
+		static bool diagnosticsMatch(string moduleText, Arr<Diagnostic> actual, Arr<(LineAndColumnLoc loc, string diag)> expected) {
+			var lc = new LineColumnGetter(moduleText);
+			if (actual.length != expected.length)
+				return false;
+
+			var sortedActual = actual.sort(compareBy<Diagnostic>(a => a.loc.start.index));
+			assert(expected.isSorted(compareBy<(LineAndColumnLoc loc, string)>(a => a.loc.start.line, a => a.loc.start.column)));
+
+			return sortedActual.eachCorresponds(expected, (a, e) =>
+				lc.lineAndColumnAtLoc(a.loc).deepEqual(e.loc) && StringMaker.stringify(a.data) == e.diag);
+		}
+
+		TestData testWithNoDiagnostics(Path testPath, Path baselinesDirectory, CompiledProgram program, Model.Module indexModule, Dictionary<Path, string> expectedBaselines) {
 			// Program compiled with no diagnostics, so safe to emit.
 			var (emittedRoot, emitLogs) = ILEmitter.emitWithLogs(indexModule);
 
@@ -183,10 +216,10 @@ namespace Test {
 				var module = (Model.Module)moduleOrFail; // Can't be a FailModule or we would call testWithDiagnostics
 				var modulePath = module.fullPath().withoutExtension(ModuleResolver.extension);
 
-				assertBaseline(baselinesDirectory, modulePath, ".ast", Dat.either(module.document.parseResult), baselines, updateBaselines);
-				assertBaseline(baselinesDirectory, modulePath, ".model", module.klass.toDat(), baselines, updateBaselines);
-				assertBaseline(baselinesDirectory, modulePath, ".js", JsEmitter.emitToString(module), baselines, updateBaselines);
-				assertBaseline(baselinesDirectory, modulePath, ".il", emitLogs[module], baselines, updateBaselines);
+				assertBaseline(baselinesDirectory, modulePath, ".ast", Dat.either(module.document.parseResult), expectedBaselines, updateBaselines);
+				assertBaseline(baselinesDirectory, modulePath, ".model", module.klass.toDat(), expectedBaselines, updateBaselines);
+				assertBaseline(baselinesDirectory, modulePath, ".js", JsEmitter.emitToString(module), expectedBaselines, updateBaselines);
+				assertBaseline(baselinesDirectory, modulePath, ".il", emitLogs[module], expectedBaselines, updateBaselines);
 			}
 
 			return new TestData(testPath, program, indexModule, emittedRoot, jsTestRunner);
@@ -198,23 +231,25 @@ namespace Test {
 		static void assertBaseline(Path testDirectory, Path modulePath, string extension, string actual, Dictionary<Path, string> baselines, bool updateBaselines) {
 			var baselinePath = modulePath.addExtension(extension);
 
-			var fullBaselinePath = testDirectory.resolve(baselinePath.asRel); //TODO: compute lazily
-
 			if (!baselines.tryDelete(baselinePath, out var oldBaseline)) {
+				var fbp = fullBaselinePath(testDirectory, baselinePath);
 				// This baseline didn't exist before.
-				if (updateBaselines) {
-					writeFileAndEnsureDirectory(fullBaselinePath, actual);
-				} else {
-					throw TestFailureException.create(s => s.add("No such baseline ").add(fullBaselinePath));
-				}
+				if (updateBaselines)
+					writeFileAndEnsureDirectory(fbp, actual);
+				else
+					throw TestFailureException.create(s => s.add("No such baseline ").add(fbp));
 			} else if (actual != oldBaseline) {
 				if (updateBaselines)
-					writeFile(fullBaselinePath, actual);
+					writeFile(fullBaselinePath(testDirectory, baselinePath), actual);
 				else
 					throw TestFailureException.create(s => s.add("Unexpected output!\nExpected: ").add(oldBaseline).add("\nActual: ").add(actual));
 			}
 		}
+
+		static Path fullBaselinePath(Path testDirectory, Path baselinePath) =>
+			testDirectory.resolve(baselinePath.asRel);
 	}
+
 
 	[AttributeUsage(AttributeTargets.Method)]
 	sealed class TestForAttribute : Attribute {
@@ -236,5 +271,59 @@ namespace Test {
 			this.emittedRoot = emittedRoot;
 			this.jsTestRunner = jsTestRunner;
 		}
+	}
+}
+
+//mv
+static class Foo {
+	// Adds diagnostics with `~`
+	internal static string generateExpectedDiagnosticsText(string text, StringMaker s, Arr<Diag.Diagnostic> actualDiagnostics) {
+		assert(actualDiagnostics.any);
+
+		var lineToDiagnostics = getLineToDiagnostics(text, actualDiagnostics);
+		uint countShownDiagnostics = 0;
+
+		uint lineNumber = 0;
+		for (uint textIndex = 0; ; textIndex++) {
+			var ch = text.at(textIndex);
+			s.add(ch);
+			if (ch == '\n' || textIndex == text.Length - 1) {
+				if (lineToDiagnostics.get(lineNumber, out var diags)) {
+					foreach (var (startCol, endCol, diag) in diags) {
+						countShownDiagnostics++;
+						showDiagnostic(s, startCol, endCol, diag);
+					}
+				}
+
+				if (textIndex == text.Length - 1)
+					break;
+				lineNumber++;
+			}
+		}
+
+		assert(countShownDiagnostics == actualDiagnostics.length);
+		return s.finish();
+	}
+
+	static Dict<uint, Arr<(uint colStart, uint colEnd, DiagnosticData)>> getLineToDiagnostics(string text, Arr<Diag.Diagnostic> actualDiagnostics) {
+		var lc = new LineColumnGetter(text);
+		var lineToDiagnostics = Dict.builder<uint, Arr.Builder<(uint colStart, uint colEnd, DiagnosticData)>>();
+		foreach (var diag in actualDiagnostics) {
+			var (loc, data) = diag;
+			var ((startLine, startColumn), (endLine, endColumn)) = lc.lineAndColumnAtLoc(loc);
+			assert(startLine == endLine, "Diagnostics should take a single line.");
+			lineToDiagnostics.multiMapAdd(startLine, (startColumn, endColumn, data));
+		}
+		return lineToDiagnostics.mapValues(v => v.finish());
+	}
+
+	static void showDiagnostic(StringMaker s, uint startColumn, uint endColumn, DiagnosticData diag) {
+		s.nl();
+		uint i = 0;
+		for (; i < startColumn; i++)
+			s.add(' ');
+		for (; i < endColumn; i++)
+			s.add('~');
+		new IndentedShower<StringMaker>(s, "! ").nl().add(diag);
 	}
 }

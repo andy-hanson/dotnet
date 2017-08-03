@@ -1,8 +1,20 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 static class Utils {
 	internal static T upcast<T>(this T t) => t;
+
+	internal static int unsignedDiff(uint a, uint b) =>
+		checked(signed(a) - signed(b));
+
+	internal static IComparer<T> compareBy<T>(Func<T, uint> by) =>
+		Comparer<T>.Create((a, b) => unsignedDiff(by(a), by(b)));
+	internal static IComparer<T> compareBy<T>(Func<T, uint> by1, Func<T, uint> by2) =>
+		Comparer<T>.Create((a, b) => {
+			var diff = unsignedDiff(by1(a), by1(b));
+			return diff != 0 ? diff : unsignedDiff(by2(a), by2(b));
+		});
 
 	internal static void writeQuotedString(string s, Action<char> writeChar) {
 		writeChar('"');
@@ -31,13 +43,17 @@ static class Utils {
 		writeChar('"');
 	}
 
+	[DebuggerStepThrough]
 	internal static int signed(uint u) => checked((int)u);
+	[DebuggerStepThrough]
 	internal static uint unsigned(int i) => checked((uint)i);
+	[DebuggerStepThrough]
+	internal static uint small(uint u) => checked((ushort)u);
 
-	#pragma warning disable S1186, CC0057 // empty methods, unused argument 'value'
-	internal static void unused<T>(Action<T> method) {}
-	internal static void unused<T, U>(Func<T, U> method) {}
+	#pragma warning disable S1186, CC0057 // empty methods, unused arguments
+	[DebuggerStepThrough]
 	internal static void unused<T>(T value) {}
+	[DebuggerStepThrough]
 	internal static void unused<T, U>(T value1, U value2) {}
 	#pragma warning restore
 

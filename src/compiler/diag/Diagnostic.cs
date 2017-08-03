@@ -5,6 +5,7 @@ namespace Diag {
 		internal readonly Loc loc;
 		internal readonly DiagnosticData data;
 		internal Diagnostic(Loc loc, DiagnosticData data) { this.loc = loc; this.data = data; }
+		internal void Deconstruct(out Loc loc, out DiagnosticData data) { loc = this.loc; data = this.data; }
 
 		public override bool Equals(object o) => throw new NotSupportedException();
 		public override int GetHashCode() => throw new NotSupportedException();
@@ -19,7 +20,7 @@ namespace Diag {
 		public abstract bool deepEqual(DiagnosticData e);
 		public abstract Dat toDat();
 
-		public abstract void show(StringMaker s);
+		public abstract void show<S>(S s) where S : Shower<S>;
 	}
 
 	/** Implementation class for every DiagnosticData. */
@@ -32,7 +33,7 @@ namespace Diag {
 		protected NoDataDiag() {}
 		public override bool deepEqual(Self e) => object.ReferenceEquals(this, e);
 		public override Dat toDat() => Dat.str(GetType().Name);
-		public sealed override void show(StringMaker s) => s.add(str);
+		public sealed override void show<S>(S s) => s.add(str);
 		protected abstract string str { get; }
 	}
 }

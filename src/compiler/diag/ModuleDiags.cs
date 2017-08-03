@@ -7,7 +7,7 @@ namespace Diag.ModuleDiag {
 			this.importedPath = importedPath;
 		}
 
-		public override void show(StringMaker s) {
+		public override void show<S>(S s) {
 			s.add("Circular dependency when module ");
 			s.add(importerPath);
 			s.add(" imports ");
@@ -31,7 +31,7 @@ namespace Diag.ModuleDiag {
 			this.importedPath = importedPath;
 		}
 
-		public override void show(StringMaker s) =>
+		public override void show<S>(S s) =>
 			s.add("Can't find module '")
 				.add(importedPath)
 				.add("' from '")
@@ -52,7 +52,7 @@ namespace Diag.ModuleDiag {
 		internal readonly Path path;
 		internal CantFindGlobalModule(Path path) { this.path = path; }
 
-		public override void show(StringMaker s) =>
+		public override void show<S>(S s) =>
 			s.add("Can't find global module '").add(path).add("'.");
 
 		public override bool deepEqual(CantFindGlobalModule g) => path.deepEqual(g.path);

@@ -54,8 +54,12 @@ struct LineAndColumn : ToData<LineAndColumn>, Show {
 		this.line = line;
 		this.column = column;
 	}
+	internal void Deconstruct(out uint line, out uint column) {
+		line = this.line;
+		column = this.column;
+	}
 
-	void Show.show(StringMaker s) => s.add(line).add(':').add(column);
+	void Show.show<S>(S s) => s.add(line).add(':').add(column);
 	public override string ToString() => throw new NotSupportedException();
 	public override bool Equals(object o) => throw new NotSupportedException();
 	public override int GetHashCode() => throw new NotSupportedException();
@@ -70,10 +74,14 @@ struct LineAndColumnLoc : ToData<LineAndColumnLoc>, Show {
 		this.start = start;
 		this.end = end;
 	}
+	internal void Deconstruct(out LineAndColumn start, out LineAndColumn end) {
+		start = this.start;
+		end = this.end;
+	}
 	internal static LineAndColumnLoc singleLine(uint line, uint startColumn, uint endColumn) =>
 		new LineAndColumnLoc(new LineAndColumn(line, startColumn), new LineAndColumn(line, endColumn));
 
-	void Show.show(StringMaker s) => s.add(start).add('-').add(end);
+	void Show.show<S>(S s) => s.add(start).add('-').add(end);
 	public override string ToString() => throw new NotSupportedException();
 	public override bool Equals(object o) => throw new NotSupportedException();
 	public override int GetHashCode() => throw new NotSupportedException();

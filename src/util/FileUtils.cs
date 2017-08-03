@@ -9,8 +9,13 @@ static class FileUtils {
 		return Directory.EnumerateDirectories(pathStr).Select(d => d.withoutStart(pathSlash));
 	}
 
-	internal static IEnumerable<(Path, string)> readFilesInDirectoryRecursive(Path basePath) {
-		var pathStr = basePath.toPathString();
+	internal static IEnumerable<(Path, string)> readFilesInDirectoryRecursiveIfExists(Path directoryPath) =>
+		directoryExists(directoryPath)
+			? readFilesInDirectoryRecursive(directoryPath)
+			: Enumerable.Empty<(Path, string)>();
+
+	internal static IEnumerable<(Path, string)> readFilesInDirectoryRecursive(Path directoryPath) {
+		var pathStr = directoryPath.toPathString();
 		var pathSlash = pathStr + '/';
 		foreach (var x in Directory.EnumerateFileSystemEntries(pathStr, "*", SearchOption.AllDirectories)) {
 			var content = File.ReadAllText(x);
@@ -21,6 +26,9 @@ static class FileUtils {
 
 	internal static string readFile(Path path) =>
 		File.ReadAllText(path.toPathString());
+
+	internal static bool directoryExists(Path path) =>
+		Directory.Exists(path.toPathString());
 
 	internal static bool fileExists(Path path) =>
 		File.Exists(path.toPathString());

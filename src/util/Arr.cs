@@ -379,6 +379,20 @@ struct Arr<T> : IEnumerable<T> {
 			return (int)hc;
 		}
 	}
+
+	internal Arr<T> sort(IComparer<T> by) {
+		var copy = new T[length];
+		Array.Copy(inner, copy, length);
+		Array.Sort(copy, by);
+		return new Arr<T>(copy);
+	}
+
+	internal bool isSorted(IComparer<T> cmp) {
+		for (uint i = 1; i < length; i++)
+			if (cmp.Compare(this[i], this[i - 1]) < 0)
+				return false;
+		return true;
+	}
 }
 
 static class Arr {
@@ -425,7 +439,7 @@ static class Arr {
 	internal static bool eachEqualId<T, U>(this Arr<T> a, Arr<T> b) where T : Identifiable<U> where U : ToData<U> =>
 		deepEqual(a, b, (x, y) => x.equalsId<T, U>(y));
 
-	static bool deepEqual<T>(this Arr<T> a, Arr<T> b, Func<T, T, bool> equal) {
+	internal static bool deepEqual<T>(this Arr<T> a, Arr<T> b, Func<T, T, bool> equal) {
 		if (a.length != b.length)
 			return false;
 
@@ -448,11 +462,16 @@ static class Arr {
 		return false;
 	}
 
-	internal static Arr<T> empty<T>() => new Arr<T>(new T[] {});
+	internal static Arr<T> empty<T>() =>
+		new Arr<T>(new T[] {});
+
 	internal static Arr<T> of<T>(params T[] args) =>
 		new Arr<T>(args);
 
-	internal static Builder<T> builder<T>() => new Builder<T>(true);
+	[DebuggerStepThrough]
+	internal static Builder<T> builder<T>() =>
+		new Builder<T>(true);
+
 	internal static Builder<T> builder<T>(T first) {
 		var b = new Builder<T>(true);
 		b.add(first);
@@ -484,6 +503,7 @@ static class Arr {
 
 	internal struct Builder<T> {
 		readonly List<T> b;
+		[DebuggerStepThrough]
 		internal Builder(bool dummy) { unused(dummy); b = new List<T>(); }
 
 		/** Number of elements added so far. */

@@ -69,7 +69,7 @@ abstract class Lexer : Reader {
 	// Number of Token.Dedent we have to output before continuing to read.
 	uint dedenting = 0;
 
-	protected Loc singleCharLoc => Loc.singleChar(pos);
+	Loc singleCharLoc => Loc.singleChar(pos.decr);
 
 	// This is set after taking one of several kinds of token, such as Name or NumberLiteral
 	protected string tokenValue;

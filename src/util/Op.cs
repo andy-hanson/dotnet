@@ -1,17 +1,17 @@
 using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 using static Utils;
 
 static class Op {
-	internal static Op<T> fromNullable<T>(T value) =>
-		value != null ? Op<T>.Some(value) : Op<T>.None;
-
+	[DebuggerStepThrough]
 	internal static Op<T> Some<T>(T value) => Op<T>.Some(value);
 }
 
 struct Op<T> {
 	readonly T value;
+	[DebuggerStepThrough]
 	Op(T value) { this.value = value; }
 
 	internal T unsafeValue => value;
@@ -20,6 +20,7 @@ struct Op<T> {
 	internal bool equalsRaw(Op<T> other) =>
 		RuntimeHelpers.Equals(value, other.value);
 
+	[DebuggerStepThrough]
 	internal bool get(out T v) {
 		v = value;
 		return has;
@@ -33,6 +34,7 @@ struct Op<T> {
 	}
 
 	internal static Op<T> None => new Op<T>(default(T));
+	[DebuggerStepThrough]
 	internal static Op<T> Some(T value) {
 		var o = new Op<T>(value);
 		assert(!(value is uint)); // Use OpUint instead

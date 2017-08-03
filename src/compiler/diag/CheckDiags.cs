@@ -5,7 +5,7 @@ namespace Diag.CheckDiags {
 		[UpPointer] internal readonly ClsRef cls;
 		internal NotAnAbstractClass(ClsRef cls) { this.cls = cls; }
 
-		public override void show(StringMaker s) =>
+		public override void show<S>(S s) =>
 			s.add("Can't extend non-abstract class ").add(cls.name.str);
 
 		public override bool deepEqual(NotAnAbstractClass n) =>
@@ -18,7 +18,7 @@ namespace Diag.CheckDiags {
 		internal readonly Sym name;
 		internal ClassNotFound(Sym name) { this.name = name; }
 
-		public override void show(StringMaker s) =>
+		public override void show<S>(S s) =>
 			s.add("Class ").add(name.str).add("not found.");
 
 		public override bool deepEqual(ClassNotFound c) => name.deepEqual(c.name);
@@ -29,7 +29,7 @@ namespace Diag.CheckDiags {
 		[UpPointer] internal readonly Arr<AbstractMethodLike> abstractMethods;
 		internal ImplsMismatch(Arr<AbstractMethodLike> abstractMethods) { this.abstractMethods = abstractMethods; }
 
-		public override void show(StringMaker s) =>
+		public override void show<S>(S s) =>
 			s.add("Abstract method implementations must be exactly, in order: ")
 				.join(abstractMethods, a => a.name.str);
 
@@ -43,7 +43,7 @@ namespace Diag.CheckDiags {
 		internal readonly Sym name;
 		internal DuplicateParameterName(Sym name) { this.name = name; }
 
-		public override void show(StringMaker s) =>
+		public override void show<S>(S s) =>
 			s.add("There are two parameters named ").add(name.str);
 
 		public override bool deepEqual(DuplicateParameterName d) => name.deepEqual(d.name);
@@ -54,7 +54,7 @@ namespace Diag.CheckDiags {
 		[UpPointer] internal readonly AbstractMethodLike implemented;
 		internal WrongImplParameters(AbstractMethodLike implemented) { this.implemented = implemented; }
 
-		public override void show(StringMaker s) =>
+		public override void show<S>(S s) =>
 			s.add("Parameters for implementation of ")
 				.add(implemented.name.str)
 				.add(" must be exactly, in order: ")
@@ -71,7 +71,7 @@ namespace Diag.CheckDiags {
 		[UpPointer] internal readonly Member secondMember;
 		internal DuplicateMember(Member firstMember, Member secondMember) { this.firstMember = firstMember; this.secondMember = secondMember; }
 
-		public override void show(StringMaker s) =>
+		public override void show<S>(S s) =>
 			s.add("Duplicate members: ").showMember(firstMember, upper: false).add(" and ").showMember(secondMember, upper: false).add('.');
 
 		public override bool deepEqual(DuplicateMember d) =>

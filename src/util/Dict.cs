@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 using static Utils;
 
@@ -41,11 +42,17 @@ struct Dict<K, V> where K : IEquatable<K> {
 	public Dictionary<K, V>.Enumerator GetEnumerator() => inner.GetEnumerator();
 	public Dictionary<K, V>.ValueCollection values => inner.Values;
 
+	[DebuggerStepThrough]
 	internal bool has(K k) => inner.ContainsKey(k);
 
 	internal V this[K k] => inner[k];
 
+	[DebuggerStepThrough]
 	internal bool get(K k, out V v) => inner.TryGetValue(k, out v);
+
+	[DebuggerStepThrough]
+	internal Op<V> getOp(K k) =>
+		inner.TryGetValue(k, out var v) ? Op.Some(v) : Op<V>.None;
 
 	internal uint size => unsigned(inner.Count);
 }
@@ -101,6 +108,7 @@ static class Dict {
 
 		internal V this[K k] => inner[k];
 
+		[DebuggerStepThrough]
 		internal bool get(K key, out V value) => inner.TryGetValue(key, out value);
 
 		internal void add(K key, V value) =>
@@ -148,6 +156,13 @@ static class DictBuilderUtils {
 
 //mv
 static class DictionaryUtils {
+	internal static void multiMapAdd<K, V>(this Dictionary<K, List<V>> b, K key, V value) where K : IEquatable<K> {
+		if (b.TryGetValue(key, out var values))
+			values.Add(value);
+		else
+			b.Add(key, new List<V> { value });
+	}
+
 	internal static bool any<K, V>(this Dictionary<K, V> dict) =>
 		dict.Count != 0;
 

@@ -1,5 +1,3 @@
-using System;
-
 using Diag;
 using Diag.ModuleDiag;
 using Model;
@@ -102,23 +100,22 @@ sealed class Compiler {
 				return (CompileSingleResult.Missing, isReused: false);
 			}
 
-			modules.add(logicalPath, ModuleState.compiling);
-			var (module, isReused) = doCompileSingle(logicalPath, document, fullPath, isIndex);
-			modules.change(logicalPath, ModuleState.compiled(module, isReused));
-			return (CompileSingleResult.Found(module), isReused);
+			var parseResult = document.parseResult;
+			if (parseResult.isRight) {
+				var fail = new FailModule(logicalPath, isIndex, document, Arr.empty<Either<Imported, FailModule>>(), Arr.of(parseResult.right));
+				modules.add(logicalPath, ModuleState.compiled(fail, isReused: false));
+				return (CompileSingleResult.Found(fail), isReused: false);
+			} else {
+				var (importAsts, classAst) = parseResult.left;
+				modules.add(logicalPath, ModuleState.compiling);
+				var (module, isReused) = doCompileSingle(logicalPath, document, importAsts, classAst, fullPath, isIndex);
+				modules.change(logicalPath, ModuleState.compiled(module, isReused));
+				return (CompileSingleResult.Found(module), isReused);
+			}
 		}
 	}
 
-	(ModuleOrFail module, bool isReused) doCompileSingle(Path logicalPath, DocumentInfo document, Path fullPath, bool isIndex) {
-		if (document.parseResult.isRight) {
-			Console.WriteLine(Test.CsonWriter.write(document.parseResult.right));
-			var parseDiagnostic = document.parseResult.right;
-			var fail = new FailModule(logicalPath, isIndex, document, Arr.empty<Either<Imported, FailModule>>(), Arr.of(parseDiagnostic));
-			return (fail, isReused: true);
-		}
-
-		var (importAsts, classAst) = document.parseResult.left;
-
+	(ModuleOrFail module, bool isReused) doCompileSingle(Path logicalPath, DocumentInfo document, Arr<Ast.Import> importAsts, Ast.Klass classAst, Path fullPath, bool isIndex) {
 		var (importsResult, allDependenciesReused) = resolveImports(fullPath, importAsts);
 
 		// We will only bother looking at the old module if all of our dependencies were safely reused.

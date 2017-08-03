@@ -1,6 +1,7 @@
 using System;
 
 using BuiltinAttributes;
+using static Utils;
 
 public static class Builtins {
 	[NoImport, JsPrimitive] // Represented by `undefined`
@@ -51,7 +52,7 @@ public static class Builtins {
 
 		[Instance, AllPure, JsBinary("-")]
 		public static Int _sub(Nat a, Nat b) =>
-			Int.of(checked((int)a.value - (int)b.value)); //TODO: there should be a better way of doing this without inner casts.
+			Int.of(unsignedDiff(a.value, b.value));
 
 		[Instance, AllPure, JsBinary("*")]
 		public static Nat _mul(Nat a, Nat b) => Nat.of(checked(a.value * b.value));
