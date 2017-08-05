@@ -59,25 +59,45 @@ sealed class Parser : ExprParser {
 			: new Ast.Import.Relative(loc, new RelPath(leadingDots, path)));
 	}
 
-	Ast.Klass parseClass(Pos start, Token kw) {
-		var (head, nextStart, nextKw) = parseHead(start, kw);
+	Ast.ClassDeclaration parseClass(Pos start, Token kw) {
+		var (typeParameters, start2, kw2) = tryParseClassGeneric(start, kw);
+		var (head, nextStart, nextKw) = parseHead(start2, kw2);
 		var (supers, nextNextStart, nextNextKw) = parseSupers(nextStart, nextKw);
 		var methods = parseMethods(nextNextStart, nextNextKw);
-		return new Ast.Klass(locFrom(start), head, supers, methods);
+		return new Ast.ClassDeclaration(locFrom(start), typeParameters, head, supers, methods);
 	}
 
-	(Op<Ast.Klass.Head> head, Pos nextStart, MethodKw nextKeyword) parseHead(Pos start, Token kw) {
+	(Arr<Sym>, Pos nextStart, Token nextKw) tryParseClassGeneric(Pos start, Token kw) {
+		// E.g. `generic[T]`
+		if (kw != Token.Generic)
+			return (Arr.empty<Sym>(), start, kw);
+
+		takeLbracket();
+		var typeParameters = Arr.build2(() => {
+			var name = takeTyName();
+			var isNext = !tryTakeRbracket();
+			if (!isNext) {
+				takeComma();
+				takeSpace();
+			}
+			return (name, isNext);
+		});
+		takeNewline();
+		return (typeParameters, pos, nextToken());
+	}
+
+	(Op<Ast.ClassDeclaration.Head> head, Pos nextStart, MethodKw nextKeyword) parseHead(Pos start, Token kw) {
 		switch (kw) {
 			case Token.EOF:
 			case Token.Fun:
-				return (Op<Ast.Klass.Head>.None, start, kw == Token.EOF ? MethodKw.Eof : MethodKw.Fun);
+				return (Op<Ast.ClassDeclaration.Head>.None, start, kw == Token.EOF ? MethodKw.Eof : MethodKw.Fun);
 			case Token.Abstract: {
 				var head = parseAbstractHead(start);
-				return (Op.Some<Ast.Klass.Head>(head), pos, takeMethodKeywordOrEof());
+				return (Op.Some<Ast.ClassDeclaration.Head>(head), pos, takeMethodKeywordOrEof());
 			}
 			case Token.Slots: {
 				var head = parseSlots(start);
-				return (Op.Some<Ast.Klass.Head>(head), pos, takeMethodKeywordOrEof());
+				return (Op.Some<Ast.ClassDeclaration.Head>(head), pos, takeMethodKeywordOrEof());
 			}
 			case Token.Enum:
 				throw TODO();
@@ -86,16 +106,20 @@ sealed class Parser : ExprParser {
 		}
 	}
 
-	Ast.Klass.Head.Abstract parseAbstractHead(Pos start) {
+	Ast.ClassDeclaration.Head.Abstract parseAbstractHead(Pos start) {
 		takeIndent();
 		var abstractMethods = Arr.build2(() => {
+			// e.g. `[T] T f(T t)`
 			var methodStart = pos;
+			var typeParameters = tryTakeTypeParameters();
+			if (typeParameters.any)
+				takeSpace();
 			var (returnTy, name, selfEffect, parameters) = parseMethodHead();
-			var abs = new Ast.Klass.Head.Abstract.AbstractMethod(locFrom(methodStart), returnTy, name, selfEffect, parameters);
+			var abs = new Ast.ClassDeclaration.Head.Abstract.AbstractMethod(locFrom(methodStart), typeParameters, returnTy, name, selfEffect, parameters);
 			var n = takeNewlineOrDedent();
 			return (abs, n == NewlineOrDedent.Newline);
 		});
-		return new Ast.Klass.Head.Abstract(locFrom(start), abstractMethods);
+		return new Ast.ClassDeclaration.Head.Abstract(locFrom(start), abstractMethods);
 	}
 
 	(Arr<Ast.Super>, Pos, MethodKw) parseSupers(Pos start, MethodKw next) {
@@ -114,6 +138,7 @@ sealed class Parser : ExprParser {
 	Ast.Super parseSuper(Pos start) {
 		takeSpace();
 		var name = takeTyName();
+		var tyArgs = Arr.empty<Ast.Ty>(); // TODO
 		Arr<Ast.Impl> impls;
 		switch (takeNewlineOrIndent()) {
 			case NewlineOrIndent.Indent:
@@ -126,7 +151,7 @@ sealed class Parser : ExprParser {
 				throw unreachable();
 		}
 
-		return new Ast.Super(locFrom(start), name, impls);
+		return new Ast.Super(locFrom(start), name, tyArgs, impls);
 	}
 
 	(Ast.Impl, bool isNext) parseImpl() {
@@ -150,10 +175,10 @@ sealed class Parser : ExprParser {
 		return (impl, isNext);
 	}
 
-	Ast.Klass.Head.Slots parseSlots(Pos start) {
+	Ast.ClassDeclaration.Head.Slots parseSlots(Pos start) {
 		takeIndent();
 		var vars = build2(parseSlot); // At least one slot must exist.
-		return new Ast.Klass.Head.Slots(locFrom(start), vars);
+		return new Ast.ClassDeclaration.Head.Slots(locFrom(start), vars);
 	}
 
 	(Ast.Slot, bool isNext) parseSlot() {
@@ -195,11 +220,12 @@ sealed class Parser : ExprParser {
 			case MethodKw.Def:
 			case MethodKw.Fun:
 				var isStatic = next == MethodKw.Fun;
+				var typeParameters = tryTakeTypeParameters();
 				takeSpace();
 				var (returnTy, name, parameters, effect) = parseMethodHead();
 				takeIndent();
 				var body = parseBlock();
-				return Op.Some(new Ast.Method(locFrom(start), isStatic, returnTy, name, parameters, effect, body));
+				return Op.Some(new Ast.Method(locFrom(start), isStatic, typeParameters, returnTy, name, parameters, effect, body));
 			case MethodKw.Eof:
 				return Op<Ast.Method>.None;
 			case MethodKw.Is:
@@ -223,7 +249,7 @@ sealed class Parser : ExprParser {
 		var name = takeName();
 		takeLparen();
 
-		var selfEffect = Model.Effect.Pure;
+		var selfEffect = Model.Effect.pure;
 		Arr<Ast.Parameter> parameters;
 		if (tryTakeRparen())
 			parameters = Arr.empty<Ast.Parameter>();

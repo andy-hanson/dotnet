@@ -1,13 +1,15 @@
-Klass(
+ClassDeclaration(
   loc: 0-340,
   head: Static(),
-  membersMap: Dict<Sym, Member>(
+  membersMap: Dict<Sym, MemberDeclaration>(
     main: MethodWithBody(
       loc: 0-243,
       isStatic: true,
       returnTy: Id(
         effect: "pure",
-        clsId: "Void"),
+        clsId: Id(
+          classDeclarationId: "Void",
+          typeArgumentIds: [])),
       name: "main",
       selfEffect: "pure",
       parameters: [],
@@ -23,15 +25,19 @@ Klass(
             target: Literal(
               loc: 21-22,
               value: 1),
-            method: Id(
-              klassId: "Nat",
-              name: "+"),
+            method: MethodInst(
+              decl: Id(
+                klassId: "Nat",
+                name: "+"),
+              typeArguments: []),
             args: [Literal(
               loc: 25-26,
               value: 2)]),
-          method: Id(
-            klassId: "Nat",
-            name: "*"),
+          method: MethodInst(
+            decl: Id(
+              klassId: "Nat",
+              name: "*"),
+            typeArguments: []),
           args: [Literal(
             loc: 29-30,
             value: 3)]),
@@ -43,9 +49,11 @@ Klass(
               loc: 39-47,
               target: AccessLocal(
                 local: "a"),
-              method: Id(
-                klassId: "Nat",
-                name: "=="),
+              method: MethodInst(
+                decl: Id(
+                  klassId: "Nat",
+                  name: "=="),
+                typeArguments: []),
               args: [Literal(
                 loc: 44-45,
                 value: 9)])),
@@ -57,14 +65,18 @@ Klass(
             value: InstanceMethodCall(
               loc: 51-65,
               target: StaticMethodCall(
-                method: Id(
-                  klassId: "",
-                  name: "double"),
+                method: MethodInst(
+                  decl: Id(
+                    klassId: "",
+                    name: "double"),
+                  typeArguments: []),
                 args: [AccessLocal(
                   local: "a")]),
-              method: Id(
-                klassId: "Nat",
-                name: "+"),
+              method: MethodInst(
+                decl: Id(
+                  klassId: "Nat",
+                  name: "+"),
+                typeArguments: []),
               args: [Literal(
                 loc: 62-63,
                 value: 1)]),
@@ -76,9 +88,11 @@ Klass(
                   loc: 72-81,
                   target: AccessLocal(
                     local: "b"),
-                  method: Id(
-                    klassId: "Nat",
-                    name: "=="),
+                  method: MethodInst(
+                    decl: Id(
+                      klassId: "Nat",
+                      name: "=="),
+                    typeArguments: []),
                   args: [Literal(
                     loc: 77-79,
                     value: 19)])),
@@ -88,16 +102,20 @@ Klass(
                   loc: 81-82,
                   name: "c"),
                 value: StaticMethodCall(
-                  method: Id(
-                    klassId: "",
-                    name: "double"),
+                  method: MethodInst(
+                    decl: Id(
+                      klassId: "",
+                      name: "double"),
+                    typeArguments: []),
                   args: [InstanceMethodCall(
                     loc: 93-100,
                     target: AccessLocal(
                       local: "a"),
-                    method: Id(
-                      klassId: "Nat",
-                      name: "+"),
+                    method: MethodInst(
+                      decl: Id(
+                        klassId: "Nat",
+                        name: "+"),
+                      typeArguments: []),
                     args: [Literal(
                       loc: 97-98,
                       value: 1)])]),
@@ -109,9 +127,11 @@ Klass(
                       loc: 107-117,
                       target: AccessLocal(
                         local: "c"),
-                      method: Id(
-                        klassId: "Nat",
-                        name: "=="),
+                      method: MethodInst(
+                        decl: Id(
+                          klassId: "Nat",
+                          name: "=="),
+                        typeArguments: []),
                       args: [Literal(
                         loc: 112-114,
                         value: 20)])),
@@ -121,22 +141,28 @@ Klass(
                       loc: 117-118,
                       name: "d"),
                     value: StaticMethodCall(
-                      method: Id(
-                        klassId: "",
-                        name: "add"),
+                      method: MethodInst(
+                        decl: Id(
+                          klassId: "",
+                          name: "add"),
+                        typeArguments: []),
                       args: [
                         InstanceMethodCall(
                           loc: 126-139,
                           target: StaticMethodCall(
-                            method: Id(
-                              klassId: "",
-                              name: "double"),
+                            method: MethodInst(
+                              decl: Id(
+                                klassId: "",
+                                name: "double"),
+                              typeArguments: []),
                             args: [Literal(
                               loc: 133-134,
                               value: 1)]),
-                          method: Id(
-                            klassId: "Nat",
-                            name: "+"),
+                          method: MethodInst(
+                            decl: Id(
+                              klassId: "Nat",
+                              name: "+"),
+                            typeArguments: []),
                           args: [Literal(
                             loc: 137-138,
                             value: 1)]),
@@ -145,9 +171,11 @@ Klass(
                           target: Literal(
                             loc: 140-141,
                             value: 2),
-                          method: Id(
-                            klassId: "Nat",
-                            name: "*"),
+                          method: MethodInst(
+                            decl: Id(
+                              klassId: "Nat",
+                              name: "*"),
+                            typeArguments: []),
                           args: [Literal(
                             loc: 144-145,
                             value: 2)])
@@ -160,9 +188,11 @@ Klass(
                           loc: 154-163,
                           target: AccessLocal(
                             local: "d"),
-                          method: Id(
-                            klassId: "Nat",
-                            name: "=="),
+                          method: MethodInst(
+                            decl: Id(
+                              klassId: "Nat",
+                              name: "=="),
+                            typeArguments: []),
                           args: [Literal(
                             loc: 159-160,
                             value: 7)])),
@@ -174,22 +204,28 @@ Klass(
                         value: InstanceMethodCall(
                           loc: 167-188,
                           target: StaticMethodCall(
-                            method: Id(
-                              klassId: "",
-                              name: "double"),
+                            method: MethodInst(
+                              decl: Id(
+                                klassId: "",
+                                name: "double"),
+                              typeArguments: []),
                             args: [InstanceMethodCall(
                               loc: 176-182,
                               target: AccessLocal(
                                 local: "a"),
-                              method: Id(
-                                klassId: "Nat",
-                                name: "+"),
+                              method: MethodInst(
+                                decl: Id(
+                                  klassId: "Nat",
+                                  name: "+"),
+                                typeArguments: []),
                               args: [Literal(
                                 loc: 180-181,
                                 value: 1)])]),
-                          method: Id(
-                            klassId: "Nat",
-                            name: "+"),
+                          method: MethodInst(
+                            decl: Id(
+                              klassId: "Nat",
+                              name: "+"),
+                            typeArguments: []),
                           args: [Literal(
                             loc: 185-186,
                             value: 1)]),
@@ -201,9 +237,11 @@ Klass(
                               loc: 195-205,
                               target: AccessLocal(
                                 local: "e"),
-                              method: Id(
-                                klassId: "Nat",
-                                name: "=="),
+                              method: MethodInst(
+                                decl: Id(
+                                  klassId: "Nat",
+                                  name: "=="),
+                                typeArguments: []),
                               args: [Literal(
                                 loc: 200-202,
                                 value: 21)])),
@@ -213,17 +251,21 @@ Klass(
                               loc: 205-206,
                               name: "f"),
                             value: StaticMethodCall(
-                              method: Id(
-                                klassId: "",
-                                name: "add"),
+                              method: MethodInst(
+                                decl: Id(
+                                  klassId: "",
+                                  name: "add"),
+                                typeArguments: []),
                               args: [
                                 Literal(
                                   loc: 214-215,
                                   value: 1),
                                 StaticMethodCall(
-                                  method: Id(
-                                    klassId: "",
-                                    name: "mul"),
+                                  method: MethodInst(
+                                    decl: Id(
+                                      klassId: "",
+                                      name: "mul"),
+                                    typeArguments: []),
                                   args: [
                                     Literal(
                                       loc: 222-223,
@@ -239,9 +281,11 @@ Klass(
                                 loc: 235-243,
                                 target: AccessLocal(
                                   local: "f"),
-                                method: Id(
-                                  klassId: "Nat",
-                                  name: "=="),
+                                method: MethodInst(
+                                  decl: Id(
+                                    klassId: "Nat",
+                                    name: "=="),
+                                  typeArguments: []),
                                 args: [Literal(
                                   loc: 240-241,
                                   value: 7)])))))))))))))),
@@ -250,14 +294,18 @@ Klass(
       isStatic: true,
       returnTy: Id(
         effect: "pure",
-        clsId: "Nat"),
+        clsId: Id(
+          classDeclarationId: "Nat",
+          typeArgumentIds: [])),
       name: "double",
       selfEffect: "pure",
       parameters: [Parameter(
         loc: 258-263,
         ty: Id(
           effect: "pure",
-          clsId: "Nat"),
+          clsId: Id(
+            classDeclarationId: "Nat",
+            typeArgumentIds: [])),
         name: "x",
         index: 0)],
       body: InstanceMethodCall(
@@ -268,12 +316,16 @@ Klass(
             loc: 258-263,
             ty: Id(
               effect: "pure",
-              clsId: "Nat"),
+              clsId: Id(
+                classDeclarationId: "Nat",
+                typeArgumentIds: [])),
             name: "x",
             index: 0)),
-        method: Id(
-          klassId: "Nat",
-          name: "*"),
+        method: MethodInst(
+          decl: Id(
+            klassId: "Nat",
+            name: "*"),
+          typeArguments: []),
         args: [Literal(
           loc: 270-271,
           value: 2)])),
@@ -282,7 +334,9 @@ Klass(
       isStatic: true,
       returnTy: Id(
         effect: "pure",
-        clsId: "Nat"),
+        clsId: Id(
+          classDeclarationId: "Nat",
+          typeArgumentIds: [])),
       name: "add",
       selfEffect: "pure",
       parameters: [
@@ -290,14 +344,18 @@ Klass(
           loc: 285-290,
           ty: Id(
             effect: "pure",
-            clsId: "Nat"),
+            clsId: Id(
+              classDeclarationId: "Nat",
+              typeArgumentIds: [])),
           name: "a",
           index: 0),
         Parameter(
           loc: 292-297,
           ty: Id(
             effect: "pure",
-            clsId: "Nat"),
+            clsId: Id(
+              classDeclarationId: "Nat",
+              typeArgumentIds: [])),
           name: "b",
           index: 1)
       ],
@@ -309,19 +367,25 @@ Klass(
             loc: 285-290,
             ty: Id(
               effect: "pure",
-              clsId: "Nat"),
+              clsId: Id(
+                classDeclarationId: "Nat",
+                typeArgumentIds: [])),
             name: "a",
             index: 0)),
-        method: Id(
-          klassId: "Nat",
-          name: "+"),
+        method: MethodInst(
+          decl: Id(
+            klassId: "Nat",
+            name: "+"),
+          typeArguments: []),
         args: [AccessParameter(
           loc: 304-305,
           param: Parameter(
             loc: 292-297,
             ty: Id(
               effect: "pure",
-              clsId: "Nat"),
+              clsId: Id(
+                classDeclarationId: "Nat",
+                typeArgumentIds: [])),
             name: "b",
             index: 1))])),
     mul: MethodWithBody(
@@ -329,7 +393,9 @@ Klass(
       isStatic: true,
       returnTy: Id(
         effect: "pure",
-        clsId: "Nat"),
+        clsId: Id(
+          classDeclarationId: "Nat",
+          typeArgumentIds: [])),
       name: "mul",
       selfEffect: "pure",
       parameters: [
@@ -337,14 +403,18 @@ Klass(
           loc: 319-324,
           ty: Id(
             effect: "pure",
-            clsId: "Nat"),
+            clsId: Id(
+              classDeclarationId: "Nat",
+              typeArgumentIds: [])),
           name: "a",
           index: 0),
         Parameter(
           loc: 326-331,
           ty: Id(
             effect: "pure",
-            clsId: "Nat"),
+            clsId: Id(
+              classDeclarationId: "Nat",
+              typeArgumentIds: [])),
           name: "b",
           index: 1)
       ],
@@ -356,18 +426,24 @@ Klass(
             loc: 319-324,
             ty: Id(
               effect: "pure",
-              clsId: "Nat"),
+              clsId: Id(
+                classDeclarationId: "Nat",
+                typeArgumentIds: [])),
             name: "a",
             index: 0)),
-        method: Id(
-          klassId: "Nat",
-          name: "*"),
+        method: MethodInst(
+          decl: Id(
+            klassId: "Nat",
+            name: "*"),
+          typeArguments: []),
         args: [AccessParameter(
           loc: 338-339,
           param: Parameter(
             loc: 326-331,
             ty: Id(
               effect: "pure",
-              clsId: "Nat"),
+              clsId: Id(
+                classDeclarationId: "Nat",
+                typeArgumentIds: [])),
             name: "b",
             index: 1))]))))

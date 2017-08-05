@@ -115,7 +115,7 @@ sealed class Compiler {
 		}
 	}
 
-	(ModuleOrFail module, bool isReused) doCompileSingle(Path logicalPath, DocumentInfo document, Arr<Ast.Import> importAsts, Ast.Klass classAst, Path fullPath, bool isIndex) {
+	(ModuleOrFail module, bool isReused) doCompileSingle(Path logicalPath, DocumentInfo document, Arr<Ast.Import> importAsts, Ast.ClassDeclaration classAst, Path fullPath, bool isIndex) {
 		var (importsResult, allDependenciesReused) = resolveImports(fullPath, importAsts);
 
 		// We will only bother looking at the old module if all of our dependencies were safely reused.

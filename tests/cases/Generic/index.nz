@@ -1,0 +1,5 @@
+fun[T] T f(T t)
+	t
+
+fun Void main()
+	assert f[Nat] 0 == 0

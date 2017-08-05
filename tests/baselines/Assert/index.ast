@@ -1,18 +1,20 @@
 Module(
   loc: 0-29,
   imports: [],
-  klass: Klass(
+  klass: ClassDeclaration(
     loc: 0-29,
+    typeParameters: [],
     head: null,
     supers: [],
     methods: [Method(
       loc: 0-29,
       isStatic: true,
+      typeParameters: [],
       returnTy: Ty(
         loc: 4-8,
-        cls: Access(
-          loc: 4-8,
-          name: "Void")),
+        effect: "pure",
+        name: "Void",
+        tyArgs: []),
       name: "main",
       parameters: [],
       body: Assert(

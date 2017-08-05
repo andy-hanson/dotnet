@@ -72,13 +72,15 @@ namespace Model {
 
 	internal sealed class AccessParameter : Expr, ToData<AccessParameter> {
 		[UpPointer] internal readonly Parameter param;
-		internal AccessParameter(Loc loc, Parameter param) : base(loc) {
+		[NotData] internal readonly Ty _ty;
+		internal override Ty ty => _ty;
+		internal AccessParameter(Loc loc, Parameter param, Ty ty) : base(loc) {
 			this.param = param;
+			this._ty = ty;
 		}
 		internal void Deconstruct(out Loc loc, out Parameter param) { loc = this.loc; param = this.param; }
 
 		internal override IEnumerable<Expr> children() => noChildren;
-		internal override Ty ty => param.ty;
 
 		public override bool deepEqual(Expr e) => e is AccessParameter a && deepEqual(a);
 		public bool deepEqual(AccessParameter a) => locEq(a) && param.equalsId<Parameter, Sym>(a.param);
@@ -331,38 +333,43 @@ namespace Model {
 	}
 
 	internal sealed class StaticMethodCall : Expr, ToData<StaticMethodCall> {
-		[UpPointer] internal readonly MethodWithBodyLike method;
+		[UpPointer] internal readonly MethodInst method;
 		internal readonly Arr<Expr> args;
-		internal StaticMethodCall(Loc loc, MethodWithBodyLike method, Arr<Expr> args) : base(loc) {
+		internal readonly Ty _ty;
+		internal override Ty ty => _ty;
+		internal StaticMethodCall(Loc loc, MethodInst method, Arr<Expr> args, Ty ty) : base(loc) {
 			assert(method.isStatic);
 			this.method = method;
 			this.args = args;
 			foreach (var arg in args)
 				arg.parent = this;
+			this._ty = ty;
 		}
-		internal void Deconstruct(out Loc loc, out MethodWithBodyLike method, out Arr<Expr> args) {
+		internal void Deconstruct(out Loc loc, out MethodInst method, out Arr<Expr> args) {
 			loc = this.loc;
 			method = this.method;
 			args = this.args;
 		}
 
 		internal override IEnumerable<Expr> children() => args;
-		internal override Ty ty => method.returnTy;
 
 		public override bool deepEqual(Expr e) => e is StaticMethodCall s && deepEqual(s);
 		public bool deepEqual(StaticMethodCall s) =>
-			method.equalsId<Method, Method.Id>(s.method) &&
+			locEq(s) &&
+			method.deepEqual(s.method) &&
 			args.deepEqual(s.args);
 		public override Dat toDat() => Dat.of(this,
-			nameof(method), method.getId(),
+			nameof(method), method,
 			nameof(args), Dat.arr(args));
 	}
 
 	internal sealed class InstanceMethodCall : Expr, ToData<InstanceMethodCall> {
 		internal readonly Expr target;
-		[UpPointer] internal readonly Method method;
+		[UpPointer] internal readonly MethodInst method;
 		internal readonly Arr<Expr> args;
-		internal InstanceMethodCall(Loc loc, Expr target, Method method, Arr<Expr> args) : base(loc) {
+		internal readonly Ty _ty;
+		internal override Ty ty => _ty;
+		internal InstanceMethodCall(Loc loc, Expr target, MethodInst method, Arr<Expr> args, Ty ty) : base(loc) {
 			assert(!method.isStatic);
 			this.target = target;
 			target.parent = this;
@@ -370,8 +377,9 @@ namespace Model {
 			this.args = args;
 			foreach (var arg in args)
 				arg.parent = this;
+			this._ty = ty;
 		}
-		internal void Deconstruct(out Loc loc, out Expr target, out Method method, out Arr<Expr> args) {
+		internal void Deconstruct(out Loc loc, out Expr target, out MethodInst method, out Arr<Expr> args) {
 			loc = this.loc;
 			target = this.target;
 			method = this.method;
@@ -383,48 +391,49 @@ namespace Model {
 			foreach (var arg in args)
 				yield return arg;
 		}
-		internal override Ty ty => method.returnTy;
 
 		public override bool deepEqual(Expr e) => e is InstanceMethodCall m && deepEqual(m);
 		public bool deepEqual(InstanceMethodCall m) =>
 			locEq(m) &&
 			target.deepEqual(m.target) &&
-			method.equalsId<Method, Method.Id>(m.method) &&
+			method.deepEqual(m.method) &&
 			args.deepEqual(m.args);
 		public override Dat toDat() => Dat.of(this,
 			nameof(loc), loc,
 			nameof(target), target,
-			nameof(method), method.getId(),
+			nameof(method), method,
 			nameof(args), Dat.arr(args));
 	}
 
 	internal sealed class MyInstanceMethodCall : Expr, ToData<MyInstanceMethodCall> {
-		[UpPointer] internal readonly Method method;
+		[UpPointer] internal readonly MethodInst method;
 		internal readonly Arr<Expr> args;
-		internal MyInstanceMethodCall(Loc loc, Method method, Arr<Expr> args) : base(loc) {
+		[NotData] readonly Ty _ty;
+		internal override Ty ty => _ty;
+		internal MyInstanceMethodCall(Loc loc, MethodInst method, Arr<Expr> args, Ty ty) : base(loc) {
 			assert(!method.isStatic);
 			this.method = method;
 			this.args = args;
 			foreach (var arg in args)
 				arg.parent = this;
+			this._ty = ty;
 		}
-		internal void Deconstruct(out Loc loc, out Method method, out Arr<Expr> args) {
+		internal void Deconstruct(out Loc loc, out MethodInst method, out Arr<Expr> args) {
 			loc = this.loc;
 			method = this.method;
 			args = this.args;
 		}
 
 		internal override IEnumerable<Expr> children() => args;
-		internal override Ty ty => method.returnTy;
 
 		public override bool deepEqual(Expr e) => e is MyInstanceMethodCall m && deepEqual(m);
 		public bool deepEqual(MyInstanceMethodCall m) =>
 			locEq(m) &&
-			method.equalsId<Method, Method.Id>(m.method) &&
+			method.deepEqual(m.method) &&
 			args.deepEqual(m.args);
 		public override Dat toDat() => Dat.of(this,
 			nameof(loc), loc,
-			nameof(method), method.getId(),
+			nameof(method), method,
 			nameof(args), Dat.arr(args));
 	}
 
@@ -434,70 +443,80 @@ namespace Model {
 		Can't directly construct any other class.
 		Also, length must match with args.
 		*/
-		[ParentPointer] internal readonly KlassHead.Slots slots;
+		[ParentPointer] internal readonly ClassHead.Slots slots;
+		internal readonly Arr<Ty> tyArgs;
 		internal readonly Arr<Expr> args;
 
-		internal New(Loc loc, KlassHead.Slots slots, Arr<Expr> args) : base(loc) {
+		internal New(Loc loc, ClassHead.Slots slots, Arr<Ty> tyArgs, Arr<Expr> args) : base(loc) {
 			this.slots = slots;
+			this.tyArgs = tyArgs;
 			this.args = args;
 			foreach (var arg in args)
 				arg.parent = this;
 		}
-		internal void Deconstruct(out Loc loc, out KlassHead.Slots slots, out Arr<Expr> args) {
+		internal void Deconstruct(out Loc loc, out ClassHead.Slots slots, out Arr<Ty> tyArgs, out Arr<Expr> args) {
 			loc = this.loc;
 			slots = this.slots;
+			tyArgs = this.tyArgs;
 			args = this.args;
 		}
 
-		internal Klass klass => slots.klass;
+		internal InstCls klass => InstCls.of(slots.klass, tyArgs);
 		internal override IEnumerable<Expr> children() => args;
 		internal override Ty ty => Ty.io(klass); // A new object always has full permission.
 
 		public override bool deepEqual(Expr e) => e is New n && deepEqual(n);
 		// Don't need to compare `klass` since that has only one legal value.
-		public bool deepEqual(New n) => args.deepEqual(n.args);
+		public bool deepEqual(New n) =>
+			locEq(n) &&
+			tyArgs.eachEqualId<Ty, TyId>(n.tyArgs) &&
+			args.deepEqual(n.args);
 		public override Dat toDat() => Dat.of(this, nameof(args), Dat.arr(args));
 	}
 
 	internal sealed class GetMySlot : Expr, ToData<GetMySlot> {
-		[UpPointer] internal readonly Slot slot;
-		internal GetMySlot(Loc loc, Slot slot) : base(loc) {
+		[UpPointer] internal readonly SlotDeclaration slot;
+		[NotData] readonly Ty _ty;
+		internal override Ty ty => _ty;
+		internal GetMySlot(Loc loc, SlotDeclaration slot, Ty ty) : base(loc) {
 			this.slot = slot;
+			this._ty = ty;
 		}
-		internal void Deconstruct(out Loc loc, out Slot slot) {
+		internal void Deconstruct(out Loc loc, out SlotDeclaration slot) {
 			loc = this.loc;
 			slot = this.slot;
 		}
 		internal override IEnumerable<Expr> children() => noChildren;
-		internal override Ty ty => slot.ty;
 
 		public override bool deepEqual(Expr e) => e is GetMySlot g && deepEqual(g);
-		public bool deepEqual(GetMySlot g) => slot.equalsId<Slot, Slot.Id>(g.slot);
+		public bool deepEqual(GetMySlot g) => slot.equalsId<SlotDeclaration, SlotDeclaration.Id>(g.slot);
 		public override Dat toDat() => Dat.of(this, nameof(slot), slot.getId());
 	}
 
 	internal sealed class GetSlot : Expr, ToData<GetSlot> {
 		internal readonly Expr target;
-		[UpPointer] internal readonly Slot slot;
-		internal GetSlot(Loc loc, Expr target, Slot slot) : base(loc) {
+		[UpPointer] internal readonly SlotDeclaration slot;
+		[NotData] readonly Ty _ty;
+		internal override Ty ty => _ty;
+		internal GetSlot(Loc loc, Expr target, SlotDeclaration slot, Ty ty) : base(loc) {
 			this.target = target;
 			target.parent = this;
 			this.slot = slot;
+			this._ty = ty;
 		}
-		internal void Deconstruct(out Loc loc, out Expr target, out Slot slot) {
+		internal void Deconstruct(out Loc loc, out Expr target, out SlotDeclaration slot) {
 			loc = this.loc;
 			target = this.target;
 			slot = this.slot;
 		}
 
 		internal override IEnumerable<Expr> children() { yield return target; }
-		internal override Ty ty => TyUtils.getTyWithNarrowedEffect(target.ty.effect, slot.ty);
 
 		public override bool deepEqual(Expr e) => e is GetSlot g && deepEqual(g);
 		public bool deepEqual(GetSlot g) =>
 			locEq(g) &&
 			target.deepEqual(g.target) &&
-			slot.equalsId<Slot, Slot.Id>(g.slot);
+			slot.equalsId<SlotDeclaration, SlotDeclaration.Id>(g.slot);
 		public override Dat toDat() => Dat.of(this,
 			nameof(loc), loc,
 			nameof(target), target,
@@ -505,14 +524,14 @@ namespace Model {
 	}
 
 	internal sealed class SetSlot : Expr, ToData<SetSlot> {
-		[UpPointer] internal readonly Slot slot;
+		[UpPointer] internal readonly SlotDeclaration slot;
 		internal readonly Expr value;
-		internal SetSlot(Loc loc, Slot slot, Expr value) : base(loc) {
+		internal SetSlot(Loc loc, SlotDeclaration slot, Expr value) : base(loc) {
 			this.slot = slot;
 			this.value = value;
 			value.parent = this;
 		}
-		internal void Deconstruct(out Loc loc, out Slot slot, out Expr value) {
+		internal void Deconstruct(out Loc loc, out SlotDeclaration slot, out Expr value) {
 			loc = this.loc;
 			slot = this.slot;
 			value = this.value;
@@ -524,7 +543,7 @@ namespace Model {
 		public override bool deepEqual(Expr e) => e is SetSlot s && deepEqual(s);
 		public bool deepEqual(SetSlot s) =>
 			locEq(s) &&
-			slot.equalsId<Slot, Slot.Id>(s.slot) &&
+			slot.equalsId<SlotDeclaration, SlotDeclaration.Id>(s.slot) &&
 			value.deepEqual(s.value);
 		public override Dat toDat() => Dat.of(this,
 			nameof(loc), loc,

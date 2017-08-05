@@ -1,13 +1,15 @@
-Klass(
+ClassDeclaration(
   loc: 0-100,
   head: Static(),
-  membersMap: Dict<Sym, Member>(
+  membersMap: Dict<Sym, MemberDeclaration>(
     main: MethodWithBody(
       loc: 0-62,
       isStatic: true,
       returnTy: Id(
         effect: "pure",
-        clsId: "Void"),
+        clsId: Id(
+          classDeclarationId: "Void",
+          typeArgumentIds: [])),
       name: "main",
       selfEffect: "pure",
       parameters: [],
@@ -18,15 +20,19 @@ Klass(
           asserted: InstanceMethodCall(
             loc: 24-39,
             target: StaticMethodCall(
-              method: Id(
-                klassId: "",
-                name: "f"),
+              method: MethodInst(
+                decl: Id(
+                  klassId: "",
+                  name: "f"),
+                typeArguments: []),
               args: [Literal(
                 loc: 27-31,
                 value: true)]),
-            method: Id(
-              klassId: "Nat",
-              name: "=="),
+            method: MethodInst(
+              decl: Id(
+                klassId: "Nat",
+                name: "=="),
+              typeArguments: []),
             args: [Literal(
               loc: 36-37,
               value: 1)])),
@@ -35,15 +41,19 @@ Klass(
           asserted: InstanceMethodCall(
             loc: 46-62,
             target: StaticMethodCall(
-              method: Id(
-                klassId: "",
-                name: "f"),
+              method: MethodInst(
+                decl: Id(
+                  klassId: "",
+                  name: "f"),
+                typeArguments: []),
               args: [Literal(
                 loc: 49-54,
                 value: false)]),
-            method: Id(
-              klassId: "Nat",
-              name: "=="),
+            method: MethodInst(
+              decl: Id(
+                klassId: "Nat",
+                name: "=="),
+              typeArguments: []),
             args: [Literal(
               loc: 59-60,
               value: 2)])))),
@@ -52,14 +62,18 @@ Klass(
       isStatic: true,
       returnTy: Id(
         effect: "pure",
-        clsId: "Nat"),
+        clsId: Id(
+          classDeclarationId: "Nat",
+          typeArgumentIds: [])),
       name: "f",
       selfEffect: "pure",
       parameters: [Parameter(
         loc: 72-78,
         ty: Id(
           effect: "pure",
-          clsId: "Bool"),
+          clsId: Id(
+            classDeclarationId: "Bool",
+            typeArgumentIds: [])),
         name: "b",
         index: 0)],
       body: IfElse(
@@ -70,7 +84,9 @@ Klass(
             loc: 72-78,
             ty: Id(
               effect: "pure",
-              clsId: "Bool"),
+              clsId: Id(
+                classDeclarationId: "Bool",
+                typeArgumentIds: [])),
             name: "b",
             index: 0)),
         then: Literal(

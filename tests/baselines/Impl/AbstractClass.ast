@@ -1,27 +1,29 @@
 Module(
   loc: 0-56,
   imports: [],
-  klass: Klass(
+  klass: ClassDeclaration(
     loc: 0-56,
+    typeParameters: [],
     head: Abstract(
       loc: 0-19),
     supers: [],
     methods: [Method(
       loc: 19-56,
       isStatic: true,
+      typeParameters: [],
       returnTy: Ty(
         loc: 23-26,
-        cls: Access(
-          loc: 23-26,
-          name: "Nat")),
+        effect: "pure",
+        name: "Nat",
+        tyArgs: []),
       name: "getN",
       parameters: [Parameter(
         loc: 32-47,
         ty: Ty(
           loc: 32-45,
-          cls: Access(
-            loc: 32-45,
-            name: "AbstractClass")),
+          effect: "pure",
+          name: "AbstractClass",
+          tyArgs: []),
         name: "a")],
       body: Call(
         loc: 50-55,
@@ -31,4 +33,5 @@ Module(
             loc: 50-51,
             name: "a"),
           propertyName: "n"),
+        typeArguments: [],
         args: []))]))

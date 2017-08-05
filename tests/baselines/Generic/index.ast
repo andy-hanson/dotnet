@@ -1,0 +1,50 @@
+Module(
+  loc: 0-58,
+  imports: [],
+  klass: ClassDeclaration(
+    loc: 0-58,
+    typeParameters: [],
+    head: null,
+    supers: [],
+    methods: [
+      Method(
+        loc: 0-20,
+        isStatic: true,
+        typeParameters: ["T"],
+        returnTy: Ty(
+          loc: 7-8,
+          effect: "pure",
+          name: "T",
+          tyArgs: []),
+        name: "f",
+        parameters: [Parameter(
+          loc: 11-14,
+          ty: Ty(
+            loc: 11-12,
+            effect: "pure",
+            name: "T",
+            tyArgs: []),
+          name: "t")],
+        body: Access(
+          loc: 17-18,
+          name: "t")),
+      Method(
+        loc: 20-58,
+        isStatic: true,
+        typeParameters: [],
+        returnTy: Ty(
+          loc: 24-28,
+          effect: "pure",
+          name: "Void",
+          tyArgs: []),
+        name: "main",
+        parameters: [],
+        body: Assert(
+          loc: 37-58,
+          asserted: OperatorCall(
+            loc: 44-58,
+            oper: "==",
+            right: Literal(
+              loc: 56-57,
+              value: 0))))
+    ]))

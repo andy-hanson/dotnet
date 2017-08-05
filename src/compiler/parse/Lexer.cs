@@ -413,6 +413,7 @@ abstract class Lexer : Reader {
 	protected void takeSpace() => expectCharacter(' ', "space");
 	protected void takeLparen() => expectCharacter('(', "'('");
 	protected void takeRparen() => expectCharacter(')', "')'");
+	protected void takeLbracket() => expectCharacter('[', "'['");
 	protected void takeComma() => expectCharacter(',', "','");
 	protected void takeDot() => expectCharacter('.', "'.'");
 	protected void takeEquals() => expectCharacter('=', "'='");
@@ -421,6 +422,8 @@ abstract class Lexer : Reader {
 	protected bool tryTakeRparen() => tryTake(')');
 	protected bool tryTakeDot() => tryTake('.');
 	protected bool tryTakeColon() => tryTake(':');
+	protected bool tryTakeLbracket() => tryTake('[');
+	protected bool tryTakeRbracket() => tryTake(']');
 
 	protected void takeSpecificKeyword(string kw) {
 		var startPos = pos;

@@ -1,19 +1,21 @@
 Module(
   loc: 0-340,
   imports: [],
-  klass: Klass(
+  klass: ClassDeclaration(
     loc: 0-340,
+    typeParameters: [],
     head: null,
     supers: [],
     methods: [
       Method(
         loc: 0-243,
         isStatic: true,
+        typeParameters: [],
         returnTy: Ty(
           loc: 4-8,
-          cls: Access(
-            loc: 4-8,
-            name: "Void")),
+          effect: "pure",
+          name: "Void",
+          tyArgs: []),
         name: "main",
         parameters: [],
         body: Let(
@@ -68,6 +70,7 @@ Module(
                     target: Access(
                       loc: 85-91,
                       name: "double"),
+                    typeArguments: [],
                     args: [OperatorCall(
                       loc: 93-100,
                       oper: "+",
@@ -94,6 +97,7 @@ Module(
                         target: Access(
                           loc: 121-124,
                           name: "add"),
+                        typeArguments: [],
                         args: [
                           OperatorCall(
                             loc: 126-139,
@@ -149,6 +153,7 @@ Module(
                                 target: Access(
                                   loc: 209-212,
                                   name: "add"),
+                                typeArguments: [],
                                 args: [
                                   Literal(
                                     loc: 214-215,
@@ -158,6 +163,7 @@ Module(
                                     target: Access(
                                       loc: 217-220,
                                       name: "mul"),
+                                    typeArguments: [],
                                     args: [
                                       Literal(
                                         loc: 222-223,
@@ -178,19 +184,20 @@ Module(
       Method(
         loc: 243-273,
         isStatic: true,
+        typeParameters: [],
         returnTy: Ty(
           loc: 247-250,
-          cls: Access(
-            loc: 247-250,
-            name: "Nat")),
+          effect: "pure",
+          name: "Nat",
+          tyArgs: []),
         name: "double",
         parameters: [Parameter(
           loc: 258-263,
           ty: Ty(
             loc: 258-261,
-            cls: Access(
-              loc: 258-261,
-              name: "Nat")),
+            effect: "pure",
+            name: "Nat",
+            tyArgs: []),
           name: "x")],
         body: OperatorCall(
           loc: 266-273,
@@ -201,28 +208,29 @@ Module(
       Method(
         loc: 273-307,
         isStatic: true,
+        typeParameters: [],
         returnTy: Ty(
           loc: 277-280,
-          cls: Access(
-            loc: 277-280,
-            name: "Nat")),
+          effect: "pure",
+          name: "Nat",
+          tyArgs: []),
         name: "add",
         parameters: [
           Parameter(
             loc: 285-290,
             ty: Ty(
               loc: 285-288,
-              cls: Access(
-                loc: 285-288,
-                name: "Nat")),
+              effect: "pure",
+              name: "Nat",
+              tyArgs: []),
             name: "a"),
           Parameter(
             loc: 292-297,
             ty: Ty(
               loc: 292-295,
-              cls: Access(
-                loc: 292-295,
-                name: "Nat")),
+              effect: "pure",
+              name: "Nat",
+              tyArgs: []),
             name: "b")
         ],
         body: OperatorCall(
@@ -234,28 +242,29 @@ Module(
       Method(
         loc: 307-340,
         isStatic: true,
+        typeParameters: [],
         returnTy: Ty(
           loc: 311-314,
-          cls: Access(
-            loc: 311-314,
-            name: "Nat")),
+          effect: "pure",
+          name: "Nat",
+          tyArgs: []),
         name: "mul",
         parameters: [
           Parameter(
             loc: 319-324,
             ty: Ty(
               loc: 319-322,
-              cls: Access(
-                loc: 319-322,
-                name: "Nat")),
+              effect: "pure",
+              name: "Nat",
+              tyArgs: []),
             name: "a"),
           Parameter(
             loc: 326-331,
             ty: Ty(
               loc: 326-329,
-              cls: Access(
-                loc: 326-329,
-                name: "Nat")),
+              effect: "pure",
+              name: "Nat",
+              tyArgs: []),
             name: "b")
         ],
         body: OperatorCall(

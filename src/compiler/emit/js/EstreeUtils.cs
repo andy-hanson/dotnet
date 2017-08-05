@@ -1,6 +1,23 @@
+using static Utils;
+
 static class EstreeUtils {
-	internal static bool isAsync(Model.Method method) =>
-		method.selfEffect.canIo || method.parameters.some(p => p.ty.effect.canIo);
+	internal static bool isAsync(Model.MethodDeclaration method) =>
+		method.selfEffect.canIo || method.parameters.some(p => canPerformIo(p.ty));
+
+	internal static bool canPerformIo(Model.Ty ty) {
+		switch (ty) {
+			case Model.TypeParameter tp:
+				// Type parameter might be `io`, but we can't call it's io methods since we're just using it as a type parameter here.
+				return false;
+
+			case Model.PlainTy p:
+				return p.effect.canIo;
+
+			case Model.BogusTy _:
+			default:
+				throw unreachable();
+		}
+	}
 
 	internal static Estree.Identifier id(Loc loc, string name) =>
 		new Estree.Identifier(loc, name);

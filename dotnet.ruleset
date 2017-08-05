@@ -90,5 +90,6 @@
 		<Rule Id="S3925" Action="None" /> <!-- Ditto -->
 		<Rule Id="S1117" Action="None" /> <!-- Allow local variable to shadow method. Useful in `class C { int x; static create(int x) { ... } }` -->
 		<Rule Id="S3877" Action="None" /> <!-- Allow throwing exceptions -->
+		<Rule Id="S3246" Action="None" /> <!-- Allow invariant generics -->
 	</Rules>
 </RuleSet>

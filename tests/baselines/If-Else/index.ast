@@ -1,19 +1,21 @@
 Module(
   loc: 0-100,
   imports: [],
-  klass: Klass(
+  klass: ClassDeclaration(
     loc: 0-100,
+    typeParameters: [],
     head: null,
     supers: [],
     methods: [
       Method(
         loc: 0-62,
         isStatic: true,
+        typeParameters: [],
         returnTy: Ty(
           loc: 4-8,
-          cls: Access(
-            loc: 4-8,
-            name: "Void")),
+          effect: "pure",
+          name: "Void",
+          tyArgs: []),
         name: "main",
         parameters: [],
         body: Seq(
@@ -37,19 +39,20 @@ Module(
       Method(
         loc: 62-100,
         isStatic: true,
+        typeParameters: [],
         returnTy: Ty(
           loc: 66-69,
-          cls: Access(
-            loc: 66-69,
-            name: "Nat")),
+          effect: "pure",
+          name: "Nat",
+          tyArgs: []),
         name: "f",
         parameters: [Parameter(
           loc: 72-78,
           ty: Ty(
             loc: 72-76,
-            cls: Access(
-              loc: 72-76,
-              name: "Bool")),
+            effect: "pure",
+            name: "Bool",
+            tyArgs: []),
           name: "b")],
         body: IfElse(
           loc: 81-100,

@@ -76,7 +76,7 @@ static class JsBuiltins {
 		primitiveNzlibInstanceMethods = primitiveNzlibInstance.finish();
 	}
 
-	internal static Estree.Expression emitStaticMethodCall(ref bool usedNzlib, Method invokedMethod, Loc loc, Arr<Estree.Expression> args) {
+	internal static Estree.Expression emitStaticMethodCall(ref bool usedNzlib, MethodDeclaration invokedMethod, Loc loc, Arr<Estree.Expression> args) {
 		if (invokedMethod is BuiltinMethodWithBody b) {
 			if (primitiveSpecialTranslateStaticMethods.get(b, out var translator))
 				return translator(loc, args);
@@ -90,7 +90,7 @@ static class JsBuiltins {
 		return callPossiblyAsync(loc, isAsync(invokedMethod), access, args);
 	}
 
-	internal static Estree.Expression emitInstanceMethodCall(ref bool usedNzlib, Method invokedMethod, Loc loc, Estree.Expression target, Arr<Estree.Expression> args) {
+	internal static Estree.Expression emitInstanceMethodCall(ref bool usedNzlib, MethodDeclaration invokedMethod, Loc loc, Estree.Expression target, Arr<Estree.Expression> args) {
 		if (invokedMethod is BuiltinMethodWithBody b) {
 			if (primitiveSpecialTranslateInstanceMethods.get(b, out var translator))
 				return translator(loc, target, args);
@@ -104,7 +104,7 @@ static class JsBuiltins {
 		return callPossiblyAsync(loc, isAsync(invokedMethod), member, args);
 	}
 
-	internal static Estree.Expression emitMyInstanceMethodCall(ref bool usedNzlib, Method invokedMethod, Loc loc, Arr<Estree.Expression> args) {
+	internal static Estree.Expression emitMyInstanceMethodCall(ref bool usedNzlib, MethodDeclaration invokedMethod, Loc loc, Arr<Estree.Expression> args) {
 		if (invokedMethod is BuiltinMethodWithBody b) {
 			unused(usedNzlib);
 			throw TODO();
@@ -165,7 +165,7 @@ static class JsBuiltins {
 			var instance = Arr.builder<string>();
 
 			foreach (var (name, m) in k.membersMap) {
-				var method = (Method)m;
+				var method = (MethodDeclaration)m;
 				(method.isStatic ? statics : instance).add(escapeName(name));
 			}
 			foreach (var o in k.overrides)

@@ -3,26 +3,28 @@ Module(
   imports: [Global(
     loc: 7-18,
     path: ["Console-App"])],
-  klass: Klass(
+  klass: ClassDeclaration(
     loc: 20-94,
+    typeParameters: [],
     head: null,
     supers: [],
     methods: [Method(
       loc: 20-94,
       isStatic: true,
+      typeParameters: [],
       returnTy: Ty(
         loc: 24-28,
-        cls: Access(
-          loc: 24-28,
-          name: "Void")),
+        effect: "pure",
+        name: "Void",
+        tyArgs: []),
       name: "main",
       parameters: [Parameter(
         loc: 34-52,
         ty: Ty(
           loc: 34-48,
-          cls: Access(
-            loc: 37-48,
-            name: "Console-App")),
+          effect: "io",
+          name: "Console-App",
+          tyArgs: []),
         name: "app")],
       body: Call(
         loc: 55-94,
@@ -36,8 +38,10 @@ Module(
                 loc: 55-58,
                 name: "app"),
               propertyName: "stdout"),
+            typeArguments: [],
             args: []),
           propertyName: "write-line"),
+        typeArguments: [],
         args: [Literal(
           loc: 79-93,
           value: "Hello world!")]))]))

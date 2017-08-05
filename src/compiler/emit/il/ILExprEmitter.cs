@@ -320,7 +320,8 @@ sealed class ILExprEmitter {
 	}
 
 	void emitNew(New n) {
-		var (_, slots, args) = n;
+		var (_, slots, tyArgs, args) = n;
+		if (tyArgs.any) throw TODO();
 		var ctr = this.maps.getConstructorInfo(slots.klass);
 		emitArgs(n.args);
 		il.callConstructor(ctr);

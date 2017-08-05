@@ -14,6 +14,18 @@ static class ReflectionUtils {
 	internal static bool hasAttribute<TAttribute>(this MethodInfo m) where TAttribute : Attribute =>
 		m.GetCustomAttribute<TAttribute>(inherit: false) != null;
 
+	internal static object invokeStaticGeneric<T>(this Type t, string methodName, params object[] args) {
+		var method = t.GetMethod(methodName, BindingFlags.Static | BindingFlags.Public);
+		method = method.MakeGenericMethod(typeof(T));
+		assert(method != null);
+		try {
+			return method.Invoke(null, args);
+		} catch (TargetInvocationException e) {
+			ExceptionDispatchInfo.Capture(e.InnerException).Throw();
+			throw unreachable();
+		}
+	}
+
 	internal static object invokeStatic(this Type t, string methodName, params object[] args) {
 		var method = t.GetMethod(methodName, BindingFlags.Static | BindingFlags.Public);
 		assert(method != null);

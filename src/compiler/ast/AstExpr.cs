@@ -61,18 +61,28 @@ namespace Ast {
 
 	internal sealed class Call : Expr, ToData<Call> {
 		internal readonly Expr target;
+		internal readonly Arr<Ty> typeArguments;
 		internal readonly Arr<Expr> args;
-		internal Call(Loc loc, Expr target, Arr<Expr> args) : base(loc) {
+		internal Call(Loc loc, Expr target, Arr<Ty> typeArguments, Arr<Expr> args) : base(loc) {
 			this.target = target;
+			this.typeArguments = typeArguments;
 			this.args = args;
 		}
-		internal void Deconstruct(out Loc loc, out Expr target, out Arr<Expr> args) {
-			loc = this.loc; target = this.target; args = this.args;
+		internal void Deconstruct(out Loc loc, out Expr target, out Arr<Ty> typeArguments, out Arr<Expr> args) {
+			loc = this.loc; target = this.target; typeArguments = this.typeArguments; args = this.args;
 		}
 
 		public override bool deepEqual(Node n) => n is Call c && deepEqual(c);
-		public bool deepEqual(Call c) => locEq(c) && target.deepEqual(c.target) && args.deepEqual(c.args);
-		public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(target), target, nameof(args), Dat.arr(args));
+		public bool deepEqual(Call c) =>
+			locEq(c) &&
+			target.deepEqual(c.target) &&
+			typeArguments.deepEqual(c.typeArguments) &&
+			args.deepEqual(c.args);
+		public override Dat toDat() => Dat.of(this,
+			nameof(loc), loc,
+			nameof(target), target,
+			nameof(typeArguments), Dat.arr(typeArguments),
+			nameof(args), Dat.arr(args));
 	}
 
 	internal sealed class Recur : Expr, ToData<Recur> {
@@ -86,15 +96,21 @@ namespace Ast {
 	}
 
 	internal sealed class New : Expr, ToData<New> {
+		internal readonly Arr<Ty> tyArgs;
 		internal readonly Arr<Expr> args;
-		internal New(Loc loc, Arr<Expr> args) : base(loc) {
+		internal New(Loc loc, Arr<Ty> tyArgs, Arr<Expr> args) : base(loc) {
+			this.tyArgs = tyArgs;
 			this.args = args;
 		}
-		internal void Deconstruct(out Loc loc, out Arr<Expr> args) { loc = this.loc; args = this.args; }
+		internal void Deconstruct(out Loc loc, out Arr<Ty> tyArgs, out Arr<Expr> args) {
+			loc = this.loc;
+			tyArgs = this.tyArgs;
+			args = this.args;
+		}
 
 		public override bool deepEqual(Node n) => n is New ne && deepEqual(ne);
-		public bool deepEqual(New n) => locEq(n) && args.deepEqual(n.args);
-		public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(args), Dat.arr(args));
+		public bool deepEqual(New n) => locEq(n) && tyArgs.deepEqual(n.tyArgs) && args.deepEqual(n.args);
+		public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(tyArgs), Dat.arr(tyArgs), nameof(args), Dat.arr(args));
 	}
 
 	internal sealed class GetProperty : Expr, ToData<GetProperty> {

@@ -1,10 +1,15 @@
 using System;
+using System.Diagnostics;
 
 namespace Diag {
 	struct Diagnostic : ToData<Diagnostic> {
 		internal readonly Loc loc;
 		internal readonly DiagnosticData data;
-		internal Diagnostic(Loc loc, DiagnosticData data) { this.loc = loc; this.data = data; }
+		internal Diagnostic(Loc loc, DiagnosticData data) {
+			Debugger.Break();
+			this.loc = loc;
+			this.data = data;
+		}
 		internal void Deconstruct(out Loc loc, out DiagnosticData data) { loc = this.loc; data = this.data; }
 
 		public override bool Equals(object o) => throw new NotSupportedException();

@@ -3,18 +3,20 @@ Module(
   imports: [Global(
     loc: 7-16,
     path: ["Exception"])],
-  klass: Klass(
+  klass: ClassDeclaration(
     loc: 18-153,
+    typeParameters: [],
     head: null,
     supers: [],
     methods: [Method(
       loc: 18-153,
       isStatic: true,
+      typeParameters: [],
       returnTy: Ty(
         loc: 22-26,
-        cls: Access(
-          loc: 22-26,
-          name: "Void")),
+        effect: "pure",
+        name: "Void",
+        tyArgs: []),
       name: "main",
       parameters: [],
       body: Let(
@@ -38,9 +40,9 @@ Module(
             loc: 83-121,
             exceptionTy: Ty(
               loc: 89-98,
-              cls: Access(
-                loc: 89-98,
-                name: "Exception")),
+              effect: "pure",
+              name: "Exception",
+              tyArgs: []),
             exceptionName: "e",
             then: Call(
               loc: 104-119,
@@ -50,6 +52,7 @@ Module(
                   loc: 104-105,
                   name: "e"),
                 propertyName: "description"),
+              typeArguments: [],
               args: [])),
           _finally: null),
         then: Assert(

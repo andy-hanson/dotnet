@@ -102,6 +102,31 @@ struct Arr<T> : IEnumerable<T> {
 
 	internal U[] mapBuilder<U>() => new U[length];
 
+	/**
+	Probably, `mapper` will always return None. In that case, return None.
+	But if it doesn't, produce an array containing the original input if mapper returned none, else the mapper result.
+	*/
+	internal bool mapProbablyIdentical(Func<T, Op<T>> mapper, out Arr<T> result) {
+		for (uint i = 0;  i < length; i++) {
+			if (mapper(this[i]).get(out var output)) {
+				result = mapProbablyIdenticalWorker(i, output, mapper);
+				return true;
+			}
+		}
+		result = default(Arr<T>);
+		return false;
+	}
+	Arr<T> mapProbablyIdenticalWorker(uint i, T firstOutput, Func<T, Op<T>> mapper) {
+		var b = new T[length];
+		for (uint j = 0; j < i; j++)
+			b[j] = this[j];
+		b[i] = firstOutput;
+		for (i++; i < length; i++)
+			if (!mapper(this[i]).get(out b[i]))
+				b[i] = this[i];
+		return new Arr<T>(b);
+	}
+
 	internal Arr<U> map<U>(Func<T, U> mapper) {
 		var b = new U[length];
 		for (uint i = 0; i < length; i++)
@@ -342,7 +367,7 @@ struct Arr<T> : IEnumerable<T> {
 		return false;
 	}
 
-	internal Arr<T> Concat(Arr<T> other) {
+	internal Arr<T> concat(Arr<T> other) {
 		var b = new T[length + other.length];
 		for (uint i = 0; i < length; i++)
 			b[i] = this[i];
@@ -427,28 +452,20 @@ static class Arr {
 		return res;
 	}
 
+	internal static bool fastEquals<T>(this Arr<T> a, Arr<T> b) where T : FastEquals<T> =>
+		a.eachCorresponds(b, (x, y) => x.fastEquals(y));
+
 	//Have to define this here to get the type constraint.
 	internal static bool deepEqual<T>(this Arr<T> a, Arr<T> b) where T : DeepEqual<T> =>
-		deepEqual(a, b, (x, y) => x.deepEqual(y));
+		a.eachCorresponds(b, (x, y) => x.deepEqual(y));
 
-	internal static bool deepEqual(this Arr<string> a, Arr<string> b) => deepEqual(a, b, (x, y) => x == y);
+	internal static bool deepEqual(this Arr<string> a, Arr<string> b) => a.eachCorresponds(b, (x, y) => x == y);
 
 	internal static bool deepEqual<T, U>(this Arr<Either<T, U>> a, Arr<Either<T, U>> b) where T : ToData<T> where U : ToData<U> =>
 		a.eachCorresponds(b, (ea, eb) => ea.deepEqual(eb));
 
 	internal static bool eachEqualId<T, U>(this Arr<T> a, Arr<T> b) where T : Identifiable<U> where U : ToData<U> =>
-		deepEqual(a, b, (x, y) => x.equalsId<T, U>(y));
-
-	internal static bool deepEqual<T>(this Arr<T> a, Arr<T> b, Func<T, T, bool> equal) {
-		if (a.length != b.length)
-			return false;
-
-		for (uint i = 0; i < a.length; i++)
-			if (!equal(a[i], b[i]))
-				return false;
-
-		return true;
-	}
+		a.eachCorresponds(b, (x, y) => x.equalsId<T, U>(y));
 
 	internal static bool find<T>(this IEnumerable<T> elements, out T found, Func<T, bool> predicate) {
 		foreach (var em in elements) {

@@ -7,7 +7,7 @@ using static Utils;
 
 namespace Model {
 	[DebuggerDisplay(":{name.str}")]
-	sealed class BuiltinClass : ClassLike, Imported, ToData<BuiltinClass>, IEquatable<BuiltinClass> {
+	sealed class BuiltinClass : ClassDeclarationLike, Imported, ToData<BuiltinClass>, IEquatable<BuiltinClass> {
 		internal readonly Type dotNetType;
 		readonly Late<Arr<AbstractMethodLike>> _abstractMethods;
 		// Use AbstractMethodLike instead of BuiltinAbstractMethod so this type will be compatible with KlassHead.Abstract's abstractMethods
@@ -46,11 +46,11 @@ namespace Model {
 		}
 		internal override bool isAbstract => dotNetType.IsAbstract;
 
-		Late<Dict<Sym, Member>> _membersMap;
-		internal void setMembersMap(Dict<Sym, Member> value) { _membersMap.set(value); }
-		internal override Dict<Sym, Member> membersMap => _membersMap.get;
+		Late<Dict<Sym, MemberDeclaration>> _membersMap;
+		internal void setMembersMap(Dict<Sym, MemberDeclaration> value) { _membersMap.set(value); }
+		internal override Dict<Sym, MemberDeclaration> membersMap => _membersMap.get;
 
-		static BuiltinClass _load<T>() => BuiltinsLoader.fromDotNetType(typeof(T));
+		static BuiltinClass _load<T>() => BuiltinsLoader.loadBuiltinClass(typeof(T));
 		internal static readonly BuiltinClass Void = _load<Builtins.Void>();
 		internal static readonly BuiltinClass Bool = _load<Builtins.Bool>();
 		internal static readonly BuiltinClass Nat = _load<Builtins.Nat>();
@@ -60,17 +60,17 @@ namespace Model {
 		internal static readonly BuiltinClass Exception = _load<Builtins.Exception>();
 
 		Sym Imported.name => name;
-		ClassLike Imported.importedClass => this;
+		ClassDeclarationLike Imported.importedClass => this;
 
 		/** Only call this if you are BuiltinsLoader! */
-		internal BuiltinClass(Sym name, Type dotNetType) : base(name) { this.dotNetType = dotNetType; }
+		internal BuiltinClass(Sym name, Arr<TypeParameter> typeParameters, Type dotNetType) : base(name, typeParameters) { this.dotNetType = dotNetType; }
 
-		public override ClassLike.Id getId() => ClassLike.Id.ofBuiltin(name);
+		public override ClassDeclarationLike.Id getId() => ClassDeclarationLike.Id.ofBuiltin(name);
 		Dat Imported.getImportedId() => getId().toDat();
 
 		bool IEquatable<BuiltinClass>.Equals(BuiltinClass other) => object.ReferenceEquals(this, other);
 		bool DeepEqual<Imported>.deepEqual(Imported i) => object.ReferenceEquals(this, i);
-		public override bool deepEqual(ClsRef c) => throw new NotSupportedException(); // This should never happen.
+		public override bool deepEqual(ClassDeclarationLike c) => throw new NotSupportedException(); // This should never happen.
 		public bool deepEqual(BuiltinClass b) => throw new NotSupportedException(); // This should never happen.
 		public override int GetHashCode() => name.GetHashCode();
 		public override Dat toDat() => Dat.of(this, nameof(name), name);

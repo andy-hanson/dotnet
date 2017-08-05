@@ -1,20 +1,24 @@
-Klass(
+ClassDeclaration(
   loc: 20-94,
   head: Static(),
-  membersMap: Dict<Sym, Member>(
+  membersMap: Dict<Sym, MemberDeclaration>(
     main: MethodWithBody(
       loc: 20-94,
       isStatic: true,
       returnTy: Id(
         effect: "pure",
-        clsId: "Void"),
+        clsId: Id(
+          classDeclarationId: "Void",
+          typeArgumentIds: [])),
       name: "main",
       selfEffect: "pure",
       parameters: [Parameter(
         loc: 34-52,
         ty: Id(
           effect: "io",
-          clsId: "Console-App"),
+          clsId: Id(
+            classDeclarationId: "Console-App",
+            typeArgumentIds: [])),
         name: "app",
         index: 0)],
       body: InstanceMethodCall(
@@ -27,16 +31,22 @@ Klass(
               loc: 34-52,
               ty: Id(
                 effect: "io",
-                clsId: "Console-App"),
+                clsId: Id(
+                  classDeclarationId: "Console-App",
+                  typeArgumentIds: [])),
               name: "app",
               index: 0)),
-          method: Id(
-            klassId: "Console-App",
-            name: "stdout"),
+          method: MethodInst(
+            decl: Id(
+              klassId: "Console-App",
+              name: "stdout"),
+            typeArguments: []),
           args: []),
-        method: Id(
-          klassId: "Write-Stream",
-          name: "write-line"),
+        method: MethodInst(
+          decl: Id(
+            klassId: "Write-Stream",
+            name: "write-line"),
+          typeArguments: []),
         args: [Literal(
           loc: 79-93,
           value: "Hello world!")]))))

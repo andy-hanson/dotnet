@@ -1,19 +1,21 @@
 Module(
   loc: 0-502,
   imports: [],
-  klass: Klass(
+  klass: ClassDeclaration(
     loc: 0-502,
+    typeParameters: [],
     head: null,
     supers: [],
     methods: [
       Method(
         loc: 0-120,
         isStatic: true,
+        typeParameters: [],
         returnTy: Ty(
           loc: 4-8,
-          cls: Access(
-            loc: 4-8,
-            name: "Void")),
+          effect: "pure",
+          name: "Void",
+          tyArgs: []),
         name: "main",
         parameters: [],
         body: Seq(
@@ -57,25 +59,27 @@ Module(
       Method(
         loc: 120-172,
         isStatic: true,
+        typeParameters: [],
         returnTy: Ty(
           loc: 124-127,
-          cls: Access(
-            loc: 124-127,
-            name: "Nat")),
+          effect: "pure",
+          name: "Nat",
+          tyArgs: []),
         name: "factorial",
         parameters: [Parameter(
           loc: 138-143,
           ty: Ty(
             loc: 138-141,
-            cls: Access(
-              loc: 138-141,
-              name: "Nat")),
+            effect: "pure",
+            name: "Nat",
+            tyArgs: []),
           name: "n")],
         body: Call(
           loc: 146-172,
           target: Access(
             loc: 146-165,
             name: "factorial-recursive"),
+          typeArguments: [],
           args: [
             Access(
               loc: 166-167,
@@ -87,28 +91,29 @@ Module(
       Method(
         loc: 172-274,
         isStatic: true,
+        typeParameters: [],
         returnTy: Ty(
           loc: 176-179,
-          cls: Access(
-            loc: 176-179,
-            name: "Nat")),
+          effect: "pure",
+          name: "Nat",
+          tyArgs: []),
         name: "factorial-recursive",
         parameters: [
           Parameter(
             loc: 200-205,
             ty: Ty(
               loc: 200-203,
-              cls: Access(
-                loc: 200-203,
-                name: "Nat")),
+              effect: "pure",
+              name: "Nat",
+              tyArgs: []),
             name: "n"),
           Parameter(
             loc: 207-214,
             ty: Ty(
               loc: 207-210,
-              cls: Access(
-                loc: 207-210,
-                name: "Nat")),
+              effect: "pure",
+              name: "Nat",
+              tyArgs: []),
             name: "acc")
         ],
         body: WhenTest(
@@ -135,6 +140,7 @@ Module(
                     loc: 255-256,
                     name: "n"),
                   propertyName: "decr"),
+                typeArguments: [],
                 args: []),
               OperatorCall(
                 loc: 265-274,
@@ -146,19 +152,20 @@ Module(
       Method(
         loc: 274-372,
         isStatic: true,
+        typeParameters: [],
         returnTy: Ty(
           loc: 278-281,
-          cls: Access(
-            loc: 278-281,
-            name: "Nat")),
+          effect: "pure",
+          name: "Nat",
+          tyArgs: []),
         name: "fibonacci",
         parameters: [Parameter(
           loc: 292-297,
           ty: Ty(
             loc: 292-295,
-            cls: Access(
-              loc: 292-295,
-              name: "Nat")),
+            effect: "pure",
+            name: "Nat",
+            tyArgs: []),
           name: "n")],
         body: WhenTest(
           loc: 300-372,
@@ -191,6 +198,7 @@ Module(
             target: Access(
               loc: 343-362,
               name: "fibonacci-recursive"),
+            typeArguments: [],
             args: [
               Access(
                 loc: 363-364,
@@ -205,36 +213,37 @@ Module(
       Method(
         loc: 372-502,
         isStatic: true,
+        typeParameters: [],
         returnTy: Ty(
           loc: 376-379,
-          cls: Access(
-            loc: 376-379,
-            name: "Nat")),
+          effect: "pure",
+          name: "Nat",
+          tyArgs: []),
         name: "fibonacci-recursive",
         parameters: [
           Parameter(
             loc: 400-405,
             ty: Ty(
               loc: 400-403,
-              cls: Access(
-                loc: 400-403,
-                name: "Nat")),
+              effect: "pure",
+              name: "Nat",
+              tyArgs: []),
             name: "n"),
           Parameter(
             loc: 407-415,
             ty: Ty(
               loc: 407-410,
-              cls: Access(
-                loc: 407-410,
-                name: "Nat")),
+              effect: "pure",
+              name: "Nat",
+              tyArgs: []),
             name: "acc1"),
           Parameter(
             loc: 417-425,
             ty: Ty(
               loc: 417-420,
-              cls: Access(
-                loc: 417-420,
-                name: "Nat")),
+              effect: "pure",
+              name: "Nat",
+              tyArgs: []),
             name: "acc2")
         ],
         body: WhenTest(
@@ -264,6 +273,7 @@ Module(
                     loc: 474-475,
                     name: "n"),
                   propertyName: "decr"),
+                typeArguments: [],
                 args: []),
               Access(
                 loc: 484-488,

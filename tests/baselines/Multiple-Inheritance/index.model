@@ -1,21 +1,25 @@
-Klass(
+ClassDeclaration(
   loc: 24-162,
   head: Slots(
-    slots: [Slot(
+    slots: [SlotDeclaration(
       loc: 31-40,
       name: "x",
       mutable: false,
       ty: PlainTy(
         effect: "pure",
-        cls: BuiltinClass(
-          name: "Nat")))]),
-  membersMap: Dict<Sym, Member>(
+        instantiatedClass: InstCls(
+          classDeclaration: BuiltinClass(
+            name: "Nat"),
+          typeArguments: [])))]),
+  membersMap: Dict<Sym, MemberDeclaration>(
     main: MethodWithBody(
       loc: 86-162,
       isStatic: true,
       returnTy: Id(
         effect: "pure",
-        clsId: "Void"),
+        clsId: Id(
+          classDeclarationId: "Void",
+          typeArgumentIds: [])),
       name: "main",
       selfEffect: "pure",
       parameters: [],
@@ -38,13 +42,17 @@ Klass(
                 loc: 121-130,
                 target: AccessLocal(
                   local: "x"),
-                method: Id(
-                  klassId: "Super1",
-                  name: "s1Def"),
+                method: MethodInst(
+                  decl: Id(
+                    klassId: "Super1",
+                    name: "s1Def"),
+                  typeArguments: []),
                 args: []),
-              method: Id(
-                klassId: "Nat",
-                name: "=="),
+              method: MethodInst(
+                decl: Id(
+                  klassId: "Nat",
+                  name: "=="),
+                typeArguments: []),
               args: [Literal(
                 loc: 134-136,
                 value: 10)])),
@@ -56,21 +64,27 @@ Klass(
                 loc: 145-154,
                 target: AccessLocal(
                   local: "x"),
-                method: Id(
-                  klassId: "Super2",
-                  name: "s2Def"),
+                method: MethodInst(
+                  decl: Id(
+                    klassId: "Super2",
+                    name: "s2Def"),
+                  typeArguments: []),
                 args: []),
-              method: Id(
-                klassId: "Nat",
-                name: "=="),
+              method: MethodInst(
+                decl: Id(
+                  klassId: "Nat",
+                  name: "=="),
+                typeArguments: []),
               args: [Literal(
                 loc: 158-160,
                 value: 20)]))))),
-    x: Slot(
+    x: SlotDeclaration(
       loc: 31-40,
       name: "x",
       mutable: false,
       ty: PlainTy(
         effect: "pure",
-        cls: BuiltinClass(
-          name: "Nat")))))
+        instantiatedClass: InstCls(
+          classDeclaration: BuiltinClass(
+            name: "Nat"),
+          typeArguments: [])))))

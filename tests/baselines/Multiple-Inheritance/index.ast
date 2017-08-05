@@ -12,8 +12,9 @@ Module(
         nParents: 1,
         relToParent: ["Super2"]))
   ],
-  klass: Klass(
+  klass: ClassDeclaration(
     loc: 24-162,
+    typeParameters: [],
     head: Slots(
       loc: 24-41,
       slots: [Slot(
@@ -21,9 +22,9 @@ Module(
         mutable: false,
         ty: Ty(
           loc: 35-38,
-          cls: Access(
-            loc: 35-38,
-            name: "Nat")),
+          effect: "pure",
+          name: "Nat",
+          tyArgs: []),
         name: "x")]),
     supers: [
       Super(
@@ -53,11 +54,12 @@ Module(
     methods: [Method(
       loc: 86-162,
       isStatic: true,
+      typeParameters: [],
       returnTy: Ty(
         loc: 90-94,
-        cls: Access(
-          loc: 90-94,
-          name: "Void")),
+        effect: "pure",
+        name: "Void",
+        tyArgs: []),
       name: "main",
       parameters: [],
       body: Let(
@@ -67,6 +69,7 @@ Module(
           name: "x"),
         value: New(
           loc: 107-114,
+          tyArgs: [],
           args: [Literal(
             loc: 111-112,
             value: 1)]),

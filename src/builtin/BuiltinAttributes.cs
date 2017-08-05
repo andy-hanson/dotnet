@@ -20,46 +20,46 @@ namespace BuiltinAttributes {
 	[AttributeUsage(AttributeTargets.Method)]
 	abstract class SelfEffectAttribute : EffectLikeAttribute {}
 	sealed class SelfPureAttribute : SelfEffectAttribute {
-		internal override Model.Effect effect => Model.Effect.Pure;
+		internal override Model.Effect effect => Model.Effect.pure;
 	}
 	sealed class SelfGetAttribute : SelfEffectAttribute {
-		internal override Model.Effect effect => Model.Effect.Get;
+		internal override Model.Effect effect => Model.Effect.get;
 	}
 	sealed class SelfSetAttribute : SelfEffectAttribute {
-		internal override Model.Effect effect => Model.Effect.Set;
+		internal override Model.Effect effect => Model.Effect.set;
 	}
 	sealed class SelfIoAttribute : SelfEffectAttribute {
-		internal override Model.Effect effect => Model.Effect.Io;
+		internal override Model.Effect effect => Model.Effect.io;
 	}
 
 	[AttributeUsage(AttributeTargets.Method)]
 	abstract class ReturnEffectAttribute : EffectLikeAttribute {}
 	sealed class ReturnPureAttribute : ReturnEffectAttribute {
-		internal override Model.Effect effect => Model.Effect.Pure;
+		internal override Model.Effect effect => Model.Effect.pure;
 	}
 	sealed class ReturnGetAttribute : ReturnEffectAttribute {
-		internal override Model.Effect effect => Model.Effect.Get;
+		internal override Model.Effect effect => Model.Effect.get;
 	}
 	sealed class ReturnSetAttribute : ReturnEffectAttribute {
-		internal override Model.Effect effect => Model.Effect.Set;
+		internal override Model.Effect effect => Model.Effect.set;
 	}
 	sealed class ReturnIoAttribute : ReturnEffectAttribute {
-		internal override Model.Effect effect => Model.Effect.Io;
+		internal override Model.Effect effect => Model.Effect.io;
 	}
 
 	[AttributeUsage(AttributeTargets.Parameter)]
 	abstract class ParameterEffectAttribute : EffectLikeAttribute {}
 	sealed class PureAttribute : ParameterEffectAttribute {
-		internal override Model.Effect effect => Model.Effect.Pure;
+		internal override Model.Effect effect => Model.Effect.pure;
 	}
 	sealed class GetAttribute : ParameterEffectAttribute {
-		internal override Model.Effect effect => Model.Effect.Get;
+		internal override Model.Effect effect => Model.Effect.get;
 	}
 	sealed class SetAttribute : ParameterEffectAttribute {
-		internal override Model.Effect effect => Model.Effect.Set;
+		internal override Model.Effect effect => Model.Effect.set;
 	}
 	sealed class IoAttribute : ParameterEffectAttribute {
-		internal override Model.Effect effect => Model.Effect.Io;
+		internal override Model.Effect effect => Model.Effect.io;
 	}
 
 

@@ -1,13 +1,15 @@
-Klass(
+ClassDeclaration(
   loc: 18-153,
   head: Static(),
-  membersMap: Dict<Sym, Member>(
+  membersMap: Dict<Sym, MemberDeclaration>(
     main: MethodWithBody(
       loc: 18-153,
       isStatic: true,
       returnTy: Id(
         effect: "pure",
-        clsId: "Void"),
+        clsId: Id(
+          classDeclarationId: "Void",
+          typeArgumentIds: [])),
       name: "main",
       selfEffect: "pure",
       parameters: [],
@@ -32,7 +34,9 @@ Klass(
             loc: 83-121,
             exceptionTy: Id(
               effect: "pure",
-              clsId: "Exception"),
+              clsId: Id(
+                classDeclarationId: "Exception",
+                typeArgumentIds: [])),
             caught: Single(
               loc: 99-100,
               name: "e"),
@@ -40,9 +44,11 @@ Klass(
               loc: 104-119,
               target: AccessLocal(
                 local: "e"),
-              method: Id(
-                klassId: "Exception",
-                name: "description"),
+              method: MethodInst(
+                decl: Id(
+                  klassId: "Exception",
+                  name: "description"),
+                typeArguments: []),
               args: [])),
           _finally: null),
         then: Assert(
@@ -51,9 +57,11 @@ Klass(
             loc: 128-153,
             target: AccessLocal(
               local: "x"),
-            method: Id(
-              klassId: "String",
-              name: "=="),
+            method: MethodInst(
+              decl: Id(
+                klassId: "String",
+                name: "=="),
+              typeArguments: []),
             args: [Literal(
               loc: 133-152,
               value: "Assertion failed.")]))))))

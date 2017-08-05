@@ -1,19 +1,21 @@
 Module(
   loc: 0-319,
   imports: [],
-  klass: Klass(
+  klass: ClassDeclaration(
     loc: 0-319,
+    typeParameters: [],
     head: null,
     supers: [],
     methods: [
       Method(
         loc: 0-219,
         isStatic: true,
+        typeParameters: [],
         returnTy: Ty(
           loc: 4-8,
-          cls: Access(
-            loc: 4-8,
-            name: "Void")),
+          effect: "pure",
+          name: "Void",
+          tyArgs: []),
         name: "main",
         parameters: [],
         body: Seq(
@@ -23,6 +25,7 @@ Module(
             target: Access(
               loc: 17-26,
               name: "needs-nat"),
+            typeArguments: [],
             args: [Literal(
               loc: 27-28,
               value: 0)]),
@@ -33,6 +36,7 @@ Module(
               target: Access(
                 loc: 30-39,
                 name: "needs-int"),
+              typeArguments: [],
               args: [Call(
                 loc: 40-50,
                 target: GetProperty(
@@ -41,6 +45,7 @@ Module(
                     loc: 40-41,
                     value: 0),
                   propertyName: "to-int"),
+                typeArguments: [],
                 args: [])]),
             then: Seq(
               loc: 52-219,
@@ -49,6 +54,7 @@ Module(
                 target: Access(
                   loc: 52-62,
                   name: "needs-real"),
+                typeArguments: [],
                 args: [Call(
                   loc: 63-74,
                   target: GetProperty(
@@ -57,6 +63,7 @@ Module(
                       loc: 63-64,
                       value: 0),
                     propertyName: "to-real"),
+                  typeArguments: [],
                   args: [])]),
               then: Seq(
                 loc: 77-219,
@@ -65,6 +72,7 @@ Module(
                   target: Access(
                     loc: 77-86,
                     name: "needs-nat"),
+                  typeArguments: [],
                   args: [Call(
                     loc: 87-98,
                     target: GetProperty(
@@ -73,6 +81,7 @@ Module(
                         loc: 87-89,
                         value: 0),
                       propertyName: "to-nat"),
+                    typeArguments: [],
                     args: [])]),
                 then: Seq(
                   loc: 100-219,
@@ -81,6 +90,7 @@ Module(
                     target: Access(
                       loc: 100-109,
                       name: "needs-int"),
+                    typeArguments: [],
                     args: [Literal(
                       loc: 110-112,
                       value: 0)]),
@@ -91,6 +101,7 @@ Module(
                       target: Access(
                         loc: 114-124,
                         name: "needs-real"),
+                      typeArguments: [],
                       args: [Call(
                         loc: 125-137,
                         target: GetProperty(
@@ -99,6 +110,7 @@ Module(
                             loc: 125-127,
                             value: 0),
                           propertyName: "to-real"),
+                        typeArguments: [],
                         args: [])]),
                     then: Seq(
                       loc: 140-219,
@@ -107,6 +119,7 @@ Module(
                         target: Access(
                           loc: 140-149,
                           name: "needs-nat"),
+                        typeArguments: [],
                         args: [Call(
                           loc: 150-175,
                           target: GetProperty(
@@ -119,8 +132,10 @@ Module(
                                   loc: 150-153,
                                   value: 0),
                                 propertyName: "round-down"),
+                              typeArguments: [],
                               args: []),
                             propertyName: "to-nat"),
+                          typeArguments: [],
                           args: [])]),
                       then: Seq(
                         loc: 177-219,
@@ -129,6 +144,7 @@ Module(
                           target: Access(
                             loc: 177-186,
                             name: "needs-int"),
+                          typeArguments: [],
                           args: [Call(
                             loc: 187-201,
                             target: GetProperty(
@@ -137,31 +153,34 @@ Module(
                                 loc: 187-190,
                                 value: 0),
                               propertyName: "round-up"),
+                            typeArguments: [],
                             args: [])]),
                         then: Call(
                           loc: 203-219,
                           target: Access(
                             loc: 203-213,
                             name: "needs-real"),
+                          typeArguments: [],
                           args: [Literal(
                             loc: 214-217,
                             value: 0)])))))))))),
       Method(
         loc: 219-252,
         isStatic: true,
+        typeParameters: [],
         returnTy: Ty(
           loc: 223-227,
-          cls: Access(
-            loc: 223-227,
-            name: "Void")),
+          effect: "pure",
+          name: "Void",
+          tyArgs: []),
         name: "needs-nat",
         parameters: [Parameter(
           loc: 238-243,
           ty: Ty(
             loc: 238-241,
-            cls: Access(
-              loc: 238-241,
-              name: "Nat")),
+            effect: "pure",
+            name: "Nat",
+            tyArgs: []),
           name: "n")],
         body: Literal(
           loc: 246-250,
@@ -169,19 +188,20 @@ Module(
       Method(
         loc: 252-285,
         isStatic: true,
+        typeParameters: [],
         returnTy: Ty(
           loc: 256-260,
-          cls: Access(
-            loc: 256-260,
-            name: "Void")),
+          effect: "pure",
+          name: "Void",
+          tyArgs: []),
         name: "needs-int",
         parameters: [Parameter(
           loc: 271-276,
           ty: Ty(
             loc: 271-274,
-            cls: Access(
-              loc: 271-274,
-              name: "Int")),
+            effect: "pure",
+            name: "Int",
+            tyArgs: []),
           name: "i")],
         body: Literal(
           loc: 279-283,
@@ -189,19 +209,20 @@ Module(
       Method(
         loc: 285-319,
         isStatic: true,
+        typeParameters: [],
         returnTy: Ty(
           loc: 289-293,
-          cls: Access(
-            loc: 289-293,
-            name: "Void")),
+          effect: "pure",
+          name: "Void",
+          tyArgs: []),
         name: "needs-real",
         parameters: [Parameter(
           loc: 305-311,
           ty: Ty(
             loc: 305-309,
-            cls: Access(
-              loc: 305-309,
-              name: "Real")),
+            effect: "pure",
+            name: "Real",
+            tyArgs: []),
           name: "f")],
         body: Literal(
           loc: 314-318,

@@ -17,7 +17,7 @@ interface Shower<Self> {
 	Self add(int i);
 
 	Self join<T>(IEnumerable<T> arr, Action<Self, T> toString, string joiner = ", ");
-	Self join<T>(Arr<T> arr, Action<StringMaker, T> toString, string joiner = ", ");
+	Self join<T>(Arr<T> arr, Action<Self, T> toString, string joiner = ", ");
 }
 
 struct IndentedShower<S> : Shower<IndentedShower<S>> where S : Shower<S> {
@@ -38,7 +38,7 @@ struct IndentedShower<S> : Shower<IndentedShower<S>> where S : Shower<S> {
 	public IndentedShower<S> add(double d) { inner.add(d); return this; }
 	public IndentedShower<S> add(int i) { inner.add(i); return this; }
 	public IndentedShower<S> join<T>(IEnumerable<T> arr, Action<IndentedShower<S>, T> toString, string joiner = ", ") { throw TODO(); }
-	public IndentedShower<S> join<T>(Arr<T> arr, Action<StringMaker, T> toString, string joiner = ", ") { throw TODO(); }
+	public IndentedShower<S> join<T>(Arr<T> arr, Action<IndentedShower<S>, T> toString, string joiner = ", ") { throw TODO(); }
 }
 
 static class ShowerUtils {

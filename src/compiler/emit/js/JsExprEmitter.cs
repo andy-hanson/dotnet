@@ -132,7 +132,7 @@ sealed class JsExprEmitter {
 		var caught = id(c.caught.loc, escapeName(c.caught.name));
 
 		// `if (!(e is ExceptionType)) throw e;`
-		var isInstance = new Estree.BinaryExpression(loc, "instanceof", caught, accessClass(loc, ((Ty.PlainTy)c.exceptionTy).cls));
+		var isInstance = new Estree.BinaryExpression(loc, "instanceof", caught, accessClass(loc, ((PlainTy)c.exceptionTy).instantiatedClass));
 		var test = Estree.UnaryExpression.not(loc, isInstance);
 		var first = new Estree.IfStatement(loc, test, new Estree.ThrowStatement(c.loc, caught));
 
@@ -140,9 +140,9 @@ sealed class JsExprEmitter {
 		return new Estree.CatchClause(loc, caught, caughtBlock);
 	}
 
-	Estree.Expression accessClass(Loc loc, ClsRef cls) {
-		switch (cls) {
-			case Klass k:
+	Estree.Expression accessClass(Loc loc, InstCls cls) {
+		switch (cls.classDeclaration) {
+			case ClassDeclaration k:
 				return id(loc, escapeName(k.name));
 			case BuiltinClass b:
 				needsLib = true;
@@ -181,7 +181,7 @@ sealed class JsExprEmitter {
 			case MyInstanceMethodCall my:
 				return emitMyInstanceMethodCall(my);
 			case New n: {
-				var (loc, slots, args) = n;
+				var (loc, slots, /*tyArgs*/_, args) = n;
 				return new Estree.NewExpression(loc, id(loc, escapeName(slots.klass.name)), args.map(exprToExpr));
 			}
 			case Recur r:
@@ -210,17 +210,17 @@ sealed class JsExprEmitter {
 
 	Estree.Expression emitStaticMethodCall(StaticMethodCall stat) {
 		var (loc, method, args) = stat;
-		return JsBuiltins.emitStaticMethodCall(ref needsLib, method, loc, args.map(exprToExpr));
+		return JsBuiltins.emitStaticMethodCall(ref needsLib, method.decl, loc, args.map(exprToExpr));
 	}
 
 	Estree.Expression emitInstanceMethodCall(InstanceMethodCall instance) {
 		var (loc, target, method, args) = instance;
-		return JsBuiltins.emitInstanceMethodCall(ref needsLib, method, loc, exprToExpr(target), args.map(exprToExpr));
+		return JsBuiltins.emitInstanceMethodCall(ref needsLib, method.decl, loc, exprToExpr(target), args.map(exprToExpr));
 	}
 
 	Estree.Expression emitMyInstanceMethodCall(MyInstanceMethodCall myInstance) {
 		var (loc, method, args) = myInstance;
-		return JsBuiltins.emitMyInstanceMethodCall(ref needsLib, method, loc, args.map(exprToExpr));
+		return JsBuiltins.emitMyInstanceMethodCall(ref needsLib, method.decl, loc, args.map(exprToExpr));
 	}
 
 	Estree.Expression emitRecur(Recur r) {

@@ -1,14 +1,16 @@
-Klass(
+ClassDeclaration(
   loc: 0-47,
   head: Abstract(
     loc: 0-20),
-  membersMap: Dict<Sym, Member>(
+  membersMap: Dict<Sym, MemberDeclaration>(
     s2Def: MethodWithBody(
       loc: 20-47,
       isStatic: false,
       returnTy: Id(
         effect: "pure",
-        clsId: "Nat"),
+        clsId: Id(
+          classDeclarationId: "Nat",
+          typeArgumentIds: [])),
       name: "s2Def",
       selfEffect: "pure",
       parameters: [],
@@ -16,13 +18,17 @@ Klass(
         loc: 37-47,
         target: MyInstanceMethodCall(
           loc: 37-41,
-          method: Id(
-            klassId: "Super2",
-            name: "s2"),
+          method: MethodInst(
+            decl: Id(
+              klassId: "Super2",
+              name: "s2"),
+            typeArguments: []),
           args: []),
-        method: Id(
-          klassId: "Nat",
-          name: "*"),
+        method: MethodInst(
+          decl: Id(
+            klassId: "Nat",
+            name: "*"),
+          typeArguments: []),
         args: [Literal(
           loc: 44-46,
           value: 10)])),
@@ -30,6 +36,8 @@ Klass(
       loc: 10-18,
       returnTy: Id(
         effect: "pure",
-        clsId: "Nat"),
+        clsId: Id(
+          classDeclarationId: "Nat",
+          typeArgumentIds: [])),
       name: "s2",
       parameters: [])))

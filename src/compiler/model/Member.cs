@@ -1,12 +1,12 @@
 namespace Model {
 	// Method, Slot, or AbstractMethod
-	abstract class Member : ModelElement, ToData<Member>, Identifiable<MemberId> {
+	abstract class MemberDeclaration : ModelElement, ToData<MemberDeclaration>, Identifiable<MemberId> {
 		internal readonly Loc loc;
 		internal readonly Sym name;
-		protected Member(Loc loc, Sym name) { this.loc = loc; this.name = name; }
+		protected MemberDeclaration(Loc loc, Sym name) { this.loc = loc; this.name = name; }
 
-		internal abstract ClassLike klass { get; }
-		public abstract bool deepEqual(Member m);
+		internal abstract ClassDeclarationLike klass { get; }
+		public abstract bool deepEqual(MemberDeclaration m);
 		public abstract Dat toDat();
 		MemberId Identifiable<MemberId>.getId() => getMemberId();
 		internal abstract MemberId getMemberId();

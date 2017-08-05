@@ -1,8 +1,9 @@
 Module(
   loc: 0-172,
   imports: [],
-  klass: Klass(
+  klass: ClassDeclaration(
     loc: 0-172,
+    typeParameters: [],
     head: Slots(
       loc: 0-29,
       slots: [
@@ -11,18 +12,18 @@ Module(
           mutable: false,
           ty: Ty(
             loc: 11-14,
-            cls: Access(
-              loc: 11-14,
-              name: "Nat")),
+            effect: "pure",
+            name: "Nat",
+            tyArgs: []),
           name: "x"),
         Slot(
           loc: 18-27,
           mutable: true,
           ty: Ty(
             loc: 22-25,
-            cls: Access(
-              loc: 22-25,
-              name: "Nat")),
+            effect: "pure",
+            name: "Nat",
+            tyArgs: []),
           name: "y")
       ]),
     supers: [],
@@ -30,11 +31,12 @@ Module(
       Method(
         loc: 29-132,
         isStatic: true,
+        typeParameters: [],
         returnTy: Ty(
           loc: 33-37,
-          cls: Access(
-            loc: 33-37,
-            name: "Void")),
+          effect: "pure",
+          name: "Void",
+          tyArgs: []),
         name: "main",
         parameters: [],
         body: Let(
@@ -44,6 +46,7 @@ Module(
             name: "obj"),
           value: New(
             loc: 52-62,
+            tyArgs: [],
             args: [
               Literal(
                 loc: 56-57,
@@ -82,6 +85,7 @@ Module(
                       loc: 100-103,
                       name: "obj"),
                     propertyName: "incrY"),
+                  typeArguments: [],
                   args: []),
                 then: Assert(
                   loc: 113-132,
@@ -94,11 +98,12 @@ Module(
       Method(
         loc: 132-172,
         isStatic: false,
+        typeParameters: [],
         returnTy: Ty(
           loc: 136-140,
-          cls: Access(
-            loc: 136-140,
-            name: "Void")),
+          effect: "pure",
+          name: "Void",
+          tyArgs: []),
         name: "incrY",
         parameters: [],
         body: SetProperty(
@@ -112,5 +117,6 @@ Module(
                 loc: 163-164,
                 name: "y"),
               propertyName: "incr"),
+            typeArguments: [],
             args: [])))
     ]))

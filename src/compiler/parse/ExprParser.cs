@@ -56,6 +56,35 @@ abstract class ExprParser : TyParser {
 	(Ast.Expr, Token next) parseExpr(Ctx ctx, Pos start, Token firstToken) {
 		var (first, next) = parseFirstExpr(start, firstToken);
 		switch (next) {
+			case Token.BracketL: {
+				var typeArguments = takeTypeArgumentsAfterPassingLbracket();
+				if (tryTakeColon())
+					// `f[Nat]: g 1, 2` should be parsed like `f<Nat>(g(1, 2))`.
+					// Base it on the Token.Colon case below.
+					throw TODO();
+				else {
+					takeSpace();
+
+					var (args, next2) = parseArgs(Ctx.NoOperator);
+					var call = new Ast.Call(locFrom(start), first, typeArguments, args);
+					return ctx != Ctx.NoOperator && next2 == Token.Operator ? slurpOperators(start, call) : (call, next2);
+				}
+			}
+
+			case Token.Colon: {
+				if (ctx == Ctx.NoOperator)
+					throw TODO();
+
+				takeSpace();
+				var (args, next2) = parseArgs(Ctx.YesOperators);
+				var call = new Ast.Call(locFrom(start), first, Arr.empty<Ast.Ty>(), args);
+				return (call, next2);
+			}
+
+			case Token.Operator:
+				// In `f x + 1`, we would have read through the space while parsing the arguments to `f`. So can encounter an operator now.
+				return ctx == Ctx.NoOperator ? (first, Token.Operator) : slurpOperators(start, first);
+
 			case Token.Space: {
 				var nextStart = pos;
 				var tok = nextToken();
@@ -96,25 +125,11 @@ abstract class ExprParser : TyParser {
 
 					default: {
 						var (args, next2) = parseArgs(Ctx.NoOperator, nextStart, tok);
-						var call = new Ast.Call(locFrom(start), first, args);
+						var call = new Ast.Call(locFrom(start), first, Arr.empty<Ast.Ty>(), args);
 						return ctx != Ctx.NoOperator && next2 == Token.Operator ? slurpOperators(start, call) : (call, next2);
 					}
 				}
 			}
-
-			case Token.Colon: {
-				if (ctx == Ctx.NoOperator)
-					throw TODO();
-
-				takeSpace();
-				var (args, next2) = parseArgs(Ctx.YesOperators);
-				var call = new Ast.Call(locFrom(start), first, args);
-				return (call, next2);
-			}
-
-			case Token.Operator:
-				// In `f x + 1`, we would have read through the space while parsing the arguments to `f`. So can encounter an operator now.
-				return ctx == Ctx.NoOperator ? (first, Token.Operator) : slurpOperators(start, first);
 
 			default:
 				return (first, next);
@@ -124,13 +139,21 @@ abstract class ExprParser : TyParser {
 	// Only meant to be called from 'parseExpr'.
 	(Ast.Expr, Token next) parseFirstExpr(Pos start, Token token) {
 		switch (token) {
-			case Token.New:
+			case Token.New: {
+				// e.g. `new[Nat] 1, 2`
+				var ctx = tryTakeColon() ? Ctx.YesOperators : Ctx.NoOperator;
+				var typeArguments = tryTakeTypeArguments();
+				takeSpace();
+				var (args, next) = parseArgs(ctx);
+				var expr = new Ast.New(locFrom(start), typeArguments, args);
+				return (expr, next);
+			}
+
 			case Token.Recur: {
 				var ctx = tryTakeColon() ? Ctx.YesOperators : Ctx.NoOperator;
 				takeSpace();
 				var (args, next) = parseArgs(ctx);
-				var loc = locFrom(start);
-				var expr = token == Token.New ? new Ast.New(loc, args) : new Ast.Recur(loc, args).upcast<Ast.Expr>();
+				var expr = new Ast.Recur(locFrom(start), args).upcast<Ast.Expr>();
 				return (expr, next);
 			}
 
@@ -209,7 +232,7 @@ abstract class ExprParser : TyParser {
 
 				case Token.ParenL:
 					takeRparen();
-					expr = new Ast.Call(locFrom(start), expr, Arr.empty<Ast.Expr>());
+					expr = new Ast.Call(locFrom(start), expr, Arr.empty<Ast.Ty>(), Arr.empty<Ast.Expr>());
 					break;
 
 				default:

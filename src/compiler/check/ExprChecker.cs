@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 
 using Diag;
-using Diag.CheckDiags;
 using Diag.CheckExprDiags;
 using Model;
+using static ClassUtils;
 using static TyUtils;
 using static Utils;
 
@@ -14,21 +14,30 @@ struct Handled {
 }
 
 class ExprChecker : CheckerCommon {
-	internal static Expr checkMethod(BaseScope baseScope, Arr.Builder<Diagnostic> diags, MethodOrImpl methodOrImpl, bool isStatic, Method implemented, Ast.Expr body) =>
-		new ExprChecker(baseScope, diags, methodOrImpl, isStatic, implemented.selfEffect, implemented.parameters).checkReturn(implemented.returnTy, body);
+	internal static Expr checkMethod(BaseScope baseScope, Arr.Builder<Diagnostic> diags, MethodOrImpl methodOrImpl, TyReplacer methodReplacer, bool isStatic, Ast.Expr body) {
+		var implemented = methodOrImpl.implementedMethod;
+		var ckr = new ExprChecker(baseScope, diags, methodOrImpl, methodReplacer, isStatic, implemented.selfEffect, implemented.parameters);
+		var returnTy = TyUtils.instantiateType(implemented.returnTy, methodReplacer);
+		return ckr.checkReturn(returnTy, body);
+	}
 
-	Klass currentClass => baseScope.currentClass;
+	ClassDeclaration currentClass => baseScope.currentClass;
+	readonly InstCls currentInstCls;
 	readonly MethodOrImpl methodOrImpl;
 	readonly bool isStatic;
 	readonly Effect selfEffect;
-	readonly Arr<Parameter> parameters;
+	// When accessing `currentParameters`, must remember to replace types in case this is an implementation of an abstract method and the superclass took type parameters.
+	readonly Arr<Parameter> currentParameters;
+	readonly TyReplacer currentMethodTyReplacer;
 	readonly Stack<Pattern.Single> locals = new Stack<Pattern.Single>();
 
-	ExprChecker(BaseScope baseScope, Arr.Builder<Diagnostic> diags, MethodOrImpl methodOrImpl, bool isStatic, Effect selfEffect, Arr<Parameter> parameters) : base(baseScope, diags) {
+	ExprChecker(BaseScope baseScope, Arr.Builder<Diagnostic> diags, MethodOrImpl methodOrImpl, TyReplacer methodReplacer, bool isStatic, Effect selfEffect, Arr<Parameter> parameters) : base(baseScope, diags) {
 		this.methodOrImpl = methodOrImpl;
 		this.isStatic = isStatic;
 		this.selfEffect = selfEffect;
-		this.parameters = parameters;
+		this.currentParameters = parameters;
+		this.currentMethodTyReplacer = methodReplacer;
+		currentInstCls = InstCls.of(currentClass, currentClass.typeParameters.map<Ty>(tp => tp));
 	}
 
 	Expr checkVoid(Ast.Expr a) => checkSubtype(Ty.Void, a);
@@ -97,23 +106,19 @@ class ExprChecker : CheckerCommon {
 		if (locals.find(out var local, l => l.name == name))
 			return handle(ref expected, new AccessLocal(loc, local));
 
-		if (parameters.find(out var param, p => p.name == name))
-			return handle(ref expected, new AccessParameter(loc, param));
+		if (currentParameters.find(out var param, p => p.name == name)) {
+			var ty = instantiateType(param.ty, currentMethodTyReplacer);
+			return handle(ref expected, new AccessParameter(loc, param, ty));
+		}
 
-		if (!baseScope.tryGetOwnMember(loc, name, diags, out var member))
+		if (!baseScope.getOwnMemberOrAddDiagnostic(loc, name, diags, out var member))
 			return handleBogus(ref expected, loc);
 
-		switch (member) {
-			case Slot slot:
-				if (isStatic) {
-					addDiagnostic(loc, new CantAccessSlotFromStaticMethod(slot));
-					return handleBogus(ref expected, loc);
-				}
+		var (memberDecl, memberTyReplacer) = member;
 
-				if (slot.mutable && !selfEffect.canGet)
-					addDiagnostic(loc, new MissingEffectToGetSlot(slot));
-
-				return handle(ref expected, new GetMySlot(loc, slot));
+		switch (memberDecl) {
+			case SlotDeclaration slot:
+				return getOwnSlot(ref expected, loc, slot, memberTyReplacer);
 
 			case MethodWithBody _:
 			case AbstractMethod _:
@@ -136,27 +141,26 @@ class ExprChecker : CheckerCommon {
 
 	Handled checkOperatorCall(ref Expected expected, Ast.OperatorCall ast) {
 		var (loc, left, oper, right) = ast;
-		return callMethod(ref expected, loc, left, oper, Arr.of(right));
+		var tyArgs = Arr.empty<Ast.Ty>(); // No way to provide these to an operator call.
+		return callMethod(ref expected, loc, left, oper, tyArgs, Arr.of(right));
 	}
 
 	Handled checkCallAst(ref Expected expected, Ast.Call call) {
-		var (callLoc, target, args) = call;
+		var (callLoc, target, tyArgs, args) = call;
 		switch (target) {
 			case Ast.StaticAccess sa: {
 				var (accessLoc, className, staticMethodName) = sa;
-				if (!baseScope.accessClsRef(className, out var cls)) {
-					addDiagnostic(accessLoc, new ClassNotFound(className));
+				if (!baseScope.accessClassDeclarationOrAddDiagnostic(accessLoc, diags,  className, out var cls))
 					return handleBogus(ref expected, accessLoc);
-				}
-				return callStaticMethod(ref expected, callLoc, cls, staticMethodName, args);
+				return callStaticMethod(ref expected, callLoc, cls, staticMethodName, tyArgs, args);
 			}
 
 			case Ast.GetProperty getProp:
 				var (_, propTarget, propertyName) = getProp;
-				return callMethod(ref expected, callLoc, propTarget, propertyName, args);
+				return callMethod(ref expected, callLoc, propTarget, propertyName, tyArgs, args);
 
 			case Ast.Access ac:
-				return callOwnMethod(ref expected, callLoc, ac.name, args);
+				return callOwnMethod(ref expected, callLoc, ac.name, tyArgs, args);
 
 			default:
 				addDiagnostic(callLoc, DelegatesNotYetSupported.instance);
@@ -170,16 +174,17 @@ class ExprChecker : CheckerCommon {
 		if (!expected.inTailCallPosition)
 			addDiagnostic(loc, NotATailCall.instance);
 
-		if (!this.checkCallArguments(loc, methodOrImpl.implementedMethod, parameters, argAsts, out var args))
+		// For recursion, need to do substitution in the case that we are implementing an abstract method where the superclass took type arguments.
+		if (!checkCallArguments(loc, methodOrImpl.implementedMethod, /*targetReplacer*/TyReplacer.doNothingReplacer, currentMethodTyReplacer, argAsts, out var args))
 			return handleBogus(ref expected, loc);
 
 		return handle(ref expected, new Recur(loc, methodOrImpl, args));
 	}
 
 	Handled checkNew(ref Expected expected, Ast.New ast) {
-		var (loc, argAsts) = ast;
+		var (loc, tyArgAsts, argAsts) = ast;
 
-		if (!(currentClass.head is KlassHead.Slots slots)) {
+		if (!(currentClass.head is ClassHead.Slots slots)) {
 			addDiagnostic(loc, new NewInvalid(currentClass));
 			return handleBogus(ref expected, loc);
 		}
@@ -189,8 +194,26 @@ class ExprChecker : CheckerCommon {
 			return handleBogus(ref expected, loc);
 		}
 
+		var tyArgs = tyArgAsts.map(getTy);
+
+		if (currentClass.typeParameters.length != tyArgs.length)
+			throw TODO();
+
 		var args = argAsts.zip(slots.slots, (arg, slot) => checkSubtype(slot.ty, arg));
-		return handle(ref expected, new New(loc, slots, args));
+		return handle(ref expected, new New(loc, slots, tyArgs, args));
+	}
+
+	Handled getOwnSlot(ref Expected expected, Loc loc, SlotDeclaration slot, TyReplacer replacer) {
+		if (isStatic) {
+			addDiagnostic(loc, new CantAccessSlotFromStaticMethod(slot));
+			return handleBogus(ref expected, loc);
+		}
+
+		if (slot.mutable && !selfEffect.canGet)
+			addDiagnostic(loc, new MissingEffectToGetSlot(slot));
+
+		var slotTy = instantiateTypeAndNarrowEffects(selfEffect, slot.ty, replacer, loc, diags);
+		return handle(ref expected, new GetMySlot(loc, slot, slotTy));
 	}
 
 	Handled checkGetProperty(ref Expected expected, Ast.GetProperty ast) {
@@ -198,15 +221,15 @@ class ExprChecker : CheckerCommon {
 
 		var target = checkInfer(targetAst);
 		switch (target.ty) {
-			case Ty.Bogus _:
+			case BogusTy _:
 				return handleBogus(ref expected, loc);
 
-			case Ty.PlainTy plainTy: {
+			case PlainTy plainTy: {
 				var (targetEffect, targetCls) = plainTy;
-				if (!getMember(loc, targetCls, propertyName, out var member))
+				if (!getMemberOfInstClsOrAddDiagnostic(loc, targetCls, propertyName, out var member))
 					return handleBogus(ref expected, loc);
 
-				if (!(member is Slot slot)) {
+				if (!(member.memberDecl is SlotDeclaration slot)) {
 					addDiagnostic(loc, DelegatesNotYetSupported.instance);
 					return handleBogus(ref expected, loc);
 				}
@@ -214,8 +237,10 @@ class ExprChecker : CheckerCommon {
 				if (slot.mutable && !targetEffect.canGet)
 					addDiagnostic(loc, new MissingEffectToGetSlot(slot));
 
+				var slotTy = instantiateTypeAndNarrowEffects(targetEffect, slot.ty, member.replacer, loc, diags);
+
 				// Handling of effect handled by GetSlot.ty -- this is the minimum common effect between 'target' and 'slot.ty'.
-				return handle(ref expected, new GetSlot(loc, target, slot));
+				return handle(ref expected, new GetSlot(loc, target, slot, slotTy));
 			}
 
 			default:
@@ -226,11 +251,13 @@ class ExprChecker : CheckerCommon {
 	Handled checkSetProperty(ref Expected expected, Ast.SetProperty ast) {
 		var (loc, propertyName, valueAst) = ast;
 
-		if (!baseScope.tryGetOwnMember(loc, propertyName, diags, out var member))
+		if (!baseScope.getOwnMemberOrAddDiagnostic(loc, propertyName, diags, out var member))
 			return handleBogus(ref expected, loc);
 
-		if (!(member is Slot slot)) {
-			addDiagnostic(loc, new CantSetNonSlot(member));
+		var (memberDecl, replacer) = member;
+
+		if (!(memberDecl is SlotDeclaration slot)) {
+			addDiagnostic(loc, new CantSetNonSlot(memberDecl));
 			return handleBogus(ref expected, loc);
 		}
 
@@ -238,9 +265,9 @@ class ExprChecker : CheckerCommon {
 			addDiagnostic(loc, new SlotNotMutable(slot));
 
 		if (!selfEffect.canSet)
-			addDiagnostic(loc, new MissingEffectToSetSlot(slot));
+			addDiagnostic(loc, new MissingEffectToSetSlot(selfEffect, slot));
 
-		var value = checkSubtype(slot.ty, valueAst);
+		var value = checkSubtype(TyUtils.instantiateType(slot.ty, replacer), valueAst);
 		return handle(ref expected, new SetSlot(loc, slot, value));
 	}
 
@@ -266,8 +293,20 @@ class ExprChecker : CheckerCommon {
 		return handle(ref expected, new Literal(loc, value));
 	}
 
-	Handled checkSelf(ref Expected expected, Ast.Self s) =>
-		handle(ref expected, new Self(s.loc, Ty.of(selfEffect, currentClass)));
+	Handled checkSelf(ref Expected expected, Ast.Self s) {
+		/*
+		Create an InstCls for the current class that just maps type parameters to theirselves.
+		For example:
+			class Foo[T]
+				Foo[T] get-self()
+					self || This is of type Foo[T] where T is the same as the type parameter on Foo.
+
+			fun use-it(Foo[Int] foo)
+				foo.get-self() || The return type has the same T, so it will be instantiated to return Foo[Int].
+		*/
+		var self = new Self(s.loc, Ty.of(selfEffect, currentInstCls));
+		return handle(ref expected, self);
+	}
 
 	Handled checkIfElse(ref Expected expected, Ast.IfElse ast) {
 		var (loc, conditionAst, thenAst, elseAst) = ast;
@@ -323,50 +362,73 @@ class ExprChecker : CheckerCommon {
 		return new Try.Catch(loc, caught, then);
 	}
 
-	Handled callStaticMethod(ref Expected expected, Loc loc, ClsRef cls, Sym methodName, Arr<Ast.Expr> argAsts) {
+	Handled callStaticMethod(ref Expected expected, Loc loc, ClassDeclarationLike cls, Sym methodName, Arr<Ast.Ty> tyArgAsts, Arr<Ast.Expr> argAsts) {
 		if (!cls.getMember(methodName, out var member)) { // No need to look in superclasses because this is a static method.
 			addDiagnostic(loc, new MemberNotFound(cls, methodName));
 			return handleBogus(ref expected, loc);
 		}
-		if (!(member is MethodWithBodyLike method) || !method.isStatic) {
+		if (!(member is MethodWithBodyLike methodDecl) || !methodDecl.isStatic) {
 			addDiagnostic(loc, DelegatesNotYetSupported.instance);
 			return handleBogus(ref expected, loc);
 		}
 
-		// No need to check selfEffect, because this is a static method.
-		if (!checkCall(loc, method, argAsts, out var args))
+		if (!instantiateMethodOrAddDiagnostic(methodDecl, tyArgAsts, out var methodInst))
 			return handleBogus(ref expected, loc);
-		return handle(ref expected, new StaticMethodCall(loc, method, args));
+
+		// No need to check selfEffect, because this is a static method.
+		// Static methods can't look at their class' type arguments.
+		if (!checkCall(loc, methodInst, TyReplacer.doNothingReplacer, argAsts, out var args))
+			return handleBogus(ref expected, loc);
+		return handle(ref expected, new StaticMethodCall(loc, methodInst, args, instantiateReturnType(methodInst)));
 	}
 
-	Handled callMethod(ref Expected expected, Loc loc, Ast.Expr targetAst, Sym methodName, Arr<Ast.Expr> argAsts) {
+	bool instantiateMethodOrAddDiagnostic(MethodDeclaration methodDecl, Arr<Ast.Ty> tyArgAsts, out MethodInst methodInst) {
+		var tyArgs = tyArgAsts.map(getTy);
+		if (tyArgs.length != methodDecl.typeParameters.length)
+			throw TODO(); // Diagnostic
+
+		methodInst = new MethodInst(methodDecl, tyArgs);
+		return true;
+	}
+
+	//mv
+	static Ty instantiateReturnType(MethodInst method) =>
+		instantiateType(method.decl.returnTy, method.replacer);
+
+	Handled callMethod(ref Expected expected, Loc loc, Ast.Expr targetAst, Sym methodName, Arr<Ast.Ty> tyArgAsts, Arr<Ast.Expr> argAsts) {
 		var target = checkInfer(targetAst);
 		switch (target.ty) {
-			case Ty.Bogus _:
+			case BogusTy _:
 				// Already issued an error, don't need another.
 				return handleBogus(ref expected, loc);
 
-			case Ty.PlainTy plainTy: {
+			case PlainTy plainTy: {
 				var (targetEffect, targetCls) = plainTy;
-				if (!getMember(loc, targetCls, methodName, out var member))
+				if (!getMemberOfInstClsOrAddDiagnostic(loc, targetCls, methodName, out var member))
 					return handleBogus(ref expected, loc);
 
-				if (!(member is Method method)) {
+				var (memberDecl, memberReplacer) = member;
+
+				if (!(memberDecl is MethodDeclaration methodDecl)) {
 					addDiagnostic(loc, DelegatesNotYetSupported.instance);
 					return handleBogus(ref expected, loc);
 				}
 
-				if (method.isStatic) {
-					addDiagnostic(loc, new CantAccessStaticMethodThroughInstance(method));
+				if (methodDecl.isStatic) {
+					addDiagnostic(loc, new CantAccessStaticMethodThroughInstance(methodDecl));
 					return handleBogus(ref expected, loc);
 				}
 
-				if (!targetEffect.contains(method.selfEffect))
-					addDiagnostic(loc, new IllegalEffect(targetEffect, method.selfEffect));
+				if (!targetEffect.contains(methodDecl.selfEffect))
+					addDiagnostic(loc, new IllegalEffect(targetEffect, methodDecl.selfEffect));
 
-				if (!checkCall(loc, method, argAsts, out var args))
+				if (!instantiateMethodOrAddDiagnostic(methodDecl, tyArgAsts, out var methodInst))
 					return handleBogus(ref expected, loc);
-				return handle(ref expected, new InstanceMethodCall(loc, target, method, args));
+
+				if (!checkCall(loc, methodInst, memberReplacer, argAsts, out var args))
+					return handleBogus(ref expected, loc);
+
+				return handle(ref expected, new InstanceMethodCall(loc, target, methodInst, args, instantiateReturnType(methodInst)));
 			}
 
 			default:
@@ -374,85 +436,94 @@ class ExprChecker : CheckerCommon {
 		}
 	}
 
-	Handled callOwnMethod(ref Expected expected, Loc loc, Sym methodName, Arr<Ast.Expr> argAsts) {
-		if (!getMember(loc, currentClass, methodName, out Member member))
+	Handled callOwnMethod(ref Expected expected, Loc loc, Sym methodName, Arr<Ast.Ty> tyArgAsts, Arr<Ast.Expr> argAsts) {
+		/*
+		Note: InstCls is still relevent here; even if 'self' is not an inst, in a superclass we will fill in type parameters.
+		*/
+		if (!getMemberOfInstClsOrAddDiagnostic(loc, currentInstCls, methodName, out var member))
 			return handleBogus(ref expected, loc);
 
-		if (!(member is Method method)) {
+		var (memberDecl, memberReplacer) = member;
+
+		if (!(memberDecl is MethodDeclaration methodDecl)) {
 			addDiagnostic(loc, DelegatesNotYetSupported.instance);
 			return handleBogus(ref expected, loc);
 		}
 
-		if (!checkCall(loc, method, argAsts, out var args))
+		if (!instantiateMethodOrAddDiagnostic(methodDecl, tyArgAsts, out var methodInst))
 			return handleBogus(ref expected, loc);
 
+		if (!checkCall(loc, methodInst, memberReplacer, argAsts, out var args))
+			return handleBogus(ref expected, loc);
+
+		var ty = instantiateReturnType(methodInst);
+
 		Expr call;
-		if (method is MethodWithBodyLike mbl && mbl.isStatic) {
+		if (methodInst.isStatic) {
 			// Calling a static method. OK whether we're in an instance or static context.
-			call = new StaticMethodCall(loc, mbl, args);
+			call = new StaticMethodCall(loc, methodInst, args, ty);
 		} else {
 			if (isStatic) {
-				addDiagnostic(loc, new CantCallInstanceMethodFromStaticMethod(method));
+				addDiagnostic(loc, new CantCallInstanceMethodFromStaticMethod(methodDecl));
 				return handleBogus(ref expected, loc);
 			}
 
-			if (!selfEffect.contains(method.selfEffect))
-				addDiagnostic(loc, new IllegalEffect(selfEffect, method.selfEffect));
+			if (!selfEffect.contains(methodDecl.selfEffect))
+				addDiagnostic(loc, new IllegalEffect(selfEffect, methodDecl.selfEffect));
 
-			call = new MyInstanceMethodCall(loc, method, args);
+			call = new MyInstanceMethodCall(loc, methodInst, args, ty);
 		}
 
 		return handle(ref expected, call);
 	}
 
+
 	/**
 	NOTE: Caller is responsible for checking that we can access this member's effect!
 	If this returns "false", we've already handled the error reporting, so just call handleBogus.
 	*/
-	bool getMember(Loc loc, ClsRef cls, Sym memberName, out Member member) {
-		if (tryGetMember(cls, memberName, out member))
+	bool getMemberOfInstClsOrAddDiagnostic(Loc loc, InstCls cls, Sym memberName, out InstMember member) {
+		if (tryGetMemberOfInstCls(cls, memberName, out member))
 			return true;
 
-		addDiagnostic(loc, new MemberNotFound(cls, memberName));
-		return false;
-	}
-
-	static bool tryGetMember(ClsRef cls, Sym memberName, out Member member) {
-		var klass = (ClassLike)cls; //TODO: support getting member of builtin class
-		if (klass.membersMap.get(memberName, out member)) {
-			return true;
-		}
-
-		foreach (var super in klass.supers) {
-			if (tryGetMember(super.superClass, memberName, out member))
-				return true;
-		}
-
+		addDiagnostic(loc, new MemberNotFound(cls.classDeclaration, memberName));
 		return false;
 	}
 
 	// Note: Caller is responsible for checking selfEffect
-	bool checkCall(Loc callLoc, Method method, Arr<Ast.Expr> argAsts, out Arr<Expr> args) =>
-		checkCallArguments(callLoc, method, method.parameters, argAsts, out args);
+	bool checkCall(Loc callLoc, MethodInst method, TyReplacer targetReplacer, Arr<Ast.Expr> argAsts, out Arr<Expr> args) =>
+		checkCallArguments(callLoc, method.decl, targetReplacer, method.replacer, argAsts, out args);
 
 	/**
+	`targetReplacer` is the replacer that comes from the instance of an instance method call. E.g.:
+		class Box[T]
+			T get()
+
+		fun foo(Box[Nat] b)
+			b.get() || Must replace T with Nat
+
 	Returns None on error.
 	Used by normal calls and by 'recur' (which doesn't need an effect check)
+
+	'methodReplacer' is the one for ordinary generic methods, e.g. `fun f[T]`.
 	*/
-	bool checkCallArguments(Loc loc, Method method, Arr<Parameter> parameters, Arr<Ast.Expr> argAsts, out Arr<Expr> args) {
-		if (parameters.length != argAsts.length) {
+	bool checkCallArguments(Loc loc, MethodDeclaration method, TyReplacer targetReplacer, TyReplacer methodReplacer, Arr<Ast.Expr> argAsts, out Arr<Expr> args) {
+		if (method.parameters.length != argAsts.length) {
 			addDiagnostic(loc, new ArgumentCountMismatch(method, argAsts.length));
 			args = default(Arr<Expr>); // Caller shouldn't look at this.
 			return false;
 		}
-		args = parameters.zip(argAsts, (parameter, argAst) => checkSubtype(parameter.ty, argAst));
+
+		var fullReplacer = targetReplacer.combine(methodReplacer);
+		args = method.parameters.zip(argAsts, (parameter, argAst) =>
+			checkSubtype(instantiateType(parameter.ty, fullReplacer), argAst));
 		return true;
 	}
 
 	void addToScope(Pattern.Single local) {
 		// It's important that we push even in the presence of errors, because we will always pop.
 
-		if (parameters.find(out var param, p => p.name == local.name))
+		if (currentParameters.find(out var param, p => p.name == local.name))
 			addDiagnostic(local.loc, new CantReassignParameter(param));
 
 		if (locals.find(out var oldLocal, l => l.name == local.name))
@@ -505,7 +576,7 @@ class ExprChecker : CheckerCommon {
 					return c.checkType(expectedTy.force, e);
 				case Kind.Infer:
 					if (expectedTy.get(out var ety)) {
-						expectedTy = Op.Some(c.combineTypes(e.loc, ety, e.ty));
+						expectedTy = Op.Some(c.getCompatibleType(e.loc, ety, e.ty));
 						return new Handled(e);
 					} else {
 						expectedTy = Op.Some(e.ty);
@@ -536,9 +607,9 @@ class ExprChecker : CheckerCommon {
 		}
 	}
 
-	Ty combineTypes(Loc loc, Ty a, Ty b) {
-		var combined = getCombinedType(a, b);
-		if (combined.get(out var c))
+	// Both `a` and `b` should be subtypes of the result.
+	Ty getCompatibleType(Loc loc, Ty a, Ty b) {
+		if (getCommonCompatibleType(a, b).get(out var c))
 			return c;
 
 		addDiagnostic(loc, new CantCombineTypes(a, b));
@@ -577,4 +648,54 @@ class ExprChecker : CheckerCommon {
 
 	void endCheckPattern(uint nAdded) =>
 		doTimes(nAdded, popFromScope);
+}
+
+//mv
+struct InstMember {
+	internal readonly MemberDeclaration memberDecl;
+	internal readonly TyReplacer replacer;
+	internal InstMember(MemberDeclaration memberDecl, TyReplacer replacer) {
+		this.memberDecl = memberDecl;
+		this.replacer = replacer;
+	}
+	internal void Deconstruct(out MemberDeclaration memberDecl, out TyReplacer replacer) {
+		memberDecl = this.memberDecl;
+		replacer = this.replacer;
+	}
+}
+
+//mv
+struct TyReplacer {
+	readonly Arr<TypeParameter> typeParameters;
+	readonly Arr<Ty> typeArguments;
+	TyReplacer(Arr<TypeParameter> typeParameters, Arr<Ty> typeArguments) {
+		this.typeParameters = typeParameters;
+		this.typeArguments = typeArguments;
+	}
+	internal static TyReplacer ofInstCls(InstCls i) {
+		var (classDeclaration, typeArguments) = i;
+		return new TyReplacer(classDeclaration.typeParameters, typeArguments);
+	}
+	internal static TyReplacer ofMethod(MethodDeclaration m, Arr<Ty> tyArgs) =>
+		new TyReplacer(m.typeParameters, tyArgs);
+
+	internal static readonly TyReplacer doNothingReplacer = new TyReplacer(Arr.empty<TypeParameter>(), Arr.empty<Ty>());
+
+	internal Ty replaceOrSame(TypeParameter ty) =>
+		replace(ty, out var newTy) ? newTy : ty;
+
+	internal bool replace(TypeParameter ty, out Ty newTy) {
+		for (uint i = 0; i < typeParameters.length; i++)
+			if (ty.fastEquals(typeParameters[i])) {
+				newTy = typeArguments[i];
+				return true;
+			}
+		newTy = default(Ty);
+		return false;
+	}
+
+	internal TyReplacer combine(TyReplacer other) {
+		assert(!typeParameters.some(ta => other.typeParameters.some(ta.fastEquals)));
+		return new TyReplacer(typeParameters.concat(other.typeParameters), typeArguments.concat(other.typeArguments));
+	}
 }

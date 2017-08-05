@@ -17,13 +17,13 @@ static class Program {
 		using (var tc = new Test.TestCompile(updateBaselines: true)) {
 			tc.runAllTests();
 			//tc.runAllCompilerTests();
-			//tc.runTestNamed("Main-Pass");
+			//tc.runTestNamed("Generic");
 		}
 	}
 
 	static void doTestIl() {
 		var t = testIl();
-		var res = t.invokeStatic("stat", 10);
+		var res = t.invokeStatic("main", 10u); //t.invokeStaticGeneric<int>("stat", 10);
 		Console.WriteLine(res);
 
 		//var instance = Activator.CreateInstance(t);
@@ -37,19 +37,35 @@ static class Program {
 
 		var tb = moduleBuilder.DefineType("TestIL", TypeAttributes.Sealed); //, typeof(object), new[] { iface });
 
-		var mb = tb.DefineMethod(
-			"stat",
+
+		var mbStat = tb.DefineMethod("stat", MethodAttributes.Public | MethodAttributes.Static);
+		var typeParameters = mbStat.DefineGenericParameters(new[] { "T" });
+		mbStat.SetParameters(typeParameters);
+		mbStat.SetReturnType(typeParameters[0]);
+
+		var il = new ILWriter(mbStat);
+		writeStat(ref il);
+
+		var mbMain = tb.DefineMethod(
+			"main",
 			MethodAttributes.Public | MethodAttributes.Static,
-			typeof(int),
-			new Type[] { });
-		var il = new ILWriter(mb);
-		writeIl(ref il);
+			typeof(uint),
+			new Type[] { typeof(uint) });
+		var ilmain = new ILWriter(mbMain);
+		writeMain(ref ilmain, mbStat);
 
 		return tb.CreateType();
 	}
 
-	static void writeIl(ref ILWriter il) {
-		il.constInt(1);
+	static void writeStat(ref ILWriter il) {
+		il.getParameter(0);
+		il.ret();
+	}
+
+	static void writeMain(ref ILWriter il, MethodInfo stat) {
+		il.getParameter(0);
+		il.callNonVirtual(stat.MakeGenericMethod(typeof(uint)));
+		// Call "stat"
 		il.ret();
 	}
 }

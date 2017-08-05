@@ -2,14 +2,14 @@ using Model;
 
 namespace Diag.CheckDiags {
 	internal sealed class NotAnAbstractClass : Diag<NotAnAbstractClass> {
-		[UpPointer] internal readonly ClsRef cls;
-		internal NotAnAbstractClass(ClsRef cls) { this.cls = cls; }
+		[UpPointer] internal readonly ClassDeclarationLike cls;
+		internal NotAnAbstractClass(ClassDeclarationLike cls) { this.cls = cls; }
 
 		public override void show<S>(S s) =>
 			s.add("Can't extend non-abstract class ").add(cls.name.str);
 
 		public override bool deepEqual(NotAnAbstractClass n) =>
-			cls.equalsId<ClsRef, ClsRefId>(n.cls);
+			cls.equalsId<ClassDeclarationLike, ClassDeclarationLike.Id>(n.cls);
 		public override Dat toDat() => Dat.of(this,
 			nameof(cls), cls);
 	}
@@ -19,7 +19,7 @@ namespace Diag.CheckDiags {
 		internal ClassNotFound(Sym name) { this.name = name; }
 
 		public override void show<S>(S s) =>
-			s.add("Class ").add(name.str).add("not found.");
+			s.add("Class ").add(name.str).add(" not found.");
 
 		public override bool deepEqual(ClassNotFound c) => name.deepEqual(c.name);
 		public override Dat toDat() => Dat.of(this, nameof(name), name);
@@ -67,16 +67,16 @@ namespace Diag.CheckDiags {
 	}
 
 	internal sealed class DuplicateMember : Diag<DuplicateMember> {
-		[UpPointer] internal readonly Member firstMember;
-		[UpPointer] internal readonly Member secondMember;
-		internal DuplicateMember(Member firstMember, Member secondMember) { this.firstMember = firstMember; this.secondMember = secondMember; }
+		[UpPointer] internal readonly MemberDeclaration firstMember;
+		[UpPointer] internal readonly MemberDeclaration secondMember;
+		internal DuplicateMember(MemberDeclaration firstMember, MemberDeclaration secondMember) { this.firstMember = firstMember; this.secondMember = secondMember; }
 
 		public override void show<S>(S s) =>
 			s.add("Duplicate members: ").showMember(firstMember, upper: false).add(" and ").showMember(secondMember, upper: false).add('.');
 
 		public override bool deepEqual(DuplicateMember d) =>
-			firstMember.equalsId<Member, MemberId>(d.firstMember) &&
-			secondMember.equalsId<Member, MemberId>(d.secondMember);
+			firstMember.equalsId<MemberDeclaration, MemberId>(d.firstMember) &&
+			secondMember.equalsId<MemberDeclaration, MemberId>(d.secondMember);
 		public override Dat toDat() => Dat.of(this,
 			nameof(firstMember), firstMember.getMemberId(),
 			nameof(secondMember), secondMember.getMemberId());

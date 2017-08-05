@@ -57,17 +57,17 @@ sealed class JsEmitter {
 	static readonly Estree.MemberExpression moduleExports = Estree.MemberExpression.simple(Loc.zero, "module", "exports");
 
 	static readonly Estree.MemberExpression objectCreate = Estree.MemberExpression.simple(Loc.zero, "Object", "create");
-	Estree.ClassExpression emitClass(Klass klass) {
+	Estree.ClassExpression emitClass(ClassDeclaration klass) {
 		var loc = klass.loc;
 		var name = klass.name;
 		var body = Arr.builder<Estree.MethodDefinition>();
 
 		switch (klass.head) {
-			case KlassHead.Static _:
-			case KlassHead.Abstract _:
+			case ClassHead.Static _:
+			case ClassHead.Abstract _:
 				// No constructor
 				break;
-			case KlassHead.Slots slots:
+			case ClassHead.Slots slots:
 				body.add(emitSlotsConstructor(slots, needSuperCall: klass.supers.length != 0));
 				break;
 			default:
@@ -98,9 +98,9 @@ sealed class JsEmitter {
 		}
 	}
 	static Estree.Expression superClassToExpr(Super super) =>
-		id(super.loc, escapeName(super.superClass.name));
+		id(super.loc, escapeName(super.superClass.classDeclaration.name));
 
-	static Estree.MethodDefinition emitSlotsConstructor(KlassHead.Slots s, bool needSuperCall) {
+	static Estree.MethodDefinition emitSlotsConstructor(ClassHead.Slots s, bool needSuperCall) {
 		// constructor(x) { this.x = x; }
 		var patterns = s.slots.map<Estree.Pattern>(slot => id(slot.loc, escapeName(slot.name)));
 		var first = needSuperCall ? Op.Some(superCall(s.loc)) : Op<Estree.Statement>.None;
@@ -116,7 +116,7 @@ sealed class JsEmitter {
 	static Estree.Statement superCall(Loc loc) =>
 		Estree.ExpressionStatement.of(Estree.CallExpression.of(loc, new Estree.Super(loc)));
 
-	Estree.MethodDefinition emitMethodOrImpl(Loc loc, Sym className, Method method, Expr body, bool isStatic) {
+	Estree.MethodDefinition emitMethodOrImpl(Loc loc, Sym className, MethodDeclaration method, Expr body, bool isStatic) {
 		var @async = isAsync(method);
 		var @params = method.parameters.map<Estree.Pattern>(p => id(p.loc, escapeName(p.name)));
 		var block = JsExprEmitter.emitMethodBody(ref needsLib, className, @async, body);

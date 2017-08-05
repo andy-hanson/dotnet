@@ -7,7 +7,7 @@ namespace Model {
 	/** Module or BuiltinClass. */
 	interface Imported : ToData<Imported> {
 		Sym name { get; }
-		ClassLike importedClass { get; }
+		ClassDeclarationLike importedClass { get; }
 		Dat getImportedId();
 	}
 
@@ -27,8 +27,8 @@ namespace Model {
 		DocumentInfo ModuleOrFail.document => document;
 		// Technically these form a tree and thus aren't up-pointers, but don't want to serialize imports when serializing a module.
 		[UpPointer] internal readonly Arr<Imported> imports;
-		Late<Klass> _klass;
-		internal Klass klass { get => _klass.get; set => _klass.set(value); }
+		Late<ClassDeclaration> _klass;
+		internal ClassDeclaration klass { get => _klass.get; set => _klass.set(value); }
 		Late<Arr<Diagnostic>> _diagnostics;
 		internal Arr<Diagnostic> diagnostics { get => _diagnostics.get; set => _diagnostics.set(value); }
 		Arr<Diagnostic> ModuleOrFail.diagnostics => diagnostics;
@@ -43,7 +43,7 @@ namespace Model {
 		public Path fullPath() => ModuleResolver.fullPath(logicalPath, isIndex);
 		internal Sym name => klass.name;
 		Sym Imported.name => name;
-		ClassLike Imported.importedClass => klass;
+		ClassDeclarationLike Imported.importedClass => klass;
 
 		internal string getText(Loc loc) =>
 			document.text.slice(loc.start.index, loc.end.index);

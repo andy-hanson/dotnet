@@ -27,7 +27,7 @@ struct Path : ToData<Path>, IEquatable<Path>, Show {
 	internal static readonly Path empty = new Path(Arr.empty<string>());
 
 	internal static Path resolveWithRoot(Path root, Path path) =>
-		new Path(root.parts.Concat(path.parts));
+		new Path(root.parts.concat(path.parts));
 
 	internal static Path fromParts(params string[] elements) {
 		foreach (var e in elements)
@@ -51,7 +51,7 @@ struct Path : ToData<Path>, IEquatable<Path>, Show {
 	internal Path resolve(RelPath rel) {
 		var nPartsToKeep = checked(parts.length - rel.nParents);
 		var parent = parts.slice(0, nPartsToKeep);
-		return new Path(parent.Concat(rel.relToParent.parts));
+		return new Path(parent.concat(rel.relToParent.parts));
 	}
 
 	internal RelPath relTo(Path other) {

@@ -1,21 +1,25 @@
-Klass(
+ClassDeclaration(
   loc: 0-56,
   head: Abstract(
     loc: 0-19),
-  membersMap: Dict<Sym, Member>(
+  membersMap: Dict<Sym, MemberDeclaration>(
     getN: MethodWithBody(
       loc: 19-56,
       isStatic: true,
       returnTy: Id(
         effect: "pure",
-        clsId: "Nat"),
+        clsId: Id(
+          classDeclarationId: "Nat",
+          typeArgumentIds: [])),
       name: "getN",
       selfEffect: "pure",
       parameters: [Parameter(
         loc: 32-47,
         ty: Id(
           effect: "pure",
-          clsId: "AbstractClass"),
+          clsId: Id(
+            classDeclarationId: "AbstractClass",
+            typeArgumentIds: [])),
         name: "a",
         index: 0)],
       body: InstanceMethodCall(
@@ -26,17 +30,23 @@ Klass(
             loc: 32-47,
             ty: Id(
               effect: "pure",
-              clsId: "AbstractClass"),
+              clsId: Id(
+                classDeclarationId: "AbstractClass",
+                typeArgumentIds: [])),
             name: "a",
             index: 0)),
-        method: Id(
-          klassId: "AbstractClass",
-          name: "n"),
+        method: MethodInst(
+          decl: Id(
+            klassId: "AbstractClass",
+            name: "n"),
+          typeArguments: []),
         args: [])),
     n: AbstractMethod(
       loc: 10-17,
       returnTy: Id(
         effect: "pure",
-        clsId: "Nat"),
+        clsId: Id(
+          classDeclarationId: "Nat",
+          typeArgumentIds: [])),
       name: "n",
       parameters: [])))

@@ -1,21 +1,25 @@
-Klass(
+ClassDeclaration(
   loc: 23-155,
   head: Slots(
-    slots: [Slot(
+    slots: [SlotDeclaration(
       loc: 30-39,
       name: "x",
       mutable: false,
       ty: PlainTy(
         effect: "pure",
-        cls: BuiltinClass(
-          name: "Nat")))]),
-  membersMap: Dict<Sym, Member>(
+        instantiatedClass: InstCls(
+          classDeclaration: BuiltinClass(
+            name: "Nat"),
+          typeArguments: [])))]),
+  membersMap: Dict<Sym, MemberDeclaration>(
     main: MethodWithBody(
       loc: 67-155,
       isStatic: true,
       returnTy: Id(
         effect: "pure",
-        clsId: "Void"),
+        clsId: Id(
+          classDeclarationId: "Void",
+          typeArgumentIds: [])),
       name: "main",
       selfEffect: "pure",
       parameters: [],
@@ -34,9 +38,11 @@ Klass(
             loc: 102-106,
             name: "gotN"),
           value: StaticMethodCall(
-            method: Id(
-              klassId: "AbstractClass",
-              name: "getN"),
+            method: MethodInst(
+              decl: Id(
+                klassId: "AbstractClass",
+                name: "getN"),
+              typeArguments: []),
             args: [AccessLocal(
               local: "instance")]),
           then: Assert(
@@ -45,17 +51,21 @@ Klass(
               loc: 145-155,
               target: AccessLocal(
                 local: "gotN"),
-              method: Id(
-                klassId: "Nat",
-                name: "=="),
+              method: MethodInst(
+                decl: Id(
+                  klassId: "Nat",
+                  name: "=="),
+                typeArguments: []),
               args: [Literal(
                 loc: 153-154,
                 value: 1)]))))),
-    x: Slot(
+    x: SlotDeclaration(
       loc: 30-39,
       name: "x",
       mutable: false,
       ty: PlainTy(
         effect: "pure",
-        cls: BuiltinClass(
-          name: "Nat")))))
+        instantiatedClass: InstCls(
+          classDeclaration: BuiltinClass(
+            name: "Nat"),
+          typeArguments: [])))))

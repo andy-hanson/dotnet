@@ -1,19 +1,21 @@
 Module(
   loc: 0-47,
   imports: [],
-  klass: Klass(
+  klass: ClassDeclaration(
     loc: 0-47,
+    typeParameters: [],
     head: Abstract(
       loc: 0-20),
     supers: [],
     methods: [Method(
       loc: 20-47,
       isStatic: false,
+      typeParameters: [],
       returnTy: Ty(
         loc: 24-27,
-        cls: Access(
-          loc: 24-27,
-          name: "Nat")),
+        effect: "pure",
+        name: "Nat",
+        tyArgs: []),
       name: "s1Def",
       parameters: [],
       body: OperatorCall(

@@ -5,8 +5,9 @@ Module(
     path: RelPath(
       nParents: 1,
       relToParent: ["AbstractClass"]))],
-  klass: Klass(
+  klass: ClassDeclaration(
     loc: 23-155,
+    typeParameters: [],
     head: Slots(
       loc: 23-40,
       slots: [Slot(
@@ -14,9 +15,9 @@ Module(
         mutable: false,
         ty: Ty(
           loc: 34-37,
-          cls: Access(
-            loc: 34-37,
-            name: "Nat")),
+          effect: "pure",
+          name: "Nat",
+          tyArgs: []),
         name: "x")]),
     supers: [Super(
       loc: 40-67,
@@ -31,11 +32,12 @@ Module(
     methods: [Method(
       loc: 67-155,
       isStatic: true,
+      typeParameters: [],
       returnTy: Ty(
         loc: 71-75,
-        cls: Access(
-          loc: 71-75,
-          name: "Void")),
+        effect: "pure",
+        name: "Void",
+        tyArgs: []),
       name: "main",
       parameters: [],
       body: Let(
@@ -45,6 +47,7 @@ Module(
           name: "instance"),
         value: New(
           loc: 95-102,
+          tyArgs: [],
           args: [Literal(
             loc: 99-100,
             value: 1)]),
@@ -59,6 +62,7 @@ Module(
               loc: 109-127,
               className: "AbstractClass",
               staticMethodName: "getN"),
+            typeArguments: [],
             args: [Access(
               loc: 128-136,
               name: "instance")]),

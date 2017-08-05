@@ -1,13 +1,15 @@
-Klass(
+ClassDeclaration(
   loc: 0-502,
   head: Static(),
-  membersMap: Dict<Sym, Member>(
+  membersMap: Dict<Sym, MemberDeclaration>(
     main: MethodWithBody(
       loc: 0-120,
       isStatic: true,
       returnTy: Id(
         effect: "pure",
-        clsId: "Void"),
+        clsId: Id(
+          classDeclarationId: "Void",
+          typeArgumentIds: [])),
       name: "main",
       selfEffect: "pure",
       parameters: [],
@@ -18,15 +20,19 @@ Klass(
           asserted: InstanceMethodCall(
             loc: 24-45,
             target: StaticMethodCall(
-              method: Id(
-                klassId: "",
-                name: "factorial"),
+              method: MethodInst(
+                decl: Id(
+                  klassId: "",
+                  name: "factorial"),
+                typeArguments: []),
               args: [Literal(
                 loc: 34-35,
                 value: 5)]),
-            method: Id(
-              klassId: "Nat",
-              name: "=="),
+            method: MethodInst(
+              decl: Id(
+                klassId: "Nat",
+                name: "=="),
+              typeArguments: []),
             args: [Literal(
               loc: 39-42,
               value: 120)])),
@@ -37,15 +43,19 @@ Klass(
             asserted: InstanceMethodCall(
               loc: 52-70,
               target: StaticMethodCall(
-                method: Id(
-                  klassId: "",
-                  name: "fibonacci"),
+                method: MethodInst(
+                  decl: Id(
+                    klassId: "",
+                    name: "fibonacci"),
+                  typeArguments: []),
                 args: [Literal(
                   loc: 62-63,
                   value: 0)]),
-              method: Id(
-                klassId: "Nat",
-                name: "=="),
+              method: MethodInst(
+                decl: Id(
+                  klassId: "Nat",
+                  name: "=="),
+                typeArguments: []),
               args: [Literal(
                 loc: 67-68,
                 value: 0)])),
@@ -56,15 +66,19 @@ Klass(
               asserted: InstanceMethodCall(
                 loc: 77-95,
                 target: StaticMethodCall(
-                  method: Id(
-                    klassId: "",
-                    name: "fibonacci"),
+                  method: MethodInst(
+                    decl: Id(
+                      klassId: "",
+                      name: "fibonacci"),
+                    typeArguments: []),
                   args: [Literal(
                     loc: 87-88,
                     value: 2)]),
-                method: Id(
-                  klassId: "Nat",
-                  name: "=="),
+                method: MethodInst(
+                  decl: Id(
+                    klassId: "Nat",
+                    name: "=="),
+                  typeArguments: []),
                 args: [Literal(
                   loc: 92-93,
                   value: 1)])),
@@ -73,15 +87,19 @@ Klass(
               asserted: InstanceMethodCall(
                 loc: 102-120,
                 target: StaticMethodCall(
-                  method: Id(
-                    klassId: "",
-                    name: "fibonacci"),
+                  method: MethodInst(
+                    decl: Id(
+                      klassId: "",
+                      name: "fibonacci"),
+                    typeArguments: []),
                   args: [Literal(
                     loc: 112-113,
                     value: 6)]),
-                method: Id(
-                  klassId: "Nat",
-                  name: "=="),
+                method: MethodInst(
+                  decl: Id(
+                    klassId: "Nat",
+                    name: "=="),
+                  typeArguments: []),
                 args: [Literal(
                   loc: 117-118,
                   value: 8)])))))),
@@ -90,20 +108,26 @@ Klass(
       isStatic: true,
       returnTy: Id(
         effect: "pure",
-        clsId: "Nat"),
+        clsId: Id(
+          classDeclarationId: "Nat",
+          typeArgumentIds: [])),
       name: "factorial",
       selfEffect: "pure",
       parameters: [Parameter(
         loc: 138-143,
         ty: Id(
           effect: "pure",
-          clsId: "Nat"),
+          clsId: Id(
+            classDeclarationId: "Nat",
+            typeArgumentIds: [])),
         name: "n",
         index: 0)],
       body: StaticMethodCall(
-        method: Id(
-          klassId: "",
-          name: "factorial-recursive"),
+        method: MethodInst(
+          decl: Id(
+            klassId: "",
+            name: "factorial-recursive"),
+          typeArguments: []),
         args: [
           AccessParameter(
             loc: 166-167,
@@ -111,7 +135,9 @@ Klass(
               loc: 138-143,
               ty: Id(
                 effect: "pure",
-                clsId: "Nat"),
+                clsId: Id(
+                  classDeclarationId: "Nat",
+                  typeArgumentIds: [])),
               name: "n",
               index: 0)),
           Literal(
@@ -123,7 +149,9 @@ Klass(
       isStatic: true,
       returnTy: Id(
         effect: "pure",
-        clsId: "Nat"),
+        clsId: Id(
+          classDeclarationId: "Nat",
+          typeArgumentIds: [])),
       name: "factorial-recursive",
       selfEffect: "pure",
       parameters: [
@@ -131,14 +159,18 @@ Klass(
           loc: 200-205,
           ty: Id(
             effect: "pure",
-            clsId: "Nat"),
+            clsId: Id(
+              classDeclarationId: "Nat",
+              typeArgumentIds: [])),
           name: "n",
           index: 0),
         Parameter(
           loc: 207-214,
           ty: Id(
             effect: "pure",
-            clsId: "Nat"),
+            clsId: Id(
+              classDeclarationId: "Nat",
+              typeArgumentIds: [])),
           name: "acc",
           index: 1)
       ],
@@ -154,12 +186,16 @@ Klass(
                 loc: 200-205,
                 ty: Id(
                   effect: "pure",
-                  clsId: "Nat"),
+                  clsId: Id(
+                    classDeclarationId: "Nat",
+                    typeArgumentIds: [])),
                 name: "n",
                 index: 0)),
-            method: Id(
-              klassId: "Nat",
-              name: "=="),
+            method: MethodInst(
+              decl: Id(
+                klassId: "Nat",
+                name: "=="),
+              typeArguments: []),
             args: [Literal(
               loc: 229-230,
               value: 0)]),
@@ -169,7 +205,9 @@ Klass(
               loc: 207-214,
               ty: Id(
                 effect: "pure",
-                clsId: "Nat"),
+                clsId: Id(
+                  classDeclarationId: "Nat",
+                  typeArgumentIds: [])),
               name: "acc",
               index: 1)))],
         elseResult: Recur(
@@ -183,12 +221,16 @@ Klass(
                   loc: 200-205,
                   ty: Id(
                     effect: "pure",
-                    clsId: "Nat"),
+                    clsId: Id(
+                      classDeclarationId: "Nat",
+                      typeArgumentIds: [])),
                   name: "n",
                   index: 0)),
-              method: Id(
-                klassId: "Nat",
-                name: "decr"),
+              method: MethodInst(
+                decl: Id(
+                  klassId: "Nat",
+                  name: "decr"),
+                typeArguments: []),
               args: []),
             InstanceMethodCall(
               loc: 265-274,
@@ -198,19 +240,25 @@ Klass(
                   loc: 207-214,
                   ty: Id(
                     effect: "pure",
-                    clsId: "Nat"),
+                    clsId: Id(
+                      classDeclarationId: "Nat",
+                      typeArgumentIds: [])),
                   name: "acc",
                   index: 1)),
-              method: Id(
-                klassId: "Nat",
-                name: "*"),
+              method: MethodInst(
+                decl: Id(
+                  klassId: "Nat",
+                  name: "*"),
+                typeArguments: []),
               args: [AccessParameter(
                 loc: 271-272,
                 param: Parameter(
                   loc: 200-205,
                   ty: Id(
                     effect: "pure",
-                    clsId: "Nat"),
+                    clsId: Id(
+                      classDeclarationId: "Nat",
+                      typeArgumentIds: [])),
                   name: "n",
                   index: 0))])
           ]))),
@@ -219,14 +267,18 @@ Klass(
       isStatic: true,
       returnTy: Id(
         effect: "pure",
-        clsId: "Nat"),
+        clsId: Id(
+          classDeclarationId: "Nat",
+          typeArgumentIds: [])),
       name: "fibonacci",
       selfEffect: "pure",
       parameters: [Parameter(
         loc: 292-297,
         ty: Id(
           effect: "pure",
-          clsId: "Nat"),
+          clsId: Id(
+            classDeclarationId: "Nat",
+            typeArgumentIds: [])),
         name: "n",
         index: 0)],
       body: WhenTest(
@@ -242,12 +294,16 @@ Klass(
                   loc: 292-297,
                   ty: Id(
                     effect: "pure",
-                    clsId: "Nat"),
+                    clsId: Id(
+                      classDeclarationId: "Nat",
+                      typeArgumentIds: [])),
                   name: "n",
                   index: 0)),
-              method: Id(
-                klassId: "Nat",
-                name: "=="),
+              method: MethodInst(
+                decl: Id(
+                  klassId: "Nat",
+                  name: "=="),
+                typeArguments: []),
               args: [Literal(
                 loc: 312-313,
                 value: 0)]),
@@ -264,12 +320,16 @@ Klass(
                   loc: 292-297,
                   ty: Id(
                     effect: "pure",
-                    clsId: "Nat"),
+                    clsId: Id(
+                      classDeclarationId: "Nat",
+                      typeArgumentIds: [])),
                   name: "n",
                   index: 0)),
-              method: Id(
-                klassId: "Nat",
-                name: "=="),
+              method: MethodInst(
+                decl: Id(
+                  klassId: "Nat",
+                  name: "=="),
+                typeArguments: []),
               args: [Literal(
                 loc: 326-327,
                 value: 1)]),
@@ -278,9 +338,11 @@ Klass(
               value: 1))
         ],
         elseResult: StaticMethodCall(
-          method: Id(
-            klassId: "",
-            name: "fibonacci-recursive"),
+          method: MethodInst(
+            decl: Id(
+              klassId: "",
+              name: "fibonacci-recursive"),
+            typeArguments: []),
           args: [
             AccessParameter(
               loc: 363-364,
@@ -288,7 +350,9 @@ Klass(
                 loc: 292-297,
                 ty: Id(
                   effect: "pure",
-                  clsId: "Nat"),
+                  clsId: Id(
+                    classDeclarationId: "Nat",
+                    typeArgumentIds: [])),
                 name: "n",
                 index: 0)),
             Literal(
@@ -303,7 +367,9 @@ Klass(
       isStatic: true,
       returnTy: Id(
         effect: "pure",
-        clsId: "Nat"),
+        clsId: Id(
+          classDeclarationId: "Nat",
+          typeArgumentIds: [])),
       name: "fibonacci-recursive",
       selfEffect: "pure",
       parameters: [
@@ -311,21 +377,27 @@ Klass(
           loc: 400-405,
           ty: Id(
             effect: "pure",
-            clsId: "Nat"),
+            clsId: Id(
+              classDeclarationId: "Nat",
+              typeArgumentIds: [])),
           name: "n",
           index: 0),
         Parameter(
           loc: 407-415,
           ty: Id(
             effect: "pure",
-            clsId: "Nat"),
+            clsId: Id(
+              classDeclarationId: "Nat",
+              typeArgumentIds: [])),
           name: "acc1",
           index: 1),
         Parameter(
           loc: 417-425,
           ty: Id(
             effect: "pure",
-            clsId: "Nat"),
+            clsId: Id(
+              classDeclarationId: "Nat",
+              typeArgumentIds: [])),
           name: "acc2",
           index: 2)
       ],
@@ -341,12 +413,16 @@ Klass(
                 loc: 400-405,
                 ty: Id(
                   effect: "pure",
-                  clsId: "Nat"),
+                  clsId: Id(
+                    classDeclarationId: "Nat",
+                    typeArgumentIds: [])),
                 name: "n",
                 index: 0)),
-            method: Id(
-              klassId: "Nat",
-              name: "=="),
+            method: MethodInst(
+              decl: Id(
+                klassId: "Nat",
+                name: "=="),
+              typeArguments: []),
             args: [Literal(
               loc: 440-441,
               value: 2)]),
@@ -358,19 +434,25 @@ Klass(
                 loc: 407-415,
                 ty: Id(
                   effect: "pure",
-                  clsId: "Nat"),
+                  clsId: Id(
+                    classDeclarationId: "Nat",
+                    typeArgumentIds: [])),
                 name: "acc1",
                 index: 1)),
-            method: Id(
-              klassId: "Nat",
-              name: "+"),
+            method: MethodInst(
+              decl: Id(
+                klassId: "Nat",
+                name: "+"),
+              typeArguments: []),
             args: [AccessParameter(
               loc: 452-456,
               param: Parameter(
                 loc: 417-425,
                 ty: Id(
                   effect: "pure",
-                  clsId: "Nat"),
+                  clsId: Id(
+                    classDeclarationId: "Nat",
+                    typeArgumentIds: [])),
                 name: "acc2",
                 index: 2))]))],
         elseResult: Recur(
@@ -384,12 +466,16 @@ Klass(
                   loc: 400-405,
                   ty: Id(
                     effect: "pure",
-                    clsId: "Nat"),
+                    clsId: Id(
+                      classDeclarationId: "Nat",
+                      typeArgumentIds: [])),
                   name: "n",
                   index: 0)),
-              method: Id(
-                klassId: "Nat",
-                name: "decr"),
+              method: MethodInst(
+                decl: Id(
+                  klassId: "Nat",
+                  name: "decr"),
+                typeArguments: []),
               args: []),
             AccessParameter(
               loc: 484-488,
@@ -397,7 +483,9 @@ Klass(
                 loc: 417-425,
                 ty: Id(
                   effect: "pure",
-                  clsId: "Nat"),
+                  clsId: Id(
+                    classDeclarationId: "Nat",
+                    typeArgumentIds: [])),
                 name: "acc2",
                 index: 2)),
             InstanceMethodCall(
@@ -408,19 +496,25 @@ Klass(
                   loc: 407-415,
                   ty: Id(
                     effect: "pure",
-                    clsId: "Nat"),
+                    clsId: Id(
+                      classDeclarationId: "Nat",
+                      typeArgumentIds: [])),
                   name: "acc1",
                   index: 1)),
-              method: Id(
-                klassId: "Nat",
-                name: "+"),
+              method: MethodInst(
+                decl: Id(
+                  klassId: "Nat",
+                  name: "+"),
+                typeArguments: []),
               args: [AccessParameter(
                 loc: 497-501,
                 param: Parameter(
                   loc: 417-425,
                   ty: Id(
                     effect: "pure",
-                    clsId: "Nat"),
+                    clsId: Id(
+                      classDeclarationId: "Nat",
+                      typeArgumentIds: [])),
                   name: "acc2",
                   index: 2))])
           ])))))

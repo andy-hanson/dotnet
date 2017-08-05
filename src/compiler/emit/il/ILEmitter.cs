@@ -79,12 +79,12 @@ sealed class ILEmitter {
 		return type;
 	}
 
-	TypeBuilder initType(Klass klass) {
+	TypeBuilder initType(ClassDeclaration klass) {
 		Type superClass;
 		Type[] interfaces;
-		if (klass.supers.find(out var es, s => s.superClass == BuiltinClass.Exception)) {
+		if (klass.supers.find(out var es, s => s.superClass.classDeclaration == BuiltinClass.Exception)) {
 			superClass = BuiltinClass.Exception.dotNetType;
-			interfaces = klass.supers.mapDefinedToArray<Type>(s => s.superClass == BuiltinClass.Exception ? Op<Type>.None : Op.Some(maps.toType(s.superClass)));
+			interfaces = klass.supers.mapDefinedToArray<Type>(s => s.superClass.classDeclaration == BuiltinClass.Exception ? Op<Type>.None : Op.Some(maps.toType(s.superClass)));
 		} else {
 			superClass = null;
 			interfaces = klass.supers.mapToArray<Type>(s => maps.toType(s.superClass));
@@ -93,33 +93,33 @@ sealed class ILEmitter {
 		return moduleBuilder.DefineType(klass.name.str, TypeAttributes.Public | typeFlags(klass.head), parent: null, interfaces: interfaces);
 	}
 
-	static TypeAttributes typeFlags(KlassHead head) {
+	static TypeAttributes typeFlags(ClassHead head) {
 		switch (head) {
-			case KlassHead.Static s:
+			case ClassHead.Static s:
 				return TypeAttributes.Sealed;
-			case KlassHead.Abstract a:
+			case ClassHead.Abstract a:
 				return TypeAttributes.Interface | TypeAttributes.Abstract;
-			case KlassHead.Slots s:
+			case ClassHead.Slots s:
 				return TypeAttributes.Sealed;
 			default:
 				throw unreachable();
 		}
 	}
 
-	void fillHead(TypeBuilder tb, Klass klass, LogWriter logger) {
+	void fillHead(TypeBuilder tb, ClassDeclaration klass, LogWriter logger) {
 		switch (klass.head) {
-			case KlassHead.Static s:
+			case ClassHead.Static s:
 				// Nothing to do for a static class.
 				return;
 
-			case KlassHead.Abstract a:
+			case ClassHead.Abstract a:
 				foreach (var abstractMethod in a.abstractMethods) {
 					var m = defineMethod(tb, abstractMethod, Attributes.@abstract, needsSyntheticThis: false, logger: logger);
 					maps.methodInfos.add(abstractMethod, m);
 				}
 				return;
 
-			case KlassHead.Slots slots:
+			case ClassHead.Slots slots:
 				var fields = slots.slots.map<FieldInfo>(slot => {
 					var field = tb.DefineField(slot.name.str, maps.toType(slot.ty), FieldAttributes.Public);
 					maps.slotToField.add(slot, field);
@@ -135,7 +135,7 @@ sealed class ILEmitter {
 		}
 	}
 
-	void generateConstructor(TypeBuilder tb, Klass klass, Arr<FieldInfo> fields, /*nullable*/ InstructionLogger logger) {
+	void generateConstructor(TypeBuilder tb, ClassDeclaration klass, Arr<FieldInfo> fields, /*nullable*/ InstructionLogger logger) {
 		//Constructor can't call any other methods, so we generate it eagerly.
 		var parameterTypes = fields.mapToArray(f => f.FieldType);
 		var ctr = tb.DefineConstructor(MethodAttributes.Private, CallingConventions.Standard, parameterTypes);
@@ -151,7 +151,7 @@ sealed class ILEmitter {
 		maps.classToConstructor.add(klass, ctr);
 	}
 
-	void fillMethodsAndSupers(TypeBuilder tb, Klass klass, /*nullable*/ LogWriter logger) {
+	void fillMethodsAndSupers(TypeBuilder tb, ClassDeclaration klass, /*nullable*/ LogWriter logger) {
 		foreach (var method in klass.methods) {
 			// Methods in abstract classes are implemented as static methods on interfaces.
 			// Noze abstract classes map to IL interfaces.
@@ -180,12 +180,26 @@ sealed class ILEmitter {
 		}
 	}
 
-	MethodBuilder defineMethod(TypeBuilder tb, Method m, MethodAttributes attrs, bool needsSyntheticThis, /*nullable*/ LogWriter logger) {
-		var first = needsSyntheticThis ? Op.Some(maps.toType(m.klass)) : Op<Type>.None;
+	MethodBuilder defineMethod(TypeBuilder tb, MethodDeclaration m, MethodAttributes attrs, bool needsSyntheticThis, /*nullable*/ LogWriter logger) {
+		var first = needsSyntheticThis ? Op.Some(maps.toClassType(m.klass)) : Op<Type>.None;
+
+		var mb = tb.DefineMethod(m.name.str, attrs);
+
+		Op<GenericTypeParameterBuilder[]> ilTypeParameters;
+		if (m.typeParameters.any) {
+			var ilTypeParameterz = mb.DefineGenericParameters(m.typeParameters.mapToArray(t => t.name.str));
+			maps.associateTypeParameters(m.typeParameters, ilTypeParameterz);
+			ilTypeParameters = Op.Some(ilTypeParameterz);
+		} else
+			ilTypeParameters = Op<GenericTypeParameterBuilder[]>.None;
+
 		var @params = m.parameters.mapToArrayWithFirst(first, p => maps.toType(p.ty));
 		var returnTy = maps.toType(m.returnTy);
-		logger?.methodHead(m.name.str, attrs, returnTy, @params);
-		return tb.DefineMethod(m.name.str, attrs, returnTy, @params);
+		mb.SetParameters(@params);
+		mb.SetReturnType(returnTy);
+		logger?.methodHead(m.name.str, ilTypeParameters, attrs, returnTy, @params);
+
+		return mb;
 	}
 }
 
@@ -205,15 +219,23 @@ sealed class LogWriter : InstructionLogger {
 	internal void endConstructor() =>
 		s.add("\n\n");
 
-	internal void methodHead(string name, MethodAttributes attrs, Type returnType, Type[] parameters) =>
+	internal void methodHead(string name, Op<GenericTypeParameterBuilder[]> typeParameters, MethodAttributes attrs, Type returnType, Type[] parameters) {
 		s.add(returnType.Name)
 			.add(' ')
-			.add(name)
-			.add('(')
+			.add(name);
+
+		if (typeParameters.get(out var tps)) {
+			s.add('<');
+			s.join(tps, (ss, t) => ss.add(t.Name));
+			s.add('>');
+		}
+
+		s.add('(')
 			.join(parameters, p => p.Name)
 			.add(") [")
 			.add(attrs.ToString())
 			.add("]\n\n");
+	}
 
 	internal void beginMethod(MethodBuilder m) =>
 		s.add(m.Name);

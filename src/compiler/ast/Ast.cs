@@ -13,13 +13,13 @@ namespace Ast {
 
 	sealed class Module : Node, ToData<Module> {
 		internal readonly Arr<Import> imports;
-		internal readonly Klass klass;
+		internal readonly ClassDeclaration klass;
 
-		internal Module(Loc loc, Arr<Import> imports, Klass klass) : base(loc) {
+		internal Module(Loc loc, Arr<Import> imports, ClassDeclaration klass) : base(loc) {
 			this.imports = imports;
 			this.klass = klass;
 		}
-		internal void Deconstruct(out Arr<Import> imports, out Klass klass) { imports = this.imports; klass = this.klass; }
+		internal void Deconstruct(out Arr<Import> imports, out ClassDeclaration klass) { imports = this.imports; klass = this.klass; }
 
 		public override bool deepEqual(Node n) => n is Module m && deepEqual(m);
 		public bool deepEqual(Module m) => locEq(m) && imports.deepEqual(m.imports) && klass.deepEqual(m.klass);
@@ -53,24 +53,36 @@ namespace Ast {
 		}
 	}
 
-	sealed class Klass : Node, ToData<Klass> {
+	sealed class ClassDeclaration : Node, ToData<ClassDeclaration> {
+		internal readonly Arr<Sym> typeParameters;
 		internal readonly Op<Head> head;
 		internal readonly Arr<Super> supers;
 		internal readonly Arr<Method> methods;
 
-		internal Klass(Loc loc, Op<Head> head, Arr<Super> supers, Arr<Method> methods) : base(loc) {
+		internal ClassDeclaration(Loc loc, Arr<Sym> typeParameters, Op<Head> head, Arr<Super> supers, Arr<Method> methods) : base(loc) {
+			this.typeParameters = typeParameters;
 			this.head = head;
 			this.supers = supers;
 			this.methods = methods;
 		}
-		internal void Deconstruct(out Loc loc, out Op<Head> head, out Arr<Super> supers, out Arr<Method> methods) {
-			loc = this.loc; head = this.head; supers = this.supers; methods = this.methods;
+		internal void Deconstruct(out Loc loc, out Arr<Sym> typeParameters, out Op<Head> head, out Arr<Super> supers, out Arr<Method> methods) {
+			loc = this.loc;
+			typeParameters = this.typeParameters;
+			head = this.head;
+			supers = this.supers;
+			methods = this.methods;
 		}
 
-		public override bool deepEqual(Node n) => n is Klass k && deepEqual(k);
-		public bool deepEqual(Klass k) => locEq(k) && head.deepEqual(k.head) && supers.deepEqual(k.supers) && methods.deepEqual(k.methods);
+		public override bool deepEqual(Node n) => n is ClassDeclaration k && deepEqual(k);
+		public bool deepEqual(ClassDeclaration k) =>
+			locEq(k) &&
+			typeParameters.deepEqual(k.typeParameters) &&
+			head.deepEqual(k.head) &&
+			supers.deepEqual(k.supers) &&
+			methods.deepEqual(k.methods);
 		public override Dat toDat() => Dat.of(this,
 			nameof(loc), loc,
+			nameof(typeParameters), Dat.arr(typeParameters),
 			nameof(head), Dat.op(head),
 			nameof(supers), Dat.arr(supers),
 			nameof(methods), Dat.arr(methods));
@@ -90,13 +102,23 @@ namespace Ast {
 				internal sealed class AbstractMethod : Node, ToData<AbstractMethod> {
 					internal readonly Ty returnTy;
 					internal readonly Sym name;
+					internal readonly Arr<Sym> typeParameters;
 					internal readonly Model.Effect selfEffect;
 					internal readonly Arr<Parameter> parameters;
-					internal AbstractMethod(Loc loc, Ty returnTy, Sym name, Model.Effect selfEffect, Arr<Parameter> parameters) : base(loc) {
+					internal AbstractMethod(Loc loc, Arr<Sym> typeParameters, Ty returnTy, Sym name, Model.Effect selfEffect, Arr<Parameter> parameters) : base(loc) {
 						this.returnTy = returnTy;
 						this.name = name;
+						this.typeParameters = typeParameters;
 						this.selfEffect = selfEffect;
 						this.parameters = parameters;
+					}
+					internal void Deconstruct(out Loc loc, out Arr<Sym> typeParameters, out Ty returnTy, out Sym name, out Model.Effect selfEffect, out Arr<Parameter> parameters) {
+						loc = this.loc;
+						typeParameters = this.typeParameters;
+						returnTy = this.returnTy;
+						name = this.name;
+						selfEffect = this.selfEffect;
+						parameters = this.parameters;
 					}
 
 					public override bool deepEqual(Node n) => n is AbstractMethod a && deepEqual(a);
@@ -104,11 +126,13 @@ namespace Ast {
 						locEq(a) &&
 						returnTy.deepEqual(a.returnTy) &&
 						name.deepEqual(a.name) &&
+						typeParameters.deepEqual(a.typeParameters) &&
 						parameters.deepEqual(a.parameters);
 					public override Dat toDat() => Dat.of(this,
 						nameof(loc), loc,
 						nameof(returnTy), returnTy,
 						nameof(name), name,
+						nameof(typeParameters), Dat.arr(typeParameters),
 						nameof(parameters), Dat.arr(parameters));
 				}
 			}
@@ -148,13 +172,15 @@ namespace Ast {
 
 	internal sealed class Super : Node, ToData<Super> {
 		internal readonly Sym name;
+		internal readonly Arr<Ty> tyArgs;
 		internal readonly Arr<Impl> impls;
-		internal Super(Loc loc, Sym name, Arr<Impl> impls) : base(loc) {
+		internal Super(Loc loc, Sym name, Arr<Ty> tyArgs, Arr<Impl> impls) : base(loc) {
 			this.name = name;
+			this.tyArgs = tyArgs;
 			this.impls = impls;
 		}
-		internal void Deconstruct(out Loc loc, out Sym name, out Arr<Impl> impls) {
-			loc = this.loc; name = this.name; impls = this.impls;
+		internal void Deconstruct(out Loc loc, out Sym name, out Arr<Ty> tyArgs, out Arr<Impl> impls) {
+			loc = this.loc; name = this.name; tyArgs = this.tyArgs; impls = this.impls;
 		}
 
 		public override bool deepEqual(Node n) => n is Super i && deepEqual(i);
@@ -196,22 +222,25 @@ namespace Ast {
 
 	internal sealed class Method : Node, ToData<Method> {
 		internal readonly bool isStatic;
+		internal readonly Arr<Sym> typeParameters;
 		internal readonly Ty returnTy;
 		internal readonly Sym name;
 		internal readonly Model.Effect selfEffect;
 		internal readonly Arr<Parameter> parameters;
 		internal readonly Expr body;
-		internal Method(Loc loc, bool isStatic, Ty returnTy, Sym name, Model.Effect selfEffect, Arr<Parameter> parameters, Expr body) : base(loc) {
+		internal Method(Loc loc, bool isStatic, Arr<Sym> typeParameters, Ty returnTy, Sym name, Model.Effect selfEffect, Arr<Parameter> parameters, Expr body) : base(loc) {
 			this.isStatic = isStatic;
+			this.typeParameters = typeParameters;
 			this.returnTy = returnTy;
 			this.name = name;
 			this.selfEffect = selfEffect;
 			this.parameters = parameters;
 			this.body = body;
 		}
-		internal void Deconstruct(out Loc loc, out bool isStatic, out Ty returnTy, out Sym name, out Model.Effect selfEffect, out Arr<Parameter> parameters, out Expr body) {
+		internal void Deconstruct(out Loc loc, out bool isStatic, out Arr<Sym> typeParameters, out Ty returnTy, out Sym name, out Model.Effect selfEffect, out Arr<Parameter> parameters, out Expr body) {
 			loc = this.loc;
 			isStatic = this.isStatic;
+			typeParameters = this.typeParameters;
 			returnTy = this.returnTy;
 			name = this.name;
 			selfEffect = this.selfEffect;
@@ -223,6 +252,7 @@ namespace Ast {
 		public bool deepEqual(Method m) =>
 			locEq(m) &&
 			isStatic == m.isStatic &&
+			typeParameters.deepEqual(m.typeParameters) &&
 			returnTy.deepEqual(m.returnTy) &&
 			name.deepEqual(m.name) &&
 			parameters.deepEqual(m.parameters) &&
@@ -230,6 +260,7 @@ namespace Ast {
 		public override Dat toDat() => Dat.of(this,
 			nameof(loc), loc,
 			nameof(isStatic), Dat.boolean(isStatic),
+			nameof(typeParameters), Dat.arr(typeParameters),
 			nameof(returnTy), returnTy,
 			nameof(name), name,
 			nameof(parameters), Dat.arr(parameters),
@@ -252,53 +283,31 @@ namespace Ast {
 
 	sealed class Ty : Node, ToData<Ty> {
 		internal readonly Model.Effect effect;
-		internal readonly ClsRef cls;
-		internal Ty(Loc loc, Model.Effect effect, ClsRef cls) : base(loc) {
+		internal readonly Sym name;
+		internal readonly Arr<Ty> tyArgs;
+		internal Ty(Loc loc, Model.Effect effect, Sym name, Arr<Ty> tyArgs) : base(loc) {
 			this.effect = effect;
-			this.cls = cls;
+			this.name = name;
+			this.tyArgs = tyArgs;
 		}
-		internal void Deconstruct(out Loc loc, out Model.Effect effect, out ClsRef cls) { loc = this.loc; effect = this.effect; cls = this.cls; }
+		internal void Deconstruct(out Loc loc, out Model.Effect effect, out Sym name, out Arr<Ty> tyArgs) {
+			loc = this.loc;
+			effect = this.effect;
+			name = this.name;
+			tyArgs = this.tyArgs;
+		}
 
 		public override bool deepEqual(Node n) => n is Ty t && deepEqual(t);
-		public bool deepEqual(Ty t) => locEq(t) && effect.deepEqual(t.effect) && cls.deepEqual(t.cls);
-		public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(cls), cls);
-	}
-
-	abstract class ClsRef : Node, ToData<ClsRef> {
-		ClsRef(Loc loc) : base(loc) {}
-		public bool deepEqual(ClsRef c) => deepEqual((Node)c);
-
-		internal sealed class Access : ClsRef, ToData<Access> {
-			internal readonly Sym name;
-			internal Access(Loc loc, Sym name) : base(loc) { this.name = name; }
-			internal void Deconstruct(out Loc loc, out Sym name) { loc = this.loc; name = this.name; }
-
-			public override bool deepEqual(Node n) => n is Access a && deepEqual(a);
-			public bool deepEqual(Access a) => locEq(a) && name.deepEqual(a.name);
-			public override Dat toDat() => Dat.of(this, nameof(loc), loc, nameof(name), name);
-		}
-
-		internal sealed class Inst : ClsRef, ToData<Inst> {
-			internal readonly Access instantiated;
-			internal readonly Arr<Ty> tyArgs;
-			internal Inst(Loc loc, Access instantiated, Arr<Ty> tyArgs) : base(loc) {
-				this.instantiated = instantiated;
-				this.tyArgs = tyArgs;
-			}
-			internal void Deconstruct(out Loc loc, out Access instantiated, out Arr<Ty> tyArgs) {
-				loc = this.loc; instantiated = this.instantiated; tyArgs = this.tyArgs;
-			}
-
-			public override bool deepEqual(Node n) => n is Inst i && deepEqual(i);
-			public bool deepEqual(Inst i) =>
-				locEq(i) &&
-				instantiated.deepEqual(i.instantiated) &&
-				tyArgs.deepEqual(i.tyArgs);
-			public override Dat toDat() => Dat.of(this,
-				nameof(loc), loc,
-				nameof(instantiated), instantiated,
-				nameof(tyArgs), Dat.arr(tyArgs));
-		}
+		public bool deepEqual(Ty t) =>
+			locEq(t) &&
+			effect.deepEqual(t.effect) &&
+			name.deepEqual(t.name) &&
+			tyArgs.deepEqual(t.tyArgs);
+		public override Dat toDat() => Dat.of(this,
+			nameof(loc), loc,
+			nameof(effect), effect,
+			nameof(name), name,
+			nameof(tyArgs), Dat.arr(tyArgs));
 	}
 
 	internal abstract class Pattern : Node, ToData<Pattern> {
